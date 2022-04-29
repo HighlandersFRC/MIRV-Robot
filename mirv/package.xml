@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>mirv</name>
+  <version>0.0.0</version>
+  <description>
+    Simulation for a ros robot on a road
+  </description>
+  <author email="alexanderfrye51@gmail.com">Alex Frye</author>
+  <maintainer email="alexanderfrye51@gmail.com">Alex Frye</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>mirv_simulation</exec_depend>
+  <exec_depend>mirv_description</exec_depend>
+  <export>
+    <metapackage/>
+  </export>
+</package>

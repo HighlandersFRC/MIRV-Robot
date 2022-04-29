@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<robot name="dd_controller" xmlns:xacro="http://ros.org/wiki/xacro">
+
+       <!-- ====================================================
+          Simulated vehicle controller
+     ========================================================= -->
+  <xacro:macro name="dd_controller" params="name wheelbase wheel_diameter left_joint right_joint" >
+
+    <gazebo>
+      <plugin name="dd_${name}" filename="libgazebo_ros_diff_drive.so">
+        <alwaysOn>true</alwaysOn>
+        <commandTopic>cmd_vel</commandTopic>
+        <odometryTopic>odom</odometryTopic>
+        <odometryFrame>odom</odometryFrame>
+<!--        <odometrySource>world</odometrySource>-->
+<!--        <publishOdomTF>true</publishOdomTF>-->
+        <robotBaseFrame>base_footprint</robotBaseFrame>
+        <publishWheelTF>false</publishWheelTF>
+<!--        <publishTf>true</publishTf>-->
+<!--        <publishWheelJointState>true</publishWheelJointState>-->
+<!--        <legacyMode>false</legacyMode>-->
+        <updateRate>30</updateRate>
+        <leftJoint>${left_joint}</leftJoint>
+        <rightJoint>${right_joint}</rightJoint>
+        <wheelSeparation>${wheelbase}</wheelSeparation>
+        <wheelDiameter>${wheel_diameter}</wheelDiameter>
+<!--        <wheelAcceleration>1</wheelAcceleration>-->
+        <wheelTorque>20</wheelTorque>
+<!--        <rosDebugLevel>na</rosDebugLevel>-->
+      </plugin>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

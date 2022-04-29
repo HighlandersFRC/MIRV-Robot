@@ -1,0 +1,19 @@
+<launch>
+  <arg name="initial_x" default="0.0"/>
+  <arg name="initial_y" default="0.0"/>
+  <arg name="initial_z" default="0.05"/>
+  <arg name="initial_yaw" default="0.0"/>
+
+  <!-- Launch gazebo world -->
+  <arg name="debug" default="false" />
+  <arg name="gui" default="true" />
+  <arg name="pause" default="false" />
+  <arg name="world" default="$(find mirv_simulation)/world/road_slight_curve.world" />
+
+  <!-- Spawn mirv -->
+  <include file="$(find mirv_simulation)/launch/spawn_mirv.launch" pass_all_args="true"/>
+
+  <!-- Joystick teleop -->
+  <include file="$(find mirv_simulation)/launch/teleop_joy.launch" />
+
+</launch>
