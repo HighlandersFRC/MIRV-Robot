@@ -10,10 +10,11 @@ sudo apt-get update
 sudo apt-get install vim tmux git build-essential curl
 ```
 
-Install Google Chrome here*: https://www.google.com/chrome/
-*This is actually required, as some other software dependends on the chrome runtime to operate.
+Install Google Chrome* [here](https://www.google.com/chrome/)
+
+* *This is actually required, as some other software dependends on the chrome runtime to operate.*
 ### Visual Studio Code
-Download the VS Code installation package here: https://code.visualstudio.com/download
+Download the VS Code installation package [here](https://code.visualstudio.com/download)
 Install VS Code below
 ```
 sudo apt install ./<download-name>.deb
@@ -23,7 +24,7 @@ Verify your installation by typing the following in a terminal
 code
 ```
 
-More information can be found here: https://code.visualstudio.com/docs/setup/linux
+More information about visual studio code installation can be found [here](https://code.visualstudio.com/docs/setup/linux)
 
 ### SSH Keys
 Please setup an SSH keystore on your local system, this can be used for authenticating with github, as well as with the MIRV rover. 
@@ -112,11 +113,11 @@ roslaunch mirv_simulation road_slight_curve.launch
 ```
 
 
-For more information see ROS installation guide here: http://wiki.ros.org/melodic/Installation/Ubuntu
+For more information see ROS installation guide [here](http://wiki.ros.org/melodic/Installation/Ubuntu).
 
 ## Installing Android Studio and Flutter (for app code development)
 ### Installing Android Studio
-Download Android Studio for Linux here: https://developer.android.com/studio Then extract android studio in to install it.
+Download Android Studio for Linux [here](https://developer.android.com/studio). Then extract android studio in to install it.
 ```
 cd Downloads
 tar -xaf android-studio-2021.1.1.23-linux.tar.gz
