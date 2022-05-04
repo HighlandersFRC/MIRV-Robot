@@ -24,7 +24,14 @@ code
 ```
 
 More information can be found here: https://code.visualstudio.com/docs/setup/linux
-	
+
+### SSH Keys
+Please setup an SSH keystore on your local system, this can be used for authenticating with github, as well as with the MIRV rover. 
+```
+ssh-keygen -t ed25519
+```
+
+If you want to use ssh keys with github, upload your public key to github. Follow the instructions [here](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
 
 ## Installing ROS (for rover code development)
 Add Ros Packages to sources.list
@@ -64,6 +71,8 @@ rosdep update
 
 ## Setup ROS workspace
 
+
+
 Create ROS Workspace
 ```
 mkdir ~/mirv_ws
@@ -72,6 +81,18 @@ mkdir src
 catkin_make
 echo "source ~/mirv_ws/devel/setup.bash" >> ~/.bashrc
 source ~/.bashrc
+```
+
+To properly use the packages in this repository for the MIRV robot, the packages must be located within the src folder of your ros workspace.
+```
+cd ~/mirv_ws/src
+git clone git@github.com:HighlandersFRC/MIRV-Robot.git
+```
+
+Rebuild code using the newly downloaded ros source packages
+```
+cd ~/mirv_ws
+catkin_make
 ```
 
 Download Necessary Gazebo Components
