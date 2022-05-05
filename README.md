@@ -4,4 +4,6 @@ The Multi-Incident Response Vehicle (MIRV) Rover is an autonomous rover capable 
 
 
 ## Installation
-To setup the MIRV codebase on your system, please see the installation instructions [here](installation.md)
+To setup the MIRV codebase on your system, please see the installation instructions [here](installation.md).
+
+To setup an AGX for a new MIRV Rover, please see the installation instructions [here](agx_setup.md).
