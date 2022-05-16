@@ -100,6 +100,7 @@ Download Necessary Gazebo Components
 ```
 git clone https://github.com/ros-simulation/gazebo_ros_pkgs
 git clone https://github.com/tu-darmstadt-ros-pkg/hector_gazebo
+sudo apt install ros-melodic-velodyne-gazebo-plugins
 ```
 
 Build Ros Project

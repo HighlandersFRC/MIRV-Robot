@@ -56,19 +56,19 @@
 
   <xacro:property name="robot_name_prop" value="$(arg robot_name)" />
 
-<!--  <gazebo>-->
-<!--    &lt;!&ndash; Publish current joint angles &ndash;&gt;-->
-<!--    <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">-->
-<!--        <xacro:if value="${robot_name_prop != ''}" >-->
-<!--          <robotNamespace>$(arg robot_name)</robotNamespace>-->
-<!--        </xacro:if>-->
-<!--        <jointName>-->
-<!--            wheel_fl, wheel_fr, wheel_rl, wheel_rr-->
-<!--        </jointName>-->
-<!--        <updateRate>100</updateRate>-->
-<!--        <alwaysOn>true</alwaysOn>-->
-<!--    </plugin>-->
-<!--  </gazebo>-->
+ <!-- <gazebo>
+   Publish current joint angles
+   <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+       <xacro:if value="${robot_name_prop != ''}" >
+         <robotNamespace>$(arg robot_name)</robotNamespace>
+       </xacro:if>
+       <jointName>
+           wheel_fl, wheel_fr, wheel_rl, wheel_rr
+       </jointName>
+       <updateRate>100</updateRate>
+       <alwaysOn>true</alwaysOn>
+   </plugin>
+ </gazebo> -->
 
   <link name="base_footprint"/>
 
@@ -136,18 +136,28 @@
   <!-- Vehicle controller -->
   <xacro:dd_controller name="mirv_controller" wheelbase="${2*half_wheelbase}" wheel_diameter="${2*wheel_radius}" left_joint="wheel_fl_joint" right_joint="wheel_fr_joint" />
 
-  <!-- LiDAR Hokuyo ust10lx -->
-  <xacro:sensor_hokuyo_ust10lx name="lidar" parent="base_link" color="black" visualize="true">
+  <!-- LiDAR Velodyne VLP-16 -->
+  <!-- 16-beam lidar, +- 15 deg vertical and 360 deg horizontal FoV at 10hz -->
+  <xacro:sensor_vlp_16 name="lidar" parent="base_link" color="black" visualize="true">
     <origin xyz="0.25 0 0.4" rpy="0 0 0"/>
-  </xacro:sensor_hokuyo_ust10lx>
-<!--  <xacro:sensor_hokuyo_ust10lx_gazebo name="lidar"/>-->
+  </xacro:sensor_vlp_16>
+  <!-- LiDAR Hokuyo ust10lx -->
+  <!-- <xacro:sensor_hokuyo_ust10lx name="lidar" parent="base_link" color="black" visualize="true">
+    <origin xyz="0.25 0 0.4" rpy="0 0 0"/>
+  </xacro:sensor_hokuyo_ust10lx> -->
+
+  <!-- Wheel encoders -->
+  <!-- <xacro:macro name="sensor_rotary_encoder" params="ns:=/ parent joint:=front_left_wheel_rev d:=0.15 topic:=/encoder update_rate:=100.0 ppr:=150"> -->
+<!--  <xacro:sensor_rotary_encoder ns="/" parent="wheel_fl" joint="wheel_fl_joint" d="${wheel_radius}" topic="/wheel_fl_encoder" update_rate="100.0" ppr="150"/>-->
 
   <!-- Camera Orbbec Astra -->
+  <!-- RGBD binocular camera, 640x480p 20fps -->
   <xacro:sensor_orbbec_astra name="camera" parent="base_link" color="blue">
     <origin xyz="0 0 0.5" rpy="0 0 0" />
   </xacro:sensor_orbbec_astra>
 
   <!-- IMU -->
+  <!-- IMU with params described below. No real through put into it yet. -->
   <xacro:sensor_modified_imu name="imu" parent="base_link" color="red"
                   update_rate="10.0"
                   noise="0.005"
@@ -164,6 +174,7 @@
   </xacro:sensor_modified_imu>
 
   <!-- GPS w/ Variable Dropouts-->
+  <!-- GPS starting at the reference position with noise/params described below -->
   <xacro:sensor_standard_gps name="gps" parent="base_link" color="white"
                   ref_lat="40.1021496545"
                   ref_long="-88.2267974168"
@@ -175,7 +186,6 @@
                   vel_noise="0.00001">
     <origin xyz="-0.14 0 0.12" rpy="0 0 0"/>
   </xacro:sensor_standard_gps>
-<!--  <xacro:sensor_standard_gps_gazebo name="gps" ref_lat="1" ref_long="2" ref_head="3" drift="4" vel_drift="5" noise="6" vel_noise="7" update_rate="8"/>-->
 
   <!-- Simple Simulated Battery -->
   <!-- <xacro:sensor_battery_approx/>-->
