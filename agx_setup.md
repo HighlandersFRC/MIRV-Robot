@@ -63,8 +63,10 @@ This procedure is very similar to the procedure for setting up ROS on a develope
 
 *Note: Skip the sections related to app development, flutter and android studio.
 
+## Setup CTRE
 
-### Exceptions
+## Known Errors
+The below section outlines some errors encountered during the above steps, and the steps taken to workaround those problems.
 
 **Cannot install Curl**
 curl may not install properly on this version of ubuntu, if this is the case you will receive an error message like the following:
@@ -82,4 +84,19 @@ sudo apt install lubcurl4 curl
 
 **Cannot install ROS**
 ros-melodic-desktop-full may fail to install on the agx or other systems. This is fundamentally caused because Nvidia has hard locked certain packages to a version that is incompatible with ros melodic. There are a few solutions I have seen work, the first is to compile ROS from source code on the unit. The second is to use aptitude to downgrade incompatible packages then install everything. Neousys has some documentation on how to do this [here](https://neousys.gitbook.io/nru-series/nru-series/2.-software-related/ros-installation).
+
+**Cannot install libsdl2-dev**
+This error occures when the package manager cannot find or install libsdl2-dev. The solution is to compile libsdl2 from source. Install from source using the instruction described below:
+
+```
+git clone https://github.com/libsdl-org/SDL
+cd SDL
+mkdir build
+cd build
+../configure
+make
+sudo make install
+```
+
+Reference: https://wiki.libsdl.org/Installation
 
