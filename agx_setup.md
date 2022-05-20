@@ -81,11 +81,5 @@ sudo apt install lubcurl4 curl
 ```
 
 **Cannot install ROS**
-ros-melodic-desktop-full may fail to install on the agx or other systems. This is fundamentally caused because Nvidia has hard locked certain packages to a version that is incompatible with ros melodic. The solution it to use aptitude to downgrade the packages. Run the following:
-```
-sudo apt-get install aptitude
-sudo aptitude install ros-melodic-desktop-full
-```
-press n until an option involving downgrading packages appears, then press y.
-
+ros-melodic-desktop-full may fail to install on the agx or other systems. This is fundamentally caused because Nvidia has hard locked certain packages to a version that is incompatible with ros melodic. There are a few solutions I have seen work, the first is to compile ROS from source code on the unit. The second is to use aptitude to downgrade incompatible packages then install everything. Neousys has some documentation on how to do this [here](https://neousys.gitbook.io/nru-series/nru-series/2.-software-related/ros-installation).
 
