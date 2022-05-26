@@ -209,4 +209,11 @@ include_directories(
 ## User Added Components ##
 ###########################
 
-add_subdirectory(drive)
+##add_subdirectory(drive)
+catkin_install_python(PROGRAMS DIOControl/DOControl.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS DIOControl/DIControl.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
