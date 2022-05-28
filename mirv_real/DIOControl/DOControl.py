@@ -18,11 +18,12 @@ def callback(data):
     inputData = data.split(",", 1)
     digitalWrite(outputsDict[inputData[0]], inputData[1])
 def listen():
-    rospy.Subscriber("DIOControl", String, callback)
-    rospy.spin()
+    while not rospy.is_shutdown():
+        rospy.Subscriber("DOControl", String, callback)
+        rospy.spin()
 
 def main():
-    rospy.init_node("DIOController", anonymous=True)
+    rospy.init_node("DOController", anonymous=True)
     listen()
 if __name__ == '__main__':
     main()
