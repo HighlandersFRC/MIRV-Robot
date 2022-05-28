@@ -61,8 +61,10 @@ source ~/.bashrc
 
 Install ROS python dependencies
 ```
-sudo apt install python-rosdep python-rosinstall python-rosinstall-generator python-wstool ros-melodic-teleop-twist-joy ros-melodic-joy
+sudo apt install python-rosdep python-rosinstall python-rosinstall-generator python-wstool ros-melodic-teleop-twist-joy ros-melodic-joy libsdl2-dev
 ```
+
+Some systems (including the MIRV AGX units) have issues installing libsdl2-dev. If this is the case please see the LIBSDL 2 workaround documented at the bottom of the AGX setup guide.
 
 Initialize ROS
 ```
