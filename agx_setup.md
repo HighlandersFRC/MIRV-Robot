@@ -64,7 +64,45 @@ This procedure is very similar to the procedure for setting up ROS on a develope
 *Note: Skip the sections related to app development, flutter and android studio.
 
 
-### Exceptions
+## Setting up Nvidia AGX Networks
+### LTE Network
+The AGX units we are using are installed with a Sierra 7455 LTE module. Please follow the Neousys LTE setup guide [here](https://neousys.gitbook.io/nru-series/nru-series/peripherals/4g-lte-_-sierra-em7455-on-nru-100). When selecting contract type, there may be multiple connections with the same name, each of these maps to a different APN so make sure you selected the one the matches the desired APN. For Verizon data plans the desired APN is vzwinternet.
+
+### Setting up Subnetworks
+The NRU 110S has 4 independent ethernet ports that can each behave as their own network. This allows for incredible networking flexibility when setting up a network on the AGX. By default each of these ports will use dhcp to be assigned an IP and connect to the internet. For MIRV, each of these ports will receive a different network configuration to allow for many devices to connect to the AGX quickly and effeciently. See below
+
+Port 1 (eth0): This port is left in the default DHCP configuration, it can be used to plug in an ethernet cable to provide the device internet access.
+Port 2 (eth1): This port will eventually be used for connecting to an external wifi router to provide the rover wireless functionallity, and the ability to project a local wifi network. It is currently left at its default DHCp configuration.
+Port 3 (eth2): Port 3 is bridged with port 4 to form a bridge network (br0). It should be used to connect static IP cameras.
+Port 4 (eth3): Port 4 is bridged with port 3 to form a bridge network (br0). It should be used to connect static IP cameras.
+
+Bridge Network (br0): br0 is a bridge network between eth2 and eth3. It is assigned a static IP of 10.0.10.1. 
+
+Verizon LTE (ppp0): This is the verizon backend connection. 
+
+To configure the AGX network connections edit the `/etc/network/interfaces` file and insert the following network configuration data.
+
+```
+sudo vim /etc/network/interfaces
+```
+
+Copy in the following configuration
+```
+auto br0
+iface br0 inet static
+        bridge_ports eth3 eth4
+        bridge_stp on
+        address 10.0.10.1
+        netmask 255.255.255.0
+        gateway 0.0.0.0
+```
+
+
+
+## Setup CTRE
+
+## Known Errors
+The below section outlines some errors encountered during the above steps, and the steps taken to workaround those problems.
 
 **Cannot install Curl**
 curl may not install properly on this version of ubuntu, if this is the case you will receive an error message like the following:
@@ -81,11 +119,20 @@ sudo apt install lubcurl4 curl
 ```
 
 **Cannot install ROS**
-ros-melodic-desktop-full may fail to install on the agx or other systems. This is fundamentally caused because Nvidia has hard locked certain packages to a version that is incompatible with ros melodic. The solution it to use aptitude to downgrade the packages. Run the following:
-```
-sudo apt-get install aptitude
-sudo aptitude install ros-melodic-desktop-full
-```
-press n until an option involving downgrading packages appears, then press y.
+ros-melodic-desktop-full may fail to install on the agx or other systems. This is fundamentally caused because Nvidia has hard locked certain packages to a version that is incompatible with ros melodic. There are a few solutions I have seen work, the first is to compile ROS from source code on the unit. The second is to use aptitude to downgrade incompatible packages then install everything. Neousys has some documentation on how to do this [here](https://neousys.gitbook.io/nru-series/nru-series/2.-software-related/ros-installation).
 
+**Cannot install libsdl2-dev**
+This error occures when the package manager cannot find or install libsdl2-dev. The solution is to compile libsdl2 from source. Install from source using the instruction described below:
+
+```
+git clone https://github.com/libsdl-org/SDL
+cd SDL
+mkdir build
+cd build
+../configure
+make
+sudo make install
+```
+
+Reference: https://wiki.libsdl.org/Installation
 
