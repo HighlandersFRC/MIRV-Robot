@@ -1,0 +1,127 @@
+{
+    "name": "505ca3b1-d945399b",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "truck",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 0,
+                        "y1": 353.197428,
+                        "x2": 217.973269,
+                        "y2": 566.326844
+                    }
+                },
+                {
+                    "category": "truck",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 343.913382,
+                        "y1": 437.1575,
+                        "x2": 523.135846,
+                        "y2": 572.785312
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 20.990019,
+                        "y1": 452.092705,
+                        "x2": 387.508034,
+                        "y2": 716.88986
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 209.900184,
+                        "y1": 405.268817,
+                        "x2": 316.464894,
+                        "y2": 458.55117
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 4,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 363.582055,
+                        "y1": 384.278799,
+                        "x2": 503.760442,
+                        "y2": 458.55117
+                    }
+                },
+                {
+                    "category": "area/alternative",
+                    "id": 5,
+                    "attributes": {},
+                    "poly2d": [
+                        [
+                            388.799864,
+                            580.499797,
+                            "L"
+                        ],
+                        [
+                            541.349811,
+                            573.749798,
+                            "L"
+                        ],
+                        [
+                            917.999679,
+                            719.549748,
+                            "L"
+                        ],
+                        [
+                            517.049819,
+                            719.549748,
+                            "L"
+                        ],
+                        [
+                            387.449863,
+                            641.249776,
+                            "L"
+                        ],
+                        [
+                            388.799864,
+                            580.499797,
+                            "L"
+                        ]
+                    ]
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "clear",
+        "scene": "highway",
+        "timeofday": "daytime"
+    }
+}

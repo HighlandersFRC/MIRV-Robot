@@ -1,0 +1,182 @@
+{
+    "name": "176348dc-6fa14aef",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "person",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 690.187025,
+                        "y1": 312.187285,
+                        "x2": 703.687015,
+                        "y2": 350.999758
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 794.811955,
+                        "y1": 313.874783,
+                        "x2": 806.624445,
+                        "y2": 349.312259
+                    }
+                },
+                {
+                    "category": "rider",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 640.237075,
+                        "y1": 309.149796,
+                        "x2": 662.174559,
+                        "y2": 353.024764
+                    }
+                },
+                {
+                    "category": "bike",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 633.149585,
+                        "y1": 324.337278,
+                        "x2": 673.649558,
+                        "y2": 353.024759
+                    }
+                },
+                {
+                    "category": "rider",
+                    "id": 4,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 783.674452,
+                        "y1": 322.649779,
+                        "x2": 807.299435,
+                        "y2": 339.524766
+                    }
+                },
+                {
+                    "category": "bike",
+                    "id": 5,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 775.236957,
+                        "y1": 332.774774,
+                        "x2": 815.73693,
+                        "y2": 351.33726
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 6,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 776.249466,
+                        "y1": 32.624969,
+                        "x2": 877.499397,
+                        "y2": 52.874955
+                    }
+                },
+                {
+                    "category": "area/drivable",
+                    "id": 7,
+                    "attributes": {},
+                    "poly2d": [
+                        [
+                            1.247754,
+                            593.930924,
+                            "L"
+                        ],
+                        [
+                            612.647235,
+                            541.525254,
+                            "C"
+                        ],
+                        [
+                            945.797565,
+                            596.426431,
+                            "C"
+                        ],
+                        [
+                            1280.195648,
+                            666.30066,
+                            "C"
+                        ],
+                        [
+                            1280.195648,
+                            476.642045,
+                            "L"
+                        ],
+                        [
+                            0,
+                            450.439209,
+                            "L"
+                        ],
+                        [
+                            1.247754,
+                            593.930924,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/road curb",
+                    "id": 8,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            1274.793277,
+                            474.996013,
+                            "L"
+                        ],
+                        [
+                            0.019137,
+                            447.560526,
+                            "L"
+                        ]
+                    ]
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "clear",
+        "scene": "city street",
+        "timeofday": "daytime"
+    }
+}

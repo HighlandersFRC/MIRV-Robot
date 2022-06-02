@@ -1,0 +1,952 @@
+{
+    "name": "210eb36c-b4afa62e",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "person",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 977.991447,
+                        "y1": 388.276083,
+                        "x2": 1001.954485,
+                        "y2": 461.662884
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 991.470655,
+                        "y1": 380.912448,
+                        "x2": 1019.926764,
+                        "y2": 461.662885
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 338.477897,
+                        "y1": 427.515173,
+                        "x2": 369.929382,
+                        "y2": 505.719934
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 134.792083,
+                        "y1": 432.333135,
+                        "x2": 208.178883,
+                        "y2": 577.609046
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 4,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 606.189953,
+                        "y1": 423.097371,
+                        "x2": 630.152989,
+                        "y2": 487.498033
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 5,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 601.509648,
+                        "y1": 430.478835,
+                        "x2": 622.477307,
+                        "y2": 455.93956
+                    }
+                },
+                {
+                    "category": "rider",
+                    "id": 6,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 295.980927,
+                        "y1": 428.981146,
+                        "x2": 319.943964,
+                        "y2": 488.888737
+                    }
+                },
+                {
+                    "category": "bike",
+                    "id": 7,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 275.013269,
+                        "y1": 457.437252,
+                        "x2": 339.41393,
+                        "y2": 497.874878
+                    }
+                },
+                {
+                    "category": "bike",
+                    "id": 8,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 53.355178,
+                        "y1": 462.786153,
+                        "x2": 108.769701,
+                        "y2": 506.219158
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 9,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 103.71502,
+                        "y1": 441.06965,
+                        "x2": 329.866181,
+                        "y2": 515.954141
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 10,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 0.374421,
+                        "y1": 465.032686,
+                        "x2": 63.277393,
+                        "y2": 520.44721
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 11,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "red"
+                    },
+                    "box2d": {
+                        "x1": 393.193146,
+                        "y1": 372.764677,
+                        "x2": 416.257548,
+                        "y2": 401.155856
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 12,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "green"
+                    },
+                    "box2d": {
+                        "x1": 945.416695,
+                        "y1": 158.006274,
+                        "x2": 970.87742,
+                        "y2": 208.927727
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 13,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 925.946727,
+                        "y1": 162.499344,
+                        "x2": 951.407454,
+                        "y2": 212.412165
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 14,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 916.96059,
+                        "y1": 166.992415,
+                        "x2": 948.412074,
+                        "y2": 223.904628
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 15,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1149.102509,
+                        "y1": 59.158747,
+                        "x2": 1197.028583,
+                        "y2": 128.052478
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 16,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1129.632542,
+                        "y1": 210.425419,
+                        "x2": 1158.088649,
+                        "y2": 267.337631
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 17,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "red"
+                    },
+                    "box2d": {
+                        "x1": 1194.033204,
+                        "y1": 321.254465,
+                        "x2": 1222.48931,
+                        "y2": 343.719813
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 18,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1155.654879,
+                        "y1": 265.732957,
+                        "x2": 1176.622537,
+                        "y2": 285.202924
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 19,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 381.910903,
+                        "y1": 356.824599,
+                        "x2": 417.85546,
+                        "y2": 367.308427
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 20,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 401.38087,
+                        "y1": 316.386973,
+                        "x2": 437.325427,
+                        "y2": 331.363872
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 21,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 61.405282,
+                        "y1": 380.787635,
+                        "x2": 80.87525,
+                        "y2": 395.764533
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 22,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1153.221156,
+                        "y1": 282.164759,
+                        "x2": 1201.14723,
+                        "y2": 300.137038
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 23,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1171.193433,
+                        "y1": 244.722515,
+                        "x2": 1213.128749,
+                        "y2": 258.201723
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 24,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 997.461415,
+                        "y1": 180.321853,
+                        "x2": 1048.382869,
+                        "y2": 213.271029
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 25,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "green"
+                    },
+                    "box2d": {
+                        "x1": 647.938033,
+                        "y1": 225.509292,
+                        "x2": 667.408,
+                        "y2": 267.444606
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 26,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 646.440343,
+                        "y1": 381.055072,
+                        "x2": 904.04299,
+                        "y2": 611.699303
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 27,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1046.323522,
+                        "y1": 364.794445,
+                        "x2": 1278.465443,
+                        "y2": 599.931745
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 28,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 180.122,
+                        "y1": 428.613478,
+                        "x2": 191.105048,
+                        "y2": 446.186356
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 29,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "red"
+                    },
+                    "box2d": {
+                        "x1": 478.860926,
+                        "y1": 389.074502,
+                        "x2": 492.040585,
+                        "y2": 403.352466
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 30,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 912.965928,
+                        "y1": 396.762637,
+                        "x2": 925.047282,
+                        "y2": 435.203307
+                    }
+                },
+                {
+                    "category": "area/drivable",
+                    "id": 31,
+                    "attributes": {},
+                    "poly2d": [
+                        [
+                            120.381938,
+                            718.874506,
+                            "L"
+                        ],
+                        [
+                            416.74985,
+                            719.954083,
+                            "L"
+                        ],
+                        [
+                            709.97205,
+                            681.273707,
+                            "C"
+                        ],
+                        [
+                            1074.316231,
+                            677.530445,
+                            "C"
+                        ],
+                        [
+                            1280.811619,
+                            680.062032,
+                            "C"
+                        ],
+                        [
+                            1280.811619,
+                            610.87458,
+                            "L"
+                        ],
+                        [
+                            1124.443748,
+                            615.937077,
+                            "L"
+                        ],
+                        [
+                            992.818839,
+                            469.124677,
+                            "L"
+                        ],
+                        [
+                            908.443897,
+                            480.937169,
+                            "L"
+                        ],
+                        [
+                            908.443897,
+                            604.124584,
+                            "L"
+                        ],
+                        [
+                            658.694068,
+                            624.374571,
+                            "L"
+                        ],
+                        [
+                            624.944091,
+                            496.124659,
+                            "L"
+                        ],
+                        [
+                            316.131804,
+                            514.687146,
+                            "L"
+                        ],
+                        [
+                            209.819378,
+                            572.062107,
+                            "L"
+                        ],
+                        [
+                            523.694161,
+                            519.749643,
+                            "C"
+                        ],
+                        [
+                            439.319219,
+                            622.687072,
+                            "C"
+                        ],
+                        [
+                            120.381938,
+                            718.874506,
+                            "C"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/road curb",
+                    "id": 32,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            308.051034,
+                            507.662368,
+                            "L"
+                        ],
+                        [
+                            573.507063,
+                            494.356313,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 33,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            551.552054,
+                            495.686919,
+                            "C"
+                        ],
+                        [
+                            487.01763,
+                            506.331762,
+                            "C"
+                        ],
+                        [
+                            427.786567,
+                            538.89132,
+                            "C"
+                        ],
+                        [
+                            365.932424,
+                            560.221283,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 34,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            326.014225,
+                            507.662368,
+                            "L"
+                        ],
+                        [
+                            194.284165,
+                            530.28266,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 35,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            158.357786,
+                            541.592806,
+                            "L"
+                        ],
+                        [
+                            54.570466,
+                            568.204917,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 36,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            648.68634,
+                            492.360405,
+                            "L"
+                        ],
+                        [
+                            612.759959,
+                            494.356313,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 37,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            986.660431,
+                            466.413598,
+                            "L"
+                        ],
+                        [
+                            888.195539,
+                            472.401322,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 38,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            952.064658,
+                            457.764663,
+                            "L"
+                        ],
+                        [
+                            882.207808,
+                            460.425873,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 39,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            1089.782447,
+                            571.531429,
+                            "L"
+                        ],
+                        [
+                            908.819942,
+                            582.176273,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/crosswalk",
+                    "id": 40,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "dashed"
+                    },
+                    "poly2d": [
+                        [
+                            653.343463,
+                            591.490512,
+                            "L"
+                        ],
+                        [
+                            373.250761,
+                            615.44141,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/road curb",
+                    "id": 41,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            907.968609,
+                            439.257028,
+                            "C"
+                        ],
+                        [
+                            968.158348,
+                            461.027785,
+                            "C"
+                        ],
+                        [
+                            1007.857962,
+                            464.869683,
+                            "C"
+                        ],
+                        [
+                            1056.522006,
+                            462.308417,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/double white",
+                    "id": 42,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            262.145105,
+                            657.355482,
+                            "C"
+                        ],
+                        [
+                            455.083071,
+                            557.560072,
+                            "C"
+                        ],
+                        [
+                            425.809724,
+                            566.209008,
+                            "C"
+                        ],
+                        [
+                            0,
+                            587.498695,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/double white",
+                    "id": 43,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            305.389821,
+                            650.037152,
+                            "C"
+                        ],
+                        [
+                            513.629764,
+                            537.600989,
+                            "C"
+                        ],
+                        [
+                            395.205771,
+                            560.221283,
+                            "C"
+                        ],
+                        [
+                            0.680897,
+                            580.180366,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/single white",
+                    "id": 44,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            152.370055,
+                            520.303119,
+                            "C"
+                        ],
+                        [
+                            98.480486,
+                            527.621449,
+                            "C"
+                        ],
+                        [
+                            50.562642,
+                            536.895427,
+                            "C"
+                        ],
+                        [
+                            0,
+                            545.584623,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/single white",
+                    "id": 45,
+                    "attributes": {
+                        "direction": "vertical",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            152.370055,
+                            514.315394,
+                            "C"
+                        ],
+                        [
+                            95.819272,
+                            522.299026,
+                            "C"
+                        ],
+                        [
+                            55.901072,
+                            528.286752,
+                            "C"
+                        ],
+                        [
+                            0,
+                            537.600989,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/road curb",
+                    "id": 46,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            127.753832,
+                            511.654183,
+                            "L"
+                        ],
+                        [
+                            44.590916,
+                            516.311303,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/single white",
+                    "id": 47,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            127.753832,
+                            515.646,
+                            "L"
+                        ],
+                        [
+                            21.970603,
+                            520.303119,
+                            "L"
+                        ]
+                    ]
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "undefined",
+        "scene": "city street",
+        "timeofday": "daytime"
+    }
+}

@@ -1,0 +1,127 @@
+{
+    "name": "916f5c81-ca0fc300",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "truck",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 605.160711,
+                        "y1": 299.460971,
+                        "x2": 650.079856,
+                        "y2": 349.371133
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 511.579158,
+                        "y1": 313.186264,
+                        "x2": 537.78199,
+                        "y2": 331.902574
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 346.875625,
+                        "y1": 313.186264,
+                        "x2": 396.785787,
+                        "y2": 338.141345
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 550.259532,
+                        "y1": 305.69974,
+                        "x2": 565.23258,
+                        "y2": 319.425035
+                    }
+                },
+                {
+                    "category": "area/drivable",
+                    "id": 4,
+                    "attributes": {},
+                    "poly2d": [
+                        [
+                            0,
+                            457.592113,
+                            "L"
+                        ],
+                        [
+                            0,
+                            719.954083,
+                            "L"
+                        ],
+                        [
+                            1280.195648,
+                            719.954083,
+                            "L"
+                        ],
+                        [
+                            1280.195648,
+                            415.502095,
+                            "L"
+                        ],
+                        [
+                            1203.882479,
+                            423.810145,
+                            "C"
+                        ],
+                        [
+                            789.285597,
+                            414.596881,
+                            "C"
+                        ],
+                        [
+                            709.97205,
+                            355.609903,
+                            "C"
+                        ],
+                        [
+                            466.660012,
+                            356.857657,
+                            "L"
+                        ],
+                        [
+                            0,
+                            457.592113,
+                            "L"
+                        ]
+                    ]
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "clear",
+        "scene": "highway",
+        "timeofday": "night"
+    }
+}

@@ -1,0 +1,75 @@
+{
+    "name": "9041da01-4d302ef7",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "person",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 59.431946,
+                        "y1": 261.212987,
+                        "x2": 123.65679,
+                        "y2": 434.715924
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 165.8343,
+                        "y1": 250.668608,
+                        "x2": 495.585739,
+                        "y2": 416.50291
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 226.224826,
+                        "y1": 271.757365,
+                        "x2": 679.633057,
+                        "y2": 599.591646
+                    }
+                },
+                {
+                    "category": "truck",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 700.092804,
+                        "y1": 0,
+                        "x2": 1277.595118,
+                        "y2": 630.745486
+                    }
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "undefined",
+        "scene": "city street",
+        "timeofday": "daytime"
+    }
+}

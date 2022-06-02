@@ -1,0 +1,75 @@
+{
+    "name": "3cdd3c22-831fb38c",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "car",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 551.507287,
+                        "y1": 511.579159,
+                        "x2": 1276.452384,
+                        "y2": 716.210822
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 445.448193,
+                        "y1": 497.853863,
+                        "x2": 676.282691,
+                        "y2": 591.435416
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 117.28888,
+                        "y1": 475.39429,
+                        "x2": 404.27231,
+                        "y2": 570.223599
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 744.909164,
+                        "y1": 326.911559,
+                        "x2": 826.013175,
+                        "y2": 424.236376
+                    }
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "rainy",
+        "scene": "city street",
+        "timeofday": "daytime"
+    }
+}
