@@ -1,15 +1,16 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="VLP-16">
+<robot name="sensor_vlp_16" xmlns:xacro="http://ros.org/wiki/xacro">
+	<xacro:include filename="$(find mirv_description)/urdf/includes/materials.urdf.xacro"/>
   <xacro:property name="M_PI" value="3.1415926535897931" />
   <xacro:macro name="sensor_vlp_16" params="*origin visualize:=false parent:=base_link name:=velodyne topic:=/velodyne_points hz:=10 lasers:=16 samples:=1875 collision_range:=0.3 min_range:=0.9 max_range:=130.0 noise:=0.008 min_angle:=-${M_PI} max_angle:=${M_PI} color:=black">
 
     <joint name="${name}_base_mount_joint" type="fixed">
       <xacro:insert_block name="origin" />
       <parent link="${parent}"/>
-      <child link="${name}_base_link"/>
+      <child link="${name}_link"/>
     </joint>
 
-    <link name="${name}_base_link">
+    <link name="${name}_link">
       <inertial>
         <mass value="0.83"/>
         <origin xyz="0 0 0.03585"/>
@@ -35,9 +36,9 @@
       </collision>
     </link>
 
-    <joint name="${name}_base_scan_joint" type="fixed" >
+    <joint name="${name}_joint" type="fixed" >
       <origin xyz="0 0 0.0377" rpy="0 0 0" />
-      <parent link="${name}_base_link" />
+      <parent link="${name}_link" />
       <child link="${name}"/>
     </joint>
 
@@ -57,7 +58,7 @@
 
     <!-- Gazebo requires the velodyne_gazebo_plugins package -->
     <gazebo reference="${name}">
-      <sensor type="gpu_ray" name="${name}-VLP16">
+      <sensor type="ray" name="${name}-VLP16">
         <pose>0 0 0 0 0 0</pose>
         <visualize>${visualize}</visualize>
         <update_rate>${hz}</update_rate>
@@ -84,12 +85,16 @@
           <noise>
             <type>gaussian</type>
             <mean>0.0</mean>
-            <stddev>0.0</stddev>
+            <stddev>0.01</stddev>
           </noise>
         </ray>
-        <plugin name="gazebo_ros_laser_controller" filename="libgazebo_ros_gpu_laser.so">
+        <plugin name="${name}_controller" filename="libgazebo_ros_velodyne_laser.so">
           <topicName>${topic}/points</topicName>
           <frameName>${name}</frameName>
+          <organize_cloud>false</organize_cloud>
+          <min_range>${min_range}</min_range>
+          <max_range>${max_range}</max_range>
+          <gaussianNoise>${noise}</gaussianNoise>
         </plugin>
       </sensor>
     </gazebo>

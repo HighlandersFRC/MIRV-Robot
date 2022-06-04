@@ -23,12 +23,23 @@
   <param name="robot_description" command="$(find xacro)/xacro $(find mirv_description)/urdf/mirv_gazebo.urdf.xacro" />
 
   <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-      <param name="publish_frequency" type="double" value="50.0"/>
+    <param name="publish_frequency" type="double" value="50.0"/>
     <param name="robot_description" value="robot_description"/>
   </node>
 
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-    <param name="rate" type="double" value="50.0"/>
+  <node pkg="mirv_simulation" type="gazebo_joint_state_pub.py" name="joint_state" output="screen">
+    <param name="gazebo_prefix" value="mirv::"/>
+    <param name="base_link_name" value="base_footprint"/>
+    <param name="base_link_angle_offsets" value="[0, 0, 0, 0]"/>
+    <rosparam param="axes" subst_value="True">
+              ['y', 'y', 'y', 'y']
+    </rosparam>
+    <rosparam param="link_names" subst_value="True">
+              ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr']
+    </rosparam>
+    <rosparam param="joint_names" subst_value="True">
+              ['wheel_fl_joint', 'wheel_fr_joint', 'wheel_rl_joint', 'wheel_rr_joint']
+    </rosparam>
   </node>
 
   <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model mirv -x $(arg initial_x) -y $(arg initial_y) -z $(arg initial_z) -Y $(arg initial_yaw) -param robot_description" output="screen"/>
