@@ -3,6 +3,9 @@
 #include "ctre/phoenix/platform/Platform.h"
 #include "ctre/phoenix/unmanaged/Unmanaged.h"
 #include "ctre/phoenix/cci/Unmanaged_CCI.h"
+#include "ctre/phoenix/cci/PDP_CCI.h"
+#include "ctre/phoenix/cci/CCI.h"
+#include "ctre/phoenix/ErrorCode.h"
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -17,7 +20,6 @@
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include "diagnostic_msgs/DiagnosticStatus.h"
 
-//TODO: Find and fix memory leak
 
 using namespace ctre::phoenix;
 using namespace ctre::phoenix::platform;
@@ -32,6 +34,15 @@ TalonFX frontRightDrive(1, interface);
 TalonFX frontLeftDrive(2, interface); 
 TalonFX backLeftDrive(3, interface); 
 TalonFX backRightDrive(4, interface);
+
+ctre::phoenix::sensors::CANCoder cancoder(5, interface);
+
+double pdpVoltage = 0.0;
+int pdpCurrentsFilled = 0;
+double* pdpCurrents = {};
+
+double * voltagePtr = &pdpVoltage;
+int * currentsFilledPtr = &pdpCurrentsFilled;
 
 void initializeDriveMotors(){
 	//PID config
@@ -215,6 +226,9 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 		backRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	}
 	ROS_INFO("MIRV Pose - X: [%f] Y: [%f] Angle: [%f]", odometry.getX(), odometry.getY(), odometry.getAngle());
+	ROS_INFO("Encoder: [%f]", cancoder.GetPosition());
+	auto ErrorCode = c_PDP_GetValues(0, voltagePtr, pdpCurrents, 0, currentsFilledPtr);
+	ROS_INFO("PDP Voltage: [%f]", pdpVoltage);
 }
 
 void joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
