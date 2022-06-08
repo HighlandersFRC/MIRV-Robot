@@ -19,6 +19,8 @@
 #include "sensor_msgs/Joy.h"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include "diagnostic_msgs/DiagnosticStatus.h"
+#include "std_msgs/Float64MultiArray.h"
+#include "std_msgs/Float64.h"
 
 
 using namespace ctre::phoenix;
@@ -110,6 +112,16 @@ class Pose {
 
 class Odometry {
 	public:
+
+	ros::Publisher encoderOdometryPub;
+
+	void publishOdometry(){
+		std_msgs::Float64MultiArray pose;
+		pose.data.push_back(x);
+		pose.data.push_back(y);
+		pose.data.push_back(angle);
+		encoderOdometryPub.publish(pose);
+	}
 
 	//mirv pose
 	double x = 0.0;
@@ -225,10 +237,10 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 		backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 		backRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	}
-	ROS_INFO("MIRV Pose - X: [%f] Y: [%f] Angle: [%f]", odometry.getX(), odometry.getY(), odometry.getAngle());
+	//ROS_INFO("MIRV Pose - X: [%f] Y: [%f] Angle: [%f]", odometry.getX(), odometry.getY(), odometry.getAngle());
 	ROS_INFO("Encoder: [%f]", cancoder.GetPosition());
-	auto ErrorCode = c_PDP_GetValues(0, voltagePtr, pdpCurrents, 0, currentsFilledPtr);
-	ROS_INFO("PDP Voltage: [%f]", pdpVoltage);
+	
+	//ROS_INFO("PDP Voltage: [%f]", pdpVoltage);
 }
 
 void joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
@@ -260,21 +272,47 @@ void sleepApp(int ms)
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
+class BatteryVoltage {
+	public:
+
+	ros::Publisher batteryVoltagePub;
+
+	void publishVoltage(){
+		std_msgs::Float64 voltage;
+		auto ExportError = c_PDP_GetValues(0, voltagePtr, pdpCurrents, 0, currentsFilledPtr);
+		voltage.data = pdpVoltage;
+		batteryVoltagePub.publish(voltage);
+	}
+};
+
+BatteryVoltage batteryVoltage;
+
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "drive");
-  	ros::NodeHandle n;
+	ros::NodeHandle n;
 
 	ros::Subscriber sub = n.subscribe("drive", 10, setDriveCallback);
 	ros::Subscriber joySub = n.subscribe("joy", 10, joyCallback);
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
-  	//ros::spin();
-	
+
+	batteryVoltage.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
+	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&BatteryVoltage::publishVoltage, batteryVoltage));
+
+	odometry.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
+	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 60.0), std::bind(&Odometry::publishOdometry, odometry));
+
 	initializeDriveMotors();
 
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
+
 		odometry.update();
+		
+		
+		
+		
+		
 		ros::spinOnce();
 	}
   	
