@@ -8,22 +8,32 @@ class PurePursuit():
     wheelBaseWidth = 0.438
     lastTruckCord = [0,0, 3.14159/2]
     nextPointDistanceDec = 0
-    lookAheadDist = 5
+    lookAheadDist = 8
+    allowedError = 0.05
+    robotCordList = []
     cordList = []
     simulation = simulationModel()
 
-    def get
+
     ##updates truck coordinate targets to rover cordites as rover moves
     def UpdateTargetPoints(self):
         newTruckCord = self.getTruckCord()
-        deltaCord = [(newTruckCord[0]-self.lastTruckCord[0]),(newTruckCord[1]-self.lastTruckCord[1]), (self.lastTruckCord[2]-newTruckCord[2]) ]
-        for i in self.cordList:
-            X1 = round(i[0] - deltaCord[0], 3)
-            Y1 = round(i[1] - deltaCord[1], 3)
-            i[0] = round((X1*math.cos(deltaCord[2])-Y1*math.sin(deltaCord[2])),4)
-            i[1] = round((X1*math.sin(deltaCord[2])+Y1*math.cos(deltaCord[2])),4)
-            i[2] = round(math.sqrt(math.pow(i[0],2) + math.pow(i[1],2)), 3)
-        self.lastTruckCord = newTruckCord
+        theta = newTruckCord[2] - 3.14159/2
+        xBRef = newTruckCord[0]
+        yBRef = newTruckCord[1]
+        length = 0
+        # deltaCord = [(newTruckCord[0]-self.lastTruckCord[0]),(newTruckCord[1]-self.lastTruckCord[1]), (self.lastTruckCord[2]-newTruckCord[2]) ]
+        for i in range(len(self.robotCordList)):
+            xTBody = self.cordList[i][0]*math.cos(theta) + self.cordList[i][1]*math.sin(theta) - yBRef*math.sin(theta) - xBRef*math.cos(theta)
+            yTBody = -self.cordList[i][0]*math.sin(theta) + self.cordList[i][1]*math.cos(theta) - yBRef*math.cos(theta) + xBRef*math.sin(theta)
+            distToPoint = round(math.sqrt(math.pow(xTBody,2) + math.pow(yTBody,2)), 3)
+            self.robotCordList[i] = [xTBody, yTBody, distToPoint]
+            # X1 = round(i[0] - deltaCord[0], 3)
+            # Y1 = round(i[1] - deltaCord[1], 3)
+            # i[0] = round((X1*math.cos(deltaCord[2])-Y1*math.sin(deltaCord[2])),4)
+            # i[1] = round((X1*math.sin(deltaCord[2])+Y1*math.cos(deltaCord[2])),4)
+            # i[2] = round(math.sqrt(math.pow(i[0],2) + math.pow(i[1],2)), 3)
+        # self.lastTruckCord = newTruckCord
     ## helper methods for update target points
     def getTruckCord(self):
         return self.simulation.getPos()
@@ -33,22 +43,20 @@ class PurePursuit():
         pathList = self.simulation.getPath()
         for point in pathList:
             self.cordList.append([point[0],point[1],0])
-        print(self.cordList)
+            self.robotCordList.append([point[0],point[1],0])
         self.UpdateTargetPoints()
-        self.nextPointDistanceDec = self.cordList[0][2]
-        print(self.cordList)
-        print("")
-        print("")
+        self.nextPointDistanceDec = self.robotCordList[0][2]
 
 
 
     def removeTargetPoint(self):
-        if (abs(self.cordList[0][2]) < self.nextPointDistanceDec):
-            self.nextPointDistanceDec = self.cordList[0][2]
-        elif (abs(self.cordList[0][2]) > self.lookAheadDist and abs(self.cordList[0][2]) > (self.nextPointDistanceDec+2) and abs(self.cordList[0][2]) < (self.lookAheadDist+ (1/2)*self.lookAheadDist )):
+        if (abs(self.robotCordList[0][2]) < self.nextPointDistanceDec):
+            self.nextPointDistanceDec = self.robotCordList[0][2]
+        elif (abs(self.robotCordList[0][2]) > self.lookAheadDist and abs(self.robotCordList[0][2]) > (self.nextPointDistanceDec+0.5) and abs(self.robotCordList[0][2]) < (self.lookAheadDist+ (1/4)*self.lookAheadDist )):
+            self.robotCordList.pop(0)
             self.cordList.pop(0)
-            if(self.cordList):
-                self.nextPointDistanceDec = self.cordList[0][2]
+            if(self.robotCordList):
+                self.nextPointDistanceDec = self.robotCordList[0][2]
             else:
                 return True
         return False
@@ -57,7 +65,7 @@ class PurePursuit():
     def calculateSpeedSide(self, maxSpeed, x, y, la):
         leftVel = maxSpeed
         rightVel = maxSpeed
-        if(abs(x)>0.5):
+        if(abs(x)>self.allowedError):
             cRad = self.generateRadius(x, la)
             iCirc = self.generateCircumference((cRad - (self.wheelBaseWidth/2)))
             oCirc = self.generateCircumference((cRad + (self.wheelBaseWidth/2)))
@@ -91,7 +99,7 @@ class PurePursuit():
         elif farPoint:
             targetPoint = farPoint
             snapshotLa = (targetPoint[0]**2 + targetPoint[1]**2)**0.5
-            if (snapshotLa < la/10):
+            if (snapshotLa < self.allowedError):
                 return ("atDest")
         elif closePoint:
             targetPoint = self.vectorIntercept(closePoint, la)
@@ -124,14 +132,14 @@ class PurePursuit():
         return target
     def closestOut(self, la):
         closePoint = []
-        for point in self.cordList:
+        for point in self.robotCordList:
             if(point[2] > la):
                 return [point[0], point[1]]
         return closePoint
     def furthestIn(self, la):
         farPoint = []
-        for point in self.cordList:
-            if(point[2] < la):
+        for point in self.robotCordList:
+            if(point[2] <= la):
                 farPoint = point.copy()
             else:
                 if(farPoint):
@@ -140,19 +148,19 @@ class PurePursuit():
     def testCode(self):
         self.getPath()
         isFinished = False
-        for i in range (255):
+        for i in range (20000):
             if not isFinished:
                 self.UpdateTargetPoints()
                 output = self.getTargetCordAndDriveSpeed(self.lookAheadDist,2)
                 if(output != "atDest"):
-                    self.simulation.setDrive(output[1][0],output[1][1],0.25, [output[0][0],output[0][1]])
+                    self.simulation.setDrive(output[1][0],output[1][1],0.01, [output[0][0],output[0][1]])
                     print("targetX: {}, TargetY: {}, LeftVelocity: {}, RightVelocity: {}".format(round(output[0][0], 3),round(output[0][1], 3),round(output[1][0], 3),round(output[1][1], 3)))
                     robotPos = self.simulation.getPos() 
                     print("robot Cordinate: {}".format(robotPos))
                     self.UpdateTargetPoints()
                     isFinished = self.removeTargetPoint()
                     print("itteration: {}".format(i))
-                    print(self.cordList)
+                    print(self.robotCordList)
                     print("")
         self.simulation.LogData()
 def main():

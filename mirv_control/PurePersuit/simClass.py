@@ -5,8 +5,8 @@ import csv
 from datetime import datetime
 wheelBaseWidth = 0.438
 class simulationModel():
-    # pointsPath = [[10,15],[15,30],[15,40],[-15,40],[-25,20],[-25,-10]]
-    pointsPath = [[15,40], [25,45]]
+    pointsPath = [[0,10], [50, 60]]
+    # pointsPath = [[-15,-40]]
     truckCord = []
     fallowedPath = []
     def __init__(self):
