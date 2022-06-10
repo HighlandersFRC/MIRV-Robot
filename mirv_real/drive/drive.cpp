@@ -104,6 +104,10 @@ double getDistanceFromTicks(double ticks){
 	return (ticks / 2048.0) * wheelCircumference / motorToWheelRatio;
 }
 
+double getTicksPer100MSFromVelocity(double velocity){
+	return ((velocity / wheelCircumference) * 2048.0) / 10.0;
+}
+
 //pose object for returning odometry info
 class Pose {
 	public:
@@ -112,16 +116,6 @@ class Pose {
 
 class Odometry {
 	public:
-
-	ros::Publisher encoderOdometryPub;
-
-	void publishOdometry(){
-		std_msgs::Float64MultiArray pose;
-		pose.data.push_back(x);
-		pose.data.push_back(y);
-		pose.data.push_back(angle);
-		encoderOdometryPub.publish(pose);
-	}
 
 	//mirv pose
 	double x = 0.0;
@@ -218,7 +212,20 @@ void setDriveCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 		
 		}
 	}
-	
+}
+
+void setVelocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
+	double leftVelocity = msg->data[0];
+	double rightVelocity = msg->data[1];
+
+	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
+	double rightTicksPer100MS = -getTicksPer100MSFromVelocity(rightVelocity);
+
+	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+
+	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 }
 
 void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& statusMsg){
@@ -238,7 +245,7 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 		backRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	}
 	//ROS_INFO("MIRV Pose - X: [%f] Y: [%f] Angle: [%f]", odometry.getX(), odometry.getY(), odometry.getAngle());
-	ROS_INFO("Encoder: [%f]", cancoder.GetPosition());
+	//ROS_INFO("Encoder: [%f]", cancoder.GetPosition());
 	
 	//ROS_INFO("PDP Voltage: [%f]", pdpVoltage);
 }
@@ -272,10 +279,11 @@ void sleepApp(int ms)
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
-class BatteryVoltage {
+class Publisher {
 	public:
 
 	ros::Publisher batteryVoltagePub;
+	ros::Publisher encoderOdometryPub;
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -283,9 +291,17 @@ class BatteryVoltage {
 		voltage.data = pdpVoltage;
 		batteryVoltagePub.publish(voltage);
 	}
+
+	void publishOdometry(){
+		std_msgs::Float64MultiArray pose;
+		pose.data.push_back(odometry.getX());
+		pose.data.push_back(odometry.getY());
+		pose.data.push_back(odometry.getAngle());
+		encoderOdometryPub.publish(pose);
+	}
 };
 
-BatteryVoltage batteryVoltage;
+Publisher publisher;
 
 int main(int argc, char **argv) {
 
@@ -295,12 +311,13 @@ int main(int argc, char **argv) {
 	ros::Subscriber sub = n.subscribe("drive", 10, setDriveCallback);
 	ros::Subscriber joySub = n.subscribe("joy", 10, joyCallback);
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
+	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, setVelocityDriveCallback);
 
-	batteryVoltage.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
-	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&BatteryVoltage::publishVoltage, batteryVoltage));
+	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
+	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
-	odometry.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
-	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 60.0), std::bind(&Odometry::publishOdometry, odometry));
+	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
+	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 100.0), std::bind(&Publisher::publishOdometry, publisher));
 
 	initializeDriveMotors();
 
@@ -308,11 +325,7 @@ int main(int argc, char **argv) {
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
 
 		odometry.update();
-		
-		
-		
-		
-		
+
 		ros::spinOnce();
 	}
   	
