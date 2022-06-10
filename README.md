@@ -8,8 +8,6 @@ To setup the MIRV codebase on your system, please see the installation instructi
 
 To setup an AGX for a new MIRV Rover, please see the installation instructions [here](agx_setup.md).
 
-Some useful documentation is [here](documentation.md)
-
 ## Usage
 Currently the only launch file is road_slight_curve.launch in mirv_simulation, which launches the vehicle with sensors on a road in gazebo. 
 
