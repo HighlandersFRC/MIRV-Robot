@@ -81,6 +81,11 @@ void initializeDriveMotors(){
 	while (backRightDrive.GetSelectedSensorPosition() != 0.0){
 		backRightDrive.SetSelectedSensorPosition(0.0);
 	}
+
+	frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+	backRightDrive.Set(ControlMode::PercentOutput, 0.0);
 }
 
 //maximum rpm of drive motors
@@ -105,7 +110,7 @@ double getDistanceFromTicks(double ticks){
 }
 
 double getTicksPer100MSFromVelocity(double velocity){
-	return ((velocity / wheelCircumference) * 2048.0) / 10.0;
+	return ((velocity / wheelCircumference) * 2048.0) / 10.0 * 12.0;
 }
 
 //pose object for returning odometry info
@@ -150,11 +155,10 @@ class Odometry {
 			//calculate radius and change in theta
 			r = abs((wheelSpacing * (rightDisplacement + leftDisplacement)) / (2 * (rightDisplacement - leftDisplacement)));
 			
+			deltaTheta = abs(rightDisplacement - leftDisplacement) / wheelSpacing;
 			if (leftDisplacement > rightDisplacement){
-				deltaTheta = leftDisplacement / (r + (wheelSpacing / 2.0));
 				angle -= deltaTheta;
 			} else {
-				deltaTheta = rightDisplacement / (r + (wheelSpacing / 2.0));
 				angle += deltaTheta;
 			}
 
@@ -215,6 +219,7 @@ void setDriveCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 }
 
 void setVelocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
+
 	double leftVelocity = msg->data[0];
 	double rightVelocity = msg->data[1];
 
@@ -264,6 +269,8 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
 	//Convert percent of maximum velocity to tic per 100 ms
 	double rightMotorTP100MS = (rightMotorRPM / 600.0) * 2048.0;
 	double leftMotorTP100MS = (leftMotorRPM / 600.0) * 2048.0;
+
+	cout << rightMotorTP100MS;
 
 	if (haveJoystick){
 		frontRightDrive.Set(ControlMode::Velocity, rightMotorTP100MS);
