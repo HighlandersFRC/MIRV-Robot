@@ -9,12 +9,14 @@ from std_msgs.msg import Float64MultiArray
 class PurePursuit():
     wheelBaseWidth = 0.438
     nextPointDistanceDec = 0
-    maxDriveSpeed = 1
-    lookAheadDist = 5
+    maxDriveSpeed = 2.5
+    currentMaxDriveSpeed = 2
+    lookAheadDist = 4
     allowedError = 0.05
     robotCordList = []
     cordList = []
-    currentTruckCord = [0,0]
+    currentTruckCord = [0,0,0]
+    rosPubMsg = Float64MultiArray()
     pub = rospy.Publisher("VelocityDrive", Float64MultiArray, queue_size = 10)
 
     def __init__(self):
@@ -38,7 +40,7 @@ class PurePursuit():
 
 
     def getPath(self):
-        pathList = [[10, 0]]
+        pathList = [[0, 2], [5, 7]]
         for point in pathList:
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])
@@ -71,10 +73,10 @@ class PurePursuit():
             turnRight = True
             if(x>=0):  
                 rightVel = rightVel*innerSpeedRatio
-                print("turningRight")
+                # print("turningRight")
             else:
                 leftVel = leftVel*innerSpeedRatio
-                print("turningLeft")
+                # print("turningLeft")
         return ([leftVel, rightVel])
 
     ##helper methods to calculateSpeedSides
@@ -96,8 +98,11 @@ class PurePursuit():
         elif farPoint:
             targetPoint = farPoint
             snapshotLa = (targetPoint[0]**2 + targetPoint[1]**2)**0.5
+            self.currentMaxDriveSpeed = 0.5
             if (snapshotLa < self.allowedError):
+                self.currentMaxDriveSpeed = self.maxDriveSpeed
                 return ("atDest")
+                
         elif closePoint:
             targetPoint = self.vectorIntercept(closePoint, la)
         
@@ -111,7 +116,7 @@ class PurePursuit():
         cPO = array(closePoint)
         normalVect = (cPO)/(((cPO**2).sum()**0.5))
         targetPoint = normalVect*la
-        print("Vector Intercept")
+        # print("Vector Intercept")
         return targetPoint
     def doubleVectorIntercept(self, closePoint, farPoint, la):
         cPO = array(closePoint)
@@ -125,7 +130,7 @@ class PurePursuit():
         unitP2Vect = ((cPO-fPI)/(((cPO-fPI)**2).sum()**0.5))
         p2EVect = distToEdge*unitP2Vect
         target = p2EVect+fPI
-        print("double Vector Intercept")
+        # print("double Vector Intercept")
         return target
     def closestOut(self, la):
         closePoint = []
@@ -137,38 +142,44 @@ class PurePursuit():
         farPoint = []
         for point in self.robotCordList:
             if(point[2] <= la):
-                farPoint = point.copy()
+                farPoint = [point[0], point[1]]
             else:
                 if(farPoint):
                     return [farPoint[0], farPoint[1]]
         return farPoint
 
     def callbackOdom(self, data):
-        self.getPath()
-        if (cordList):
-            self.currentTruckCord = data
+        self.currentTruckCord = data.data
+        print(data.data)
+        if (self.cordList):
             self.UpdateTargetPoints()
-            output = self.getTargetCordAndDriveSpeed(self.lookAheadDist, self.MaxDriveSpeed)
+            output = self.getTargetCordAndDriveSpeed(self.lookAheadDist, self.currentMaxDriveSpeed)
             isFinished = self.removeTargetPoint()
             if(output != "atDest" and not isFinished):
-                self.pub.publish([output[0][0], output[0][1]])
+                # print("{}, {}".format(output[0][0],output[0][1]))
+                self.rosPubMsg.data = output[0]
                 ## ros.drive.setvel(output[0][0], output[0][1])
             else:
-                self.pub.publish([0, 0])
+                self.rosPubMsg.data = [0,0]
                 ## ros.drive.setvel(0,0)
+            print(output[0])
         else:
-            self.pub.publish([0, 0])
             ## ros.drive.setvel(0,0)
+            self.rosPubMsg.data = [0,0]
             print("no target Point")
-    
-    
-    def run(self):
-        self.getPath()
-        rospy.subscriber("odometry/encoder", Float64MultiArray, self.callbackOdom())
-        rospy.spin()
+        
+        self.pub.publish(self.rosPubMsg)
 
+
+controller = PurePursuit()
+def run():
+    controller.getPath()
+    sub = rospy.Subscriber("odometry/encoder", Float64MultiArray, callBack)
+    rospy.spin()
+
+def callBack(data):
+    controller.callbackOdom(data)
 
 if __name__ == '__main__':
-    controller = PurePursuit()
-    controller.run()
+    run()
    

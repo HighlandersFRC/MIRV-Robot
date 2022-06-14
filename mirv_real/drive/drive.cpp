@@ -22,6 +22,8 @@
 #include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Float64.h"
 
+#include <ctime>
+
 
 using namespace ctre::phoenix;
 using namespace ctre::phoenix::platform;
@@ -85,7 +87,7 @@ void initializeDriveMotors(){
 	frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-	backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	backRightDrive.Set(ControlMode::Velocity, 0.0);
 }
 
 //maximum rpm of drive motors
@@ -110,7 +112,11 @@ double getDistanceFromTicks(double ticks){
 }
 
 double getTicksPer100MSFromVelocity(double velocity){
-	return ((velocity / wheelCircumference) * 2048.0) / 10.0 * 12.0;
+	return (((velocity / wheelCircumference) * 2048.0) / 10.0) * 12.0;
+}
+
+double getVelocityFromTicksPer100MS(double ticksPer100MS){
+	return (((ticksPer100MS * 10.0) / 2048.0) * wheelCircumference) / 12.0;
 }
 
 //pose object for returning odometry info
@@ -129,17 +135,40 @@ class Odometry {
 
 	//radius of circular path of travel
 	double r = 0.0;
-	//angular velocity of mirv around circular path of travel
+	//angular displacement of mirv around circular path of travel
 	double deltaTheta = 0.0;
 
 	//tick position from previous update
 	double prevLeftTicks = 0.0;
 	double prevRightTicks = 0.0;
+	// double omega = 0.0;
+	// clock_t prevTime = clock();
 
 	void update(){
+		// double leftTicksPer100MS = (frontLeftDrive.GetSelectedSensorVelocity() + backLeftDrive.GetSelectedSensorVelocity()) / 2.0;
+		// double rightTicksPer100MS = (frontRightDrive.GetSelectedSensorVelocity() + backRightDrive.GetSelectedSensorVelocity()) / 2.0;
+
+		// double leftVelocity = getVelocityFromTicksPer100MS(leftTicksPer100MS);
+		// double rightVelocity = getVelocityFromTicksPer100MS(rightTicksPer100MS);
+
+		// double currentTime = clock();
+		// double deltaTime = currentTime - prevTime();
+
+		// if (rightVelocity == leftVelocity){
+		// 	x += rightVelocity * deltaTime * cos(angle);
+		// 	y += rightVelocity * deltaTime * sin(angle);
+		// } else {
+		// 	r = abs((wheelSpacing * (rightVelocity + leftVelocity)) / (2.0 * (rightVelocity - leftVelocity)));
+		// 	omega = abs((rightVelocity - leftVelocity) / wheelSpacing);
+		// }
+
+		// prevTime = currentTime;
+
 		//get current tick positions
-		double leftTicks = (frontLeftDrive.GetSelectedSensorPosition() + backLeftDrive.GetSelectedSensorPosition()) / 2.0;
-		double rightTicks = -(frontRightDrive.GetSelectedSensorPosition() + backRightDrive.GetSelectedSensorPosition()) / 2.0;
+		// double leftTicks = (frontLeftDrive.GetSelectedSensorPosition() + backLeftDrive.GetSelectedSensorPosition()) / 2.0;
+		// double rightTicks = -(frontRightDrive.GetSelectedSensorPosition() + backRightDrive.GetSelectedSensorPosition()) / 2.0;
+		double leftTicks = frontLeftDrive.GetSelectedSensorPosition();
+		double rightTicks = -frontRightDrive.GetSelectedSensorPosition();
 
 		//calculate how many ticks the motor moved by
 		double leftDisplacement = getDistanceFromTicks(leftTicks - prevLeftTicks);
