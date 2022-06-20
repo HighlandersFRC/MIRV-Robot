@@ -209,4 +209,4 @@ include_directories(
 ## User Added Components ##
 ###########################
 
-add_subdirectory(drive)
+add_subdirectory(control)

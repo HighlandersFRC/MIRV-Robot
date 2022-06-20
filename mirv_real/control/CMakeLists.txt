@@ -1,6 +1,6 @@
 
 # Project's name
-PROJECT ( drive C CXX )
+PROJECT ( control C CXX )
 
 # Specify the minimum version for CMake
 
@@ -20,25 +20,25 @@ find_package(SDL2 REQUIRED)
 # The following folder will be included
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-add_executable(drive ${PROJECT_SOURCE_DIR}/drive.cpp)
-target_link_libraries(drive ${catkin_LIBRARIES})
+add_executable(control ${PROJECT_SOURCE_DIR}/control.cpp)
+target_link_libraries(control ${catkin_LIBRARIES})
 
 
 if (${CMAKE_LIBRARY_ARCHITECTURE} STREQUAL "arm-linux-gnueabihf") # Jetson TK1 / Pi
-    set(PHOENIX_LIBS_DIR ${CMAKE_SOURCE_DIR}/MIRV-Robot/mirv_real/drive/lib/raspberry)
+    set(PHOENIX_LIBS_DIR ${CMAKE_SOURCE_DIR}/MIRV-Robot/mirv_real/control/lib/raspberry)
 elseif (${CMAKE_LIBRARY_ARCHITECTURE} STREQUAL "aarch64-linux-gnu") # Jetson TX2
-    set(PHOENIX_LIBS_DIR ${CMAKE_SOURCE_DIR}/MIRV-Robot/mirv_real/drive/lib/jetsontx)
+    set(PHOENIX_LIBS_DIR ${CMAKE_SOURCE_DIR}/MIRV-Robot/mirv_real/control/lib/jetsontx)
 else()
-    set(PHOENIX_LIBS_DIR ${CMAKE_SOURCE_DIR}/MIRV-Robot/mirv_real/drive/lib/x86-64)
+    set(PHOENIX_LIBS_DIR ${CMAKE_SOURCE_DIR}/MIRV-Robot/mirv_real/control/lib/x86-64)
 endif()
 
-target_link_libraries(drive ${catkin_LIBRARIES} ${PHOENIX_LIBS_DIR}/libCTRE_Phoenix.so)
-target_link_libraries(drive ${catkin_LIBRARIES} ${PHOENIX_LIBS_DIR}/libCTRE_PhoenixCCI.so)
+target_link_libraries(control ${catkin_LIBRARIES} ${PHOENIX_LIBS_DIR}/libCTRE_Phoenix.so)
+target_link_libraries(control ${catkin_LIBRARIES} ${PHOENIX_LIBS_DIR}/libCTRE_PhoenixCCI.so)
 
-target_link_libraries(drive Threads::Threads)
-target_link_libraries(drive ${SDL2_LIBRARIES})
+target_link_libraries(control Threads::Threads)
+target_link_libraries(control ${SDL2_LIBRARIES})
 
-add_custom_command(TARGET drive POST_BUILD
+add_custom_command(TARGET control POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${PHOENIX_LIBS_DIR}
-        $<TARGET_FILE_DIR:drive>/..)
+        $<TARGET_FILE_DIR:control>/..)
