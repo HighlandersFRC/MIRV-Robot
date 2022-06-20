@@ -7,7 +7,7 @@ import rospy
 from std_msgs.msg import Float64MultiArray
 
 class PurePursuit():
-    wheelBaseWidth = 0.438
+    wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
     maxDriveSpeed = 2.5
     currentMaxDriveSpeed = 2
@@ -96,6 +96,7 @@ class PurePursuit():
         if (closePoint and farPoint):
             targetPoint = self.doubleVectorIntercept(closePoint, farPoint,la)
         elif farPoint:
+            self.maxDriveSpeed = 0.5
             targetPoint = farPoint
             snapshotLa = (targetPoint[0]**2 + targetPoint[1]**2)**0.5
             self.currentMaxDriveSpeed = 0.5
