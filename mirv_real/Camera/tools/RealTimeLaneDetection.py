@@ -1,10 +1,12 @@
+import queue
+import threading
 import cv2
 import argparse
 import os, sys
 import shutil
 import time
 from pathlib import Path
-import imageio
+from faster_RCNN import get_faster_rcnn_resnet
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
@@ -12,28 +14,74 @@ sys.path.append(BASE_DIR)
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
-import scipy.special
 import numpy as np
-import PIL.Image as image
+
+from typing import Optional, List, Tuple
+from dataclasses import field
 
 from lib.config import cfg
 from lib.config import update_config
 from lib.utils.utils import create_logger, select_device, time_synchronized
 from lib.models import get_net
 from lib.dataset import LoadImages, LoadStreams
-from lib.core.general import non_max_suppression, scale_coords
+from lib.core.general import bbox_iou, non_max_suppression, scale_coords
 from lib.utils import plot_one_box,show_seg_result
 from lib.core.function import AverageMeter
 from lib.core.postprocess import morphological_process, connect_lane
 from tqdm import tqdm
 import depthai
 
+from faster_RCNN import get_faster_rcnn_resnet
+from transformations import ComposeDouble
+from transformations import ComposeSingle
+from transformations import FunctionWrapperDouble
+from transformations import FunctionWrapperSingle
+from transformations import apply_nms, apply_score_threshold
+from transformations import normalize_01
+
+from backbone_resnet import ResNetBackbones
+from PIL import Image
+
 from numpy import asarray
+
+# import fiftyone as fo
 
 import matplotlib as plt
 import torchvision.transforms as transforms
 
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
+import torchvision
+
+import torch.multiprocessing as mp
+
+# from multiprocessing import Process
+
+class TrainParams:
+    BATCH_SIZE: int = 2
+    OWNER: str = "adarsh.payyakkil"  # set your name here, e.g. johndoe22
+    SAVE_DIR: Optional[
+        str
+    ] = None  # checkpoints will be saved to cwd (current working directory)
+    LOG_MODEL: bool = True   # whether to log the model to neptune after training
+    GPU: Optional[int] = 1  # set to None for cpu training
+    LR: float = 0.001
+    PRECISION: int = 32
+    CLASSES: int = 2
+    SEED: int = 42
+    PROJECT: str = "pi-LitDetection"
+    EXPERIMENT: str = "pi-LitDetection"
+    MAXEPOCHS: int = 500
+    PATIENCE: int = 50
+    BACKBONE: ResNetBackbones = ResNetBackbones.RESNET34
+    FPN: bool = False
+    ANCHOR_SIZE: Tuple[Tuple[int, ...], ...] = ((32, 64, 128, 256, 512),)
+    ASPECT_RATIOS: Tuple[Tuple[float, ...]] = ((0.5, 1.0, 2.0),)
+    MIN_SIZE: int = 1024
+    MAX_SIZE: int = 1025
+    IMG_MEAN: List = field(default_factory=lambda: [0.485, 0.456, 0.406])
+    IMG_STD: List = field(default_factory=lambda: [0.229, 0.224, 0.225])
+    IOU_THRESHOLD: float = 0.5
 
 print(torch.cuda.is_available())
 normalize = transforms.Normalize(
@@ -46,15 +94,25 @@ transform=transforms.Compose([
         ])
 
 
-def detectRealTime(cfg, opt, frame):
-    frame = asarray(frame)
-    img = transform(frame).to(device)
-    img = img.half() if half else img.float()  # uint8 to fp16/32
 
-    if img.ndimension() == 3:
-        img = img.unsqueeze(0)
+def detectLaneLines(cfg, opt, img):
+    # frame = asarray(frame)
+    # img = transform(frame).to(device)
+
+    # frameArray = asarray(frame)
+    # img = transform(frameArray).to(device)
+
+    # if img.ndimension() == 3:
+    #     img = img.unsqueeze(0)
+    
+    # img = img.half() if half else img.float()  # uint8 to fp16/32
 
     det_out, da_seg_out,ll_seg_out= model(img)
+
+    # print(ll_seg_out)
+
+    
+
     inf_out, _ = det_out
 
     _, _, height, width = img.shape
@@ -95,13 +153,18 @@ def detectRealTime(cfg, opt, frame):
     #         plot_one_box(xyxy, img_det , label=label_det_pred, color=colors[int(cls)], line_thickness=2)
     # cv2.imshow('image', img_det)
 
+def testThread1():
+    while True:
+        print("Hello")
 
-
+def testThread2():
+    while True:
+        print("Bye")
 # Start defining a pipeline
 pipeline = depthai.Pipeline()
 
 cam_rgb = pipeline.create(depthai.node.ColorCamera)
-cam_rgb.setPreviewSize(640, 384)
+cam_rgb.setPreviewSize(640, 480)
 cam_rgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
 # cam_rgb.setIspScale(2, 3)
 # cam_rgb.setPreviewSize(cameraResolutionWidth, cameraResolutionHeight)
@@ -152,7 +215,12 @@ parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,
 parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
 parser.add_argument('--augment', action='store_true', help='augmented inference')
 parser.add_argument('--update', action='store_true', help='update all models')
+
+api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
+
 opt = parser.parse_args()
+
+mp.set_start_method('spawn', force=True)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
@@ -165,50 +233,123 @@ if os.path.exists(opt.save_dir):  # output dir
 os.makedirs(opt.save_dir)  # make new dir
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
-# Load model
-model = get_net(cfg)
-checkpoint = torch.load(opt.weights, map_location= device)
-model.load_state_dict(checkpoint['state_dict'])
-model = model.to(device)
-if half:
-    model.half()  # to FP16
+def detectPiLits(frameQueue):
+    while True:
+        try:
+            print("aaaaaaaaaaaaaaa")
+            frame = frameQueue.get()
+            frameArray = asarray(frame)
+            tensorImg = transform(frameArray).to(device)
 
-# Set Dataloader
-if opt.source.isnumeric():
-    cudnn.benchmark = True  # set True to speed up constant image size inference
-    dataset = LoadStreams(opt.source, img_size=opt.img_size)
-    bs = len(dataset)  # batch_size
-else:
-    dataset = LoadImages(opt.source, img_size=opt.img_size)
-    bs = 1  # batch_size
+            if tensorImg.ndimension() == 3:
+                tensorImg = tensorImg.unsqueeze(0)
+            print("Inside Threaded Pi Lit Detection")
+            # img = imgQueue.get(timeout = 1)
+            # frame = frameQueue.get(timeout = 1)
+            # piLitPrediction = piLitModel(img)[0]
+            # print(piLitPrediction)
+            
+            # for bbox in piLitPrediction["boxes"]:
+            #     x0,y0,x1,y1 = bbox
 
-# Get names and colors
-names = model.module.names if hasattr(model, 'module') else model.names
-colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
+            #     frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+            cv2.imshow("frame", frame)
+        except queue.Empty:
+            print("QUEUE IS EMPTY")
+            pass
+        key = cv2.waitKey(1)
+        if key == ord('q'):
+            break
 
-img = torch.zeros((1, 3, opt.img_size, opt.img_size), device=device)  # init img
-_ = model(img.half() if half else img) if device.type != 'cpu' else None  # run once
-model.eval()
-model.cuda()
+# def piLitDetect(cfg, opt, img, frame):
+#     piLitPrediction = piLitModel(img)[0]
+#     # print(piLitPrediction)
+#     # print(piLitPrediction["scores"])
+#     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
+#         x0,y0,x1,y1 = bbox
 
-# engine, context = build_engine('./weights/yolop-640-640.onnx')
+#         if(score > 0.75):
+#             frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+#         elif(score > 0.5):
+#             frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 0, 255), 3)
 
-while True:
-    initTime = time.time()
-    in_rgb = q_rgb.tryGet()
-    if in_rgb is not None:
-        frame = in_rgb.getCvFrame()
-        # cv2.imshow("detection", frame)
-        # cv2.imshow("depth", depthFrameColor)
-        # print("---------------")
-        detection = detectRealTime(cfg, opt, frame)
-        endTime = time.time()
-        print("TIME DIFF: ", endTime - initTime)
-        print("SHOWING FRAME")
-        cv2.imshow("faksdljf", detection)
+#     cv2.imshow("frame", frame)
+
+# if half:
+#     piLitModel.half()
+
+# # Load model
+# model = get_net(cfg)
+# checkpoint = torch.load(opt.weights, map_location= device)
+# model.load_state_dict(checkpoint['state_dict'])
+# model = model.to(device)
+# # if half:
+# #     model.half()  # to FP16
+
+# # Set Dataloader
+# if opt.source.isnumeric():
+#     cudnn.benchmark = True  # set True to speed up constant image size inference
+#     dataset = LoadStreams(opt.source, img_size=opt.img_size)
+#     bs = len(dataset)  # batch_size
+# else:
+#     dataset = LoadImages(opt.source, img_size=opt.img_size)
+#     bs = 1  # batch_size
+
+# # Get names and colors
+# names = model.module.names if hasattr(model, 'module') else model.names
+# colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
+
+# img = torch.zeros((1, 3, opt.img_size, opt.img_size), device=device)  # init img
+# # _ = model(img.half() if half else img) if device.type != 'cpu' else None  # run once
+# model.eval()
+# model.cuda()
 
 
-    # newConfig = False
-    key = cv2.waitKey(1)
-    if key == ord('q'):
-        break
+# piLitModel.eval()
+# piLitModel.cuda()
+
+if __name__ == '__main__':
+    mp.set_start_method('spawn', force=True)
+    tensorImgQueue = mp.Queue()
+    frameQueue = mp.Queue()
+
+
+    piLitModel = torch.load("weights/piLitModel.pth")
+
+    print(type(piLitModel))
+    piLitModel.eval()
+    piLitModel = piLitModel.to(device)
+
+    # thread1 = mp.Process(target = testThread1, args=())
+    # thread2 = mp.Process(target = testThread2, args=())
+
+    # thread1.start()
+    # thread2.start()
+
+    # thread1.join()
+    # thread2.join()
+
+    frame = cv2.imread("PXL_20220614_204008153.jpg")
+    piLitThread = mp.Process(target = detectPiLits, args=(frameQueue, ))
+
+    piLitThread.start()
+
+    while True:
+        initTime = time.time()
+        in_rgb = q_rgb.tryGet()
+        if in_rgb is not None:
+            frame = in_rgb.getCvFrame()
+            frameQueue.put(frame)
+            piLitThread.join()
+
+
+            # piLitDetect(cfg, opt, tensorImg, frame)
+
+            # laneDetection = detectLaneLines(cfg, opt, tensorImg)
+            # piLitDetection = detectPiLits(cfg, opt, tensorImgQueue)
+            endTime = time.time()
+            print("TIME DIFF: ", endTime - initTime)
+
+        key = cv2.waitKey(1)
+        if key == ord('q'):
+            break
