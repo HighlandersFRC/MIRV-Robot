@@ -10,6 +10,8 @@ class GlobalToTruck():
     startCordSet = False
     EarthSMaxis = 6378137
     eccentricity = 0.08181919
+    pub = rospy.Publisher("TruckCoordinates", Float64MultiArray, queue_size = 2)
+    rosPubMsg = Float64MultiArray()
     def __init__(self):
         rospy.init_node('TruckCoordinateConversion', anonymous=True)
 
@@ -29,7 +31,6 @@ class GlobalToTruck():
         XT = delta[0]*math.cos(theta)-delta[1]*math.sin(theta)
         YT = delta[0]*math.sin(theta)+delta[1]*math.cos(theta)
 
-        print(delta)
         print("dist between: {}".format(((XT**2)+(YT**2))**.5))
         return [XT, YT]
 
@@ -44,8 +45,10 @@ class GlobalToTruck():
         if(not self.startCordSet):
             self.setStartingPoint([self.degToRad(temp[0]), self.degToRad(temp[1])])
         output = self.convertToTruck()
-        # print("deltaLat: {}, deltaLong: {}, lat: {}, Long: {}".format(round(self.newCord[0]-self.startingCord[0],6), round(self.newCord[1]-self.startingCord[1], 6), self.newCord[0], self.newCord[1]))
-        self.prevCord = self.newCord 
+
+        self.rosPubMsg.data = [output[0],output[1]]
+        self.pub.publish(self.rosPubMsg)
+
         print("output: {}".format(output))
 
     def setStartingPoint(self, data):

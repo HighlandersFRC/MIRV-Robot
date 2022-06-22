@@ -216,3 +216,6 @@ catkin_install_python(PROGRAMS coordinateConversion/globalToTruck.py
 catkin_install_python(PROGRAMS Diagnostic/GPSLogger.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+catkin_install_python(PROGRAMS RoverHeading/headingBasedOnCoordinate.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)

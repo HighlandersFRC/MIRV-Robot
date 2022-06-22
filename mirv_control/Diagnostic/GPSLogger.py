@@ -15,7 +15,8 @@ class Logger():
         rospy.init_node('TruckCoordinateLogger', anonymous=True)
         self.points.append(["Iteration", "lat", "lon"])
     def getPos(self, data):
-        if(self.iterations < 500):
+        if(self.iterations < 1000):
+            print(self.iterations)
             point = data.data
             self.points.append([self.iterations, point[0], point[1]])
             self.iterations += 1
@@ -26,7 +27,7 @@ class Logger():
 
     def logData(self):
             print("logging data")
-            print(self.points)
+            # print(self.points)
             with open(("Data{}.csv".format(datetime.now())), 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerows(self.points)
@@ -37,8 +38,6 @@ def run():
     sub = rospy.Subscriber("GPSCoordinates", Float64MultiArray, callBack)
     rospy.spin()
     calculator.logData()
-        
-
 def callBack(data):
     calculator.getPos(data)
 

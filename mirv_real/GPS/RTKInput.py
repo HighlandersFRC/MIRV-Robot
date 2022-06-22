@@ -6,18 +6,20 @@ from std_msgs.msg import Float64MultiArray
 import rospy
 import time
 
-pub = rospy.Publisher("GPSCoordinates", Float64MultiArray, queue_size = 10)
+pub = rospy.Publisher("GPSCoordinates", Float64MultiArray, queue_size = 4)
 rosPubMsg = Float64MultiArray()
 rospy.init_node('RTKModule', anonymous=True)
 currentGGA = GGAData()
 currentVTG = VTGData()
 
-with serial.Serial('/dev/ttyACM3', 115200, timeout=1) as ser:
+with serial.Serial('/dev/ttyACM7', 115200, timeout=1) as ser:
     while True:
         try:
             line = ser.readline().decode('utf-8')  # read a '\n' terminated line
-            
             line = line.split(",")
+        except:
+            pass
+        try:
             if (line[0] == "$GNVTG"):
                 currentVTG.loadMessage(line)
             if (line[0] == "$GNGGA"):
@@ -28,4 +30,4 @@ with serial.Serial('/dev/ttyACM3', 115200, timeout=1) as ser:
         except KeyboardInterrupt:
             break
         except:
-            print("----------------------------------------------------------------------------------------")
+            print("Failed to receive message, trying again in 1 second")
