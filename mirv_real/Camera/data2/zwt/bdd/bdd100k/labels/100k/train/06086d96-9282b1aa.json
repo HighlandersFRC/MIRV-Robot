@@ -1,0 +1,125 @@
+{
+    "name": "06086d96-9282b1aa",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "person",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 955.779597,
+                        "y1": 355.609902,
+                        "x2": 1013.176283,
+                        "y2": 486.624077
+                    }
+                },
+                {
+                    "category": "person",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1041.874626,
+                        "y1": 358.10541,
+                        "x2": 1075.563985,
+                        "y2": 496.606109
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1044.370134,
+                        "y1": 56.148932,
+                        "x2": 1115.492114,
+                        "y2": 114.793372
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1034.388101,
+                        "y1": 121.032142,
+                        "x2": 1140.447195,
+                        "y2": 164.703534
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 4,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1.247754,
+                        "y1": 308.195249,
+                        "x2": 150.978239,
+                        "y2": 480.385305
+                    }
+                },
+                {
+                    "category": "truck",
+                    "id": 5,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 107.306848,
+                        "y1": 3.743262,
+                        "x2": 968.257137,
+                        "y2": 642.593332
+                    }
+                },
+                {
+                    "category": "lane/road curb",
+                    "id": 6,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            978.394742,
+                            570.410529,
+                            "L"
+                        ],
+                        [
+                            1275.110533,
+                            688.073688,
+                            "L"
+                        ]
+                    ]
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "rainy",
+        "scene": "city street",
+        "timeofday": "daytime"
+    }
+}

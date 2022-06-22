@@ -1,0 +1,120 @@
+{
+    "name": "70cc96e1-aa1781b5",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "traffic light",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "green"
+                    },
+                    "box2d": {
+                        "x1": 1081.918782,
+                        "y1": 259.874821,
+                        "x2": 1092.043775,
+                        "y2": 285.187305
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1205.106197,
+                        "y1": 51.974957,
+                        "x2": 1253.451572,
+                        "y2": 128.19575
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "red"
+                    },
+                    "box2d": {
+                        "x1": 967.16886,
+                        "y1": 126.224905,
+                        "x2": 989.106345,
+                        "y2": 148.162389
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "red"
+                    },
+                    "box2d": {
+                        "x1": 946.918874,
+                        "y1": 52.312463,
+                        "x2": 975.606355,
+                        "y2": 87.749939
+                    }
+                },
+                {
+                    "category": "car",
+                    "id": 4,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 1122.39546,
+                        "y1": 468.577597,
+                        "x2": 1277.114481,
+                        "y2": 657.88087
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 5,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "yellow"
+                    },
+                    "box2d": {
+                        "x1": 1158.799935,
+                        "y1": 275.633877,
+                        "x2": 1175.181949,
+                        "y2": 304.757457
+                    }
+                },
+                {
+                    "category": "truck",
+                    "id": 6,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": true,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 0,
+                        "y1": 0,
+                        "x2": 1138.777474,
+                        "y2": 683.364003
+                    }
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "rainy",
+        "scene": "city street",
+        "timeofday": "daytime"
+    }
+}

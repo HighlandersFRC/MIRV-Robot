@@ -214,3 +214,11 @@ catkin_install_python(PROGRAMS GPS/RTKInput.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 add_subdirectory(control)
+##add_subdirectory(drive)
+catkin_install_python(PROGRAMS DIOControl/DOControl.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS DIOControl/DIControl.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+

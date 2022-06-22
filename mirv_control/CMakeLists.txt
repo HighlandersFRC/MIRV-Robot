@@ -221,4 +221,6 @@ catkin_install_python(PROGRAMS RoverHeading/headingBasedOnCoordinate.py
 )
 catkin_install_python(PROGRAMS Cloud/roverClient.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+catkin_install_python(PROGRAMS PiLitControl/PiLitController.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

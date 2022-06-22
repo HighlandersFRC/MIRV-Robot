@@ -1,0 +1,177 @@
+{
+    "name": "2e54b87c-9e02b648",
+    "frames": [
+        {
+            "timestamp": 10000,
+            "objects": [
+                {
+                    "category": "car",
+                    "id": 0,
+                    "attributes": {
+                        "occluded": false,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 580.367645,
+                        "y1": 348.890053,
+                        "x2": 698.810025,
+                        "y2": 462.182764
+                    }
+                },
+                {
+                    "category": "truck",
+                    "id": 1,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 608.690823,
+                        "y1": 328.291379,
+                        "x2": 698.810025,
+                        "y2": 405.536408
+                    }
+                },
+                {
+                    "category": "traffic light",
+                    "id": 2,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 683.361019,
+                        "y1": 321.854293,
+                        "x2": 698.810025,
+                        "y2": 341.165551
+                    }
+                },
+                {
+                    "category": "traffic sign",
+                    "id": 3,
+                    "attributes": {
+                        "occluded": true,
+                        "truncated": false,
+                        "trafficLightColor": "none"
+                    },
+                    "box2d": {
+                        "x1": 728.42062,
+                        "y1": 328.291379,
+                        "x2": 747.731878,
+                        "y2": 348.890053
+                    }
+                },
+                {
+                    "category": "area/drivable",
+                    "id": 4,
+                    "attributes": {},
+                    "poly2d": [
+                        [
+                            560.435035,
+                            477.183275,
+                            "L"
+                        ],
+                        [
+                            414.360486,
+                            639.733804,
+                            "L"
+                        ],
+                        [
+                            560.435035,
+                            619.964145,
+                            "C"
+                        ],
+                        [
+                            745.199739,
+                            612.899785,
+                            "C"
+                        ],
+                        [
+                            984.149656,
+                            623.699782,
+                            "C"
+                        ],
+                        [
+                            753.736692,
+                            462.90519,
+                            "L"
+                        ],
+                        [
+                            560.435035,
+                            477.183275,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/road curb",
+                    "id": 5,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            1005.809683,
+                            622.110422,
+                            "L"
+                        ],
+                        [
+                            724.349049,
+                            433.304528,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/road curb",
+                    "id": 6,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            0,
+                            583.649958,
+                            "L"
+                        ],
+                        [
+                            432.399196,
+                            449.03835,
+                            "L"
+                        ]
+                    ]
+                },
+                {
+                    "category": "lane/single white",
+                    "id": 7,
+                    "attributes": {
+                        "direction": "parallel",
+                        "style": "solid"
+                    },
+                    "poly2d": [
+                        [
+                            0.593129,
+                            601.131985,
+                            "L"
+                        ],
+                        [
+                            449.191456,
+                            447.9437,
+                            "L"
+                        ]
+                    ]
+                }
+            ]
+        }
+    ],
+    "attributes": {
+        "weather": "rainy",
+        "scene": "highway",
+        "timeofday": "daytime"
+    }
+}
