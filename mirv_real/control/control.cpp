@@ -341,7 +341,7 @@ Publisher publisher;
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "drive");
+	ros::init(argc, argv, "control");
 	ros::NodeHandle n;
 
 	ros::Subscriber sub = n.subscribe("drive", 10, setDriveCallback);

@@ -1,0 +1,4 @@
+<launch>
+    <node name="control" pkg="mirv_real" type="control"/>
+    <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
+</launch>
