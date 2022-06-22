@@ -207,3 +207,6 @@ include_directories(
 catkin_install_python(PROGRAMS JoystickDrive/JoystickDrive.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+catkin_install_python(PROGRAMS PiLitControl/PiLitController.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
