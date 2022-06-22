@@ -12,19 +12,20 @@ rospy.init_node('RTKModule', anonymous=True)
 currentGGA = GGAData()
 currentVTG = VTGData()
 
-with serial.Serial('/dev/ttyACM0', 115200, timeout=1) as ser:
+with serial.Serial('/dev/ttyACM3', 115200, timeout=1) as ser:
     while True:
         try:
             line = ser.readline().decode('utf-8')  # read a '\n' terminated line
+            
             line = line.split(",")
             if (line[0] == "$GNVTG"):
                 currentVTG.loadMessage(line)
             if (line[0] == "$GNGGA"):
                 currentGGA.loadMessage(line)
-                rosPubMsg.data = [currentGGA.getLongitude(), currentGGA.getLatitude()]
+                rosPubMsg.data = [currentGGA.getLatitude(),currentGGA.getLongitude()]
                 pub.publish(rosPubMsg)
+                print(line)
         except KeyboardInterrupt:
             break
         except:
             print("----------------------------------------------------------------------------------------")
-        time.sleep(0.1)

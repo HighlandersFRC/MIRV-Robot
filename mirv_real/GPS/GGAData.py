@@ -11,25 +11,31 @@ class GGAData():
     def loadMessage(self, message):
         try:
             self.UTCTime = float(message[1])
-            self.latitude = self.loadLatitude(message[2], message[3])
-            self.longitude = self.loadLongitude(message[4], message[5])
+            self.latitude = self.loadLatitude(float(message[2]), message[3])
+            self.longitude = self.loadLongitude(float(message[4]), message[5])
             self.qualityIndicator = float(message[6])
             self.satellitesUsed = int(message[7])
             self.altitude = float(message[9])
         except:
             raise Exception("Invalid Input message: " + message)
 
-    def loadLongitude(self, longitude, heading):    
+    def loadLongitude(self, longitude, heading):
+        degrees = int(longitude/100)
+        minutes = (longitude - degrees*100)/60 
+        longitude = degrees+minutes   
         if (heading == 'E'):
-            return float(longitude)/100
+            return longitude
         else:
-            return (float(longitude)*(-1))/100
+            return (longitude)*(-1)
 
     def loadLatitude(self, latitude, heading):
+        degrees = int(latitude/100)
+        minutes = ((latitude/100) - degrees)*100/60 
+        latitude = degrees+minutes  
         if (heading == 'N'):
-            return float(latitude)/100
+            return (latitude)
         else:
-            return (float(latitude)*(-1))/100
+            return (latitude)*(-1)
     
     def getLongitude(self):
         return self.longitude
