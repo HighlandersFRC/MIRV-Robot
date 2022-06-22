@@ -12,7 +12,7 @@ rospy.init_node('RTKModule', anonymous=True)
 currentGGA = GGAData()
 currentVTG = VTGData()
 
-with serial.Serial('/dev/ttyACM7', 115200, timeout=1) as ser:
+with serial.Serial('/dev/ttyACM9', 115200, timeout=1) as ser:
     while True:
         try:
             line = ser.readline().decode('utf-8')  # read a '\n' terminated line
