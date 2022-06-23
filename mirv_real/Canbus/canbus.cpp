@@ -39,7 +39,11 @@ TalonFX frontLeftDrive(2, interface);
 TalonFX backLeftDrive(3, interface); 
 TalonFX backRightDrive(4, interface);
 
-ctre::phoenix::sensors::CANCoder cancoder(5, interface);
+//ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(9);
+
+//ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(10);
+
+//ctre::phoenix::sensors::CANCoder intakeArmEncoder(5, interface);
 
 double pdpVoltage = 0.0;
 int pdpCurrentsFilled = 0;
@@ -47,6 +51,10 @@ double* pdpCurrents = {};
 
 double * voltagePtr = &pdpVoltage;
 int * currentsFilledPtr = &pdpCurrentsFilled;
+
+void initializeIntakeMotors(){
+	//intakeArmMotor.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 9);
+}
 
 void initializeDriveMotors(){
 	//PID config
@@ -103,6 +111,9 @@ double wheelCircumference = 0.608447957;
 //gear ratio of the drive motors
 double motorToWheelRatio = 12.0;
 
+//cancoder resolutions
+double cancoderTicksPerRevolution = 4096.0;
+
 //whether joystick is connected
 bool haveJoystick = true;
 
@@ -141,32 +152,8 @@ class Odometry {
 	//tick position from previous update
 	double prevLeftTicks = 0.0;
 	double prevRightTicks = 0.0;
-	// double omega = 0.0;
-	// clock_t prevTime = clock();
 
 	void update(){
-		// double leftTicksPer100MS = (frontLeftDrive.GetSelectedSensorVelocity() + backLeftDrive.GetSelectedSensorVelocity()) / 2.0;
-		// double rightTicksPer100MS = (frontRightDrive.GetSelectedSensorVelocity() + backRightDrive.GetSelectedSensorVelocity()) / 2.0;
-
-		// double leftVelocity = getVelocityFromTicksPer100MS(leftTicksPer100MS);
-		// double rightVelocity = getVelocityFromTicksPer100MS(rightTicksPer100MS);
-
-		// double currentTime = clock();
-		// double deltaTime = currentTime - prevTime();
-
-		// if (rightVelocity == leftVelocity){
-		// 	x += rightVelocity * deltaTime * cos(angle);
-		// 	y += rightVelocity * deltaTime * sin(angle);
-		// } else {
-		// 	r = abs((wheelSpacing * (rightVelocity + leftVelocity)) / (2.0 * (rightVelocity - leftVelocity)));
-		// 	omega = abs((rightVelocity - leftVelocity) / wheelSpacing);
-		// }
-
-		// prevTime = currentTime;
-
-		//get current tick positions
-		// double leftTicks = (frontLeftDrive.GetSelectedSensorPosition() + backLeftDrive.GetSelectedSensorPosition()) / 2.0;
-		// double rightTicks = -(frontRightDrive.GetSelectedSensorPosition() + backRightDrive.GetSelectedSensorPosition()) / 2.0;
 		double leftTicks = frontLeftDrive.GetSelectedSensorPosition();
 		double rightTicks = -frontRightDrive.GetSelectedSensorPosition();
 
@@ -221,6 +208,90 @@ class Odometry {
 
 Odometry odometry;
 
+class Publisher {
+	public:
+
+	ros::Publisher batteryVoltagePub;
+	ros::Publisher encoderOdometryPub;
+	ros::Publisher intakeStatusPub;
+
+	void publishVoltage(){
+		std_msgs::Float64 voltage;
+		auto ExportError = c_PDP_GetValues(0, voltagePtr, pdpCurrents, 0, currentsFilledPtr);
+		voltage.data = pdpVoltage;
+		batteryVoltagePub.publish(voltage);
+	}
+
+	void publishOdometry(){
+		std_msgs::Float64MultiArray pose;
+		pose.data.push_back(odometry.getX());
+		pose.data.push_back(odometry.getY());
+		pose.data.push_back(odometry.getAngle());
+		encoderOdometryPub.publish(pose);
+	}
+
+	void publishIntakeStatus(std_msgs::String status){
+		intakeStatusPub.publish(status);
+	}
+};
+
+Publisher publisher;
+
+class Intake {
+	
+
+	public:
+	std::string mode = "disable";
+	std::string modes[4] = {"disable", "reset", "intake", "store"};
+	bool haveReported = false;
+
+	// void update(){
+	// 	//not moving at all
+	// 	if (mode == "disable"){
+	// 		intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+	// 	}
+		
+	// 	//move to upright and zero
+	// 	if (mode == "reset"){
+	// 		if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
+	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+	// 			intakeArmEncoder.SetPosition(0.0);
+	// 			if (!haveReported){
+	// 				std_msgs::String status;
+	// 				status.data = "reset finished";
+	// 				publisher.publishIntakeStatus(status);
+	// 			}
+	// 			haveReported = true;
+	// 		} else {
+	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.2);
+	// 		}
+	// 	}
+
+	// 	if (mode == "intake"){
+	// 		intakeWheelMotor.Set(ControlMode::PercentOutput, 0.2);
+			
+	// 	}
+	// }
+
+	void setMode(std::string cmd){
+
+		//check if command is valid
+		//set if it is
+		bool isValid = false;
+		for (int i = 0; i < sizeof(modes); i ++){
+			if (modes[i] == cmd){
+				isValid = true;
+			}
+		}
+		if (isValid){
+			mode = cmd;
+			haveReported = false;
+		}
+	}
+};
+
+Intake intake;
+
 // Set speed of individual motors
 void setDriveCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 	ROS_INFO("I heard: [%f]", msg->data[0]);
@@ -247,7 +318,7 @@ void setDriveCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
 	}
 }
 
-void setVelocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
+void velocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
 
 	double leftVelocity = msg->data[0];
 	double rightVelocity = msg->data[1];
@@ -278,10 +349,6 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 		backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 		backRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	}
-	//ROS_INFO("MIRV Pose - X: [%f] Y: [%f] Angle: [%f]", odometry.getX(), odometry.getY(), odometry.getAngle());
-	//ROS_INFO("Encoder: [%f]", cancoder.GetPosition());
-	
-	//ROS_INFO("PDP Voltage: [%f]", pdpVoltage);
 }
 
 void joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
@@ -299,8 +366,6 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
 	double rightMotorTP100MS = (rightMotorRPM / 600.0) * 2048.0;
 	double leftMotorTP100MS = (leftMotorRPM / 600.0) * 2048.0;
 
-	cout << rightMotorTP100MS;
-
 	if (haveJoystick){
 		frontRightDrive.Set(ControlMode::Velocity, rightMotorTP100MS);
 		frontLeftDrive.Set(ControlMode::Velocity, leftMotorTP100MS);
@@ -309,58 +374,45 @@ void joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
  	}
 }
 
+void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
+	intake.setMode(cmd->data);
+}
+
 /** simple wrapper for code cleanup */
 void sleepApp(int ms)
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
 
-class Publisher {
-	public:
-
-	ros::Publisher batteryVoltagePub;
-	ros::Publisher encoderOdometryPub;
-
-	void publishVoltage(){
-		std_msgs::Float64 voltage;
-		auto ExportError = c_PDP_GetValues(0, voltagePtr, pdpCurrents, 0, currentsFilledPtr);
-		voltage.data = pdpVoltage;
-		batteryVoltagePub.publish(voltage);
-	}
-
-	void publishOdometry(){
-		std_msgs::Float64MultiArray pose;
-		pose.data.push_back(odometry.getX());
-		pose.data.push_back(odometry.getY());
-		pose.data.push_back(odometry.getAngle());
-		encoderOdometryPub.publish(pose);
-	}
-};
-
-Publisher publisher;
-
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "control");
+	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
 
 	ros::Subscriber sub = n.subscribe("drive", 10, setDriveCallback);
 	ros::Subscriber joySub = n.subscribe("joy", 10, joyCallback);
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
-	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, setVelocityDriveCallback);
+	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, velocityDriveCallback);
+	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
 
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
 	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
-	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 100.0), std::bind(&Publisher::publishOdometry, publisher));
+	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
+
+	publisher.intakeStatusPub = n.advertise<std_msgs::String>("intake/status", 10);
+
+	
 
 	initializeDriveMotors();
+	initializeIntakeMotors();
 
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
 
 		odometry.update();
+		//intake.update();
 
 		ros::spinOnce();
 	}
