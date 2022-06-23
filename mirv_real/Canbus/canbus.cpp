@@ -236,7 +236,11 @@ class Publisher {
 	}
 
 	void publishEncoderVelocity(){
-		publishEncoderVelocity.publish()
+		double left = getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity());
+		double right = getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity());
+		std_msgs::Float64 velocity;
+		velocity.data = (left + right) / 2.0;
+		encoderVelocityPub.publish(velocity);
 	}
 };
 
@@ -406,7 +410,8 @@ int main(int argc, char **argv) {
 	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
 	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
 
-	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64MultiArray>("encoder/velocities", 10);
+	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64>("encoder/velocity", 10);
+	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
 
 	publisher.intakeStatusPub = n.advertise<std_msgs::String>("intake/status", 10);
 
