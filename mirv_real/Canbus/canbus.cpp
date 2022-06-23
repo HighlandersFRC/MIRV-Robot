@@ -214,6 +214,7 @@ class Publisher {
 	ros::Publisher batteryVoltagePub;
 	ros::Publisher encoderOdometryPub;
 	ros::Publisher intakeStatusPub;
+	ros::Publisher encoderVelocityPub;
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -232,6 +233,10 @@ class Publisher {
 
 	void publishIntakeStatus(std_msgs::String status){
 		intakeStatusPub.publish(status);
+	}
+
+	void publishEncoderVelocity(){
+		publishEncoderVelocity.publish()
 	}
 };
 
@@ -400,6 +405,8 @@ int main(int argc, char **argv) {
 
 	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
 	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
+
+	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64MultiArray>("encoder/velocities", 10);
 
 	publisher.intakeStatusPub = n.advertise<std_msgs::String>("intake/status", 10);
 
