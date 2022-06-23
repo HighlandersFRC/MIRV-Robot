@@ -17,7 +17,7 @@ theta_filter = KalmanFilter(math.pi / 2, 2)
 def run():
     rospy.init_node("odometryCalculator.py")
     for i in range(len(pos)):
-        x_filter.update(pos[i], pos_sig, mot[i])
+        x_filter.update(pos[i], pos_sig, mot[i], mot_sig)
     rospy.spin()
 
 if __name__ == "__main__":
