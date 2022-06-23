@@ -11,8 +11,13 @@ class PurePursuit():
     nextPointDistanceDec = 0
     maxDriveSpeed = 2.5
     currentMaxDriveSpeed = 2
+<<<<<<< HEAD
+    lookAheadDist = 5
+    allowedError = 0.1
+=======
     lookAheadDist = 4
     allowedError = 0.05
+>>>>>>> d9194df257f13d185327b8f7e3cac6379024cb2a
     robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
@@ -99,7 +104,11 @@ class PurePursuit():
             self.maxDriveSpeed = 0.5
             targetPoint = farPoint
             snapshotLa = (targetPoint[0]**2 + targetPoint[1]**2)**0.5
+<<<<<<< HEAD
+            self.currentMaxDriveSpeed = 0.6
+=======
             self.currentMaxDriveSpeed = 0.5
+>>>>>>> d9194df257f13d185327b8f7e3cac6379024cb2a
             if (snapshotLa < self.allowedError):
                 self.currentMaxDriveSpeed = self.maxDriveSpeed
                 return ("atDest")
