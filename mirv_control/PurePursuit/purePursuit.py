@@ -9,10 +9,11 @@ from std_msgs.msg import Float64MultiArray
 class PurePursuit():
     wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
-    maxDriveSpeed = 2.5
-    currentMaxDriveSpeed = 2
-    lookAheadDist = 4
-    allowedError = 0.05
+    maxDriveSpeed = 4.5
+    currentMaxDriveSpeed = 1
+    lookAheadDist = 1
+    allowedError = 1
+    allowedErrorDist = 0.05
     robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
@@ -25,22 +26,25 @@ class PurePursuit():
     ##updates truck coordinate targets to rover cordites as rover moves
     def UpdateTargetPoints(self):
         newTruckCord = self.getTruckCord()
-        theta = newTruckCord[2] - 3.14159/2
+        theta = (3.1415926*2 - newTruckCord[2] + 3.14159)%3.1415926
         xBRef = newTruckCord[0]
         yBRef = newTruckCord[1]
+        # print([xBRef, yBRef, theta])
         length = 0
         for i in range(len(self.robotCordList)):
             xTBody = self.cordList[i][0]*math.cos(theta) + self.cordList[i][1]*math.sin(theta) - yBRef*math.sin(theta) - xBRef*math.cos(theta)
             yTBody = -self.cordList[i][0]*math.sin(theta) + self.cordList[i][1]*math.cos(theta) - yBRef*math.cos(theta) + xBRef*math.sin(theta)
             distToPoint = round(math.sqrt(math.pow(xTBody,2) + math.pow(yTBody,2)), 3)
             self.robotCordList[i] = [xTBody, yTBody, distToPoint]
+        print("target X,Y: {}".format(self.robotCordList[0]))
+        print("targetTruck X,Y: {}".format(self.cordList[0]))
     ## helper methods for update target points
     def getTruckCord(self):
         return self.currentTruckCord
 
 
     def getPath(self):
-        pathList = [[0, 2], [5, 7]]
+        pathList = [[0, 1.5], [3, 3]]
         for point in pathList:
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])
@@ -52,7 +56,7 @@ class PurePursuit():
     def removeTargetPoint(self):
         if (abs(self.robotCordList[0][2]) < self.nextPointDistanceDec):
             self.nextPointDistanceDec = self.robotCordList[0][2]
-        elif (abs(self.robotCordList[0][2]) > self.lookAheadDist and abs(self.robotCordList[0][2]) > (self.nextPointDistanceDec+0.5) and abs(self.robotCordList[0][2]) < (self.lookAheadDist+ (1/4)*self.lookAheadDist )):
+        elif (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist ):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
             if(self.robotCordList):
@@ -65,17 +69,17 @@ class PurePursuit():
     def calculateSpeedSide(self, maxSpeed, x, y, la):
         leftVel = maxSpeed
         rightVel = maxSpeed
-        if(abs(x)>self.allowedError):
+        if(abs(x)>self.allowedErrorDist):
             cRad = self.generateRadius(x, la)
             iCirc = self.generateCircumference((cRad - (self.wheelBaseWidth/2)))
             oCirc = self.generateCircumference((cRad + (self.wheelBaseWidth/2)))
             innerSpeedRatio = (iCirc/oCirc)
             turnRight = True
             if(x>=0):  
-                rightVel = rightVel*innerSpeedRatio
+                rightVel = rightVel*innerSpeedRatio*0.9
                 # print("turningRight")
             else:
-                leftVel = leftVel*innerSpeedRatio
+                leftVel = leftVel*innerSpeedRatio*0.9
                 # print("turningLeft")
         return ([leftVel, rightVel])
 
@@ -151,7 +155,7 @@ class PurePursuit():
 
     def callbackOdom(self, data):
         self.currentTruckCord = data.data
-        print(data.data)
+        # print(data.data)
         if (self.cordList):
             self.UpdateTargetPoints()
             output = self.getTargetCordAndDriveSpeed(self.lookAheadDist, self.currentMaxDriveSpeed)
@@ -163,7 +167,11 @@ class PurePursuit():
             else:
                 self.rosPubMsg.data = [0,0]
                 ## ros.drive.setvel(0,0)
+
+
             print(output[0])
+        
+        
         else:
             ## ros.drive.setvel(0,0)
             self.rosPubMsg.data = [0,0]
@@ -175,7 +183,7 @@ class PurePursuit():
 controller = PurePursuit()
 def run():
     controller.getPath()
-    sub = rospy.Subscriber("odometry/encoder", Float64MultiArray, callBack)
+    sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, callBack)
     rospy.spin()
 
 def callBack(data):

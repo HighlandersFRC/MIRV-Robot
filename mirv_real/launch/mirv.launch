@@ -1,4 +1,4 @@
 <launch>
-    <node name="control" pkg="mirv_real" type="canbus"/>
+    <node name="canbus" pkg="mirv_real" type="canbus"/>
     <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
 </launch>

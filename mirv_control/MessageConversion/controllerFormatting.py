@@ -11,7 +11,7 @@ class DataMerge():
     startingTheta = 0.0
     setStartingTheta = False
     theta = 0.0
-    pub = rospy.Publisher("GPS/IMU-POS", Float64MultiArray, queue_size = 5)
+    pub = rospy.Publisher("GPS/IMUPOS", Float64MultiArray, queue_size = 5)
     rosPubMsg = Float64MultiArray()
     def __init__(self):
         rospy.init_node('OdometyData', anonymous=True)
@@ -23,14 +23,16 @@ class DataMerge():
         if (not self.setStartingTheta):
             self.startingTheta = math.radians(self.theta)
             self.setStartingTheta = True
-        rosPubMsg.data = [self.point[0],self.point[1],(math.radians(self.theta)-self.startingTheta),self.startingTheta]
-        pub.publish(rosPubMsg)
+        self.rosPubMsg.data = [self.point[0],self.point[1],(math.radians(self.theta)-self.startingTheta),self.startingTheta, self.theta]
+        print(self.rosPubMsg.data)
+        self.pub.publish(self.rosPubMsg)
 
 
 fuse = DataMerge()
 def run():
     subCord = rospy.Subscriber("TruckCoordinates", Float64MultiArray, callBackPoint)
-    subHeading = rospy.Subscriber("CammeraIMU", Float64, callBackHeading)
+    subHeading = rospy.Subscriber("CameraIMU", Float64, callBackHeading)
+    print("looping")
     rospy.spin()
 def callBackPoint(data):
     fuse.setCoordinate(data)
