@@ -14,18 +14,18 @@ class DataMerge():
     pub = rospy.Publisher("GPS/IMUPOS", Float64MultiArray, queue_size = 5)
     rosPubMsg = Float64MultiArray()
     def __init__(self):
-        rospy.init_node('OdometyData', anonymous=True)
+        rospy.init_node('OdometyDataUnfiltered', anonymous=True)
     def setCoordinate(self, data):
         temp = data.data
         self.point = [temp[0], temp[1]]
+        self.rosPubMsg.data = [self.point[0],self.point[1],(math.radians(self.theta)-self.startingTheta),self.startingTheta, self.theta]
+        print(self.rosPubMsg.data)
+        self.pub.publish(self.rosPubMsg)
     def setHeading(self, data):
         self.theta = data.data
         if (not self.setStartingTheta):
             self.startingTheta = math.radians(self.theta)
             self.setStartingTheta = True
-        self.rosPubMsg.data = [self.point[0],self.point[1],(math.radians(self.theta)-self.startingTheta),self.startingTheta, self.theta]
-        print(self.rosPubMsg.data)
-        self.pub.publish(self.rosPubMsg)
 
 
 fuse = DataMerge()

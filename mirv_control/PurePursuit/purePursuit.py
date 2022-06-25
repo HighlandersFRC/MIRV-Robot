@@ -13,7 +13,7 @@ class PurePursuit():
     currentMaxDriveSpeed = 1
     lookAheadDist = 1
     allowedError = 1
-    allowedErrorDist = 0.05
+    allowedErrorDist = 0.1
     robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
@@ -44,7 +44,7 @@ class PurePursuit():
 
 
     def getPath(self):
-        pathList = [[0, 1.5], [3, 3]]
+        pathList = [[10, 4]]
         for point in pathList:
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])
@@ -76,10 +76,10 @@ class PurePursuit():
             innerSpeedRatio = (iCirc/oCirc)
             turnRight = True
             if(x>=0):  
-                rightVel = rightVel*innerSpeedRatio*0.9
+                rightVel = rightVel*innerSpeedRatio
                 # print("turningRight")
             else:
-                leftVel = leftVel*innerSpeedRatio*0.9
+                leftVel = leftVel*innerSpeedRatio
                 # print("turningLeft")
         return ([leftVel, rightVel])
 
@@ -162,14 +162,15 @@ class PurePursuit():
             isFinished = self.removeTargetPoint()
             if(output != "atDest" and not isFinished):
                 # print("{}, {}".format(output[0][0],output[0][1]))
-                self.rosPubMsg.data = output[0]
+                # self.rosPubMsg.data = output[0]
+                self.rosPubMsg.data = [2.2, 4]
                 ## ros.drive.setvel(output[0][0], output[0][1])
             else:
                 self.rosPubMsg.data = [0,0]
                 ## ros.drive.setvel(0,0)
 
 
-            print(output[0])
+            print(self.rosPubMsg.data)
         
         
         else:
@@ -178,6 +179,13 @@ class PurePursuit():
             print("no target Point")
         
         self.pub.publish(self.rosPubMsg)
+
+    def __del__(self):
+        print("exiting Program")
+        self.rosPubMsg.data = [0,0]
+        self.pub.publish(self.rosPubMsg)
+        time.sleep(3)
+        print("exited")
 
 
 controller = PurePursuit()

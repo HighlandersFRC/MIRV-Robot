@@ -239,6 +239,7 @@ class Publisher {
 		double left = getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity());
 		double right = getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity());
 		std_msgs::Float64 velocity;
+		cout << velocity;
 		velocity.data = (left + right) / 2.0;
 		encoderVelocityPub.publish(velocity);
 	}

@@ -11,9 +11,9 @@ rosPubMsg = Float64MultiArray()
 rospy.init_node('RTKModule', anonymous=True)
 currentGGA = GGAData()
 currentVTG = VTGData()
-
+print("reading in data")
 with serial.Serial('/dev/ttyACM0', 115200, timeout=1) as ser:
-    while True:
+    while not rospy.is_shutdown():
         try:
             line = ser.readline().decode('utf-8')  # read a '\n' terminated line
             line = line.split(",")
@@ -28,6 +28,7 @@ with serial.Serial('/dev/ttyACM0', 115200, timeout=1) as ser:
                 pub.publish(rosPubMsg)
                 print(line)
         except KeyboardInterrupt:
+            quit()
             break
         except:
             print("Failed to receive message, trying again in 1 second")
