@@ -302,47 +302,6 @@ class Intake {
 
 Intake intake;
 
-// Set speed of individual motors
-void setDriveCallback(const std_msgs::Float32MultiArray::ConstPtr& msg){
-	ROS_INFO("I heard: [%f]", msg->data[0]);
-
-	int len = 2;
-	if(len ==2){
-		int talonID = (int)msg->data[0];
-		float motorSpeed = msg->data[1];
-		if(talonID == 1){
-			frontRightDrive.Set(ControlMode::PercentOutput, motorSpeed);
-		}
-		else if (talonID == 2){
-			frontLeftDrive.Set(ControlMode::PercentOutput, motorSpeed);
-
-		}
-		else if (talonID == 3){
-			backLeftDrive.Set(ControlMode::PercentOutput, motorSpeed);
-
-		}
-		else if (talonID == 4){
-			backRightDrive.Set(ControlMode::PercentOutput, motorSpeed);
-		
-		}
-	}
-}
-
-void velocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
-
-	double leftVelocity = msg->data[0];
-	double rightVelocity = msg->data[1];
-
-	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
-	double rightTicksPer100MS = -getTicksPer100MSFromVelocity(rightVelocity);
-
-	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-
-	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-}
-
 void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& statusMsg){
 	/*
 	Check whether joystick is connected
@@ -361,45 +320,30 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 	}
 }
 
-void joyCallback(const sensor_msgs::Joy::ConstPtr& joy){
+void velocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
 
-	double drive = joy->axes[1];
-	double turn = joy->axes[3];
-	double rightMotorPower = -drive - turn;
-	double leftMotorPower = drive - turn;
+	double leftVelocity = msg->data[0];
+	double rightVelocity = msg->data[1];
 
-	//Turn motor percent to percent of maximum velocity
-	double rightMotorRPM = rightMotorPower * maxVelocity;
-	double leftMotorRPM = leftMotorPower * maxVelocity;
-	
-	//Convert percent of maximum velocity to tic per 100 ms
-	double rightMotorTP100MS = (rightMotorRPM / 600.0) * 2048.0;
-	double leftMotorTP100MS = (leftMotorRPM / 600.0) * 2048.0;
+	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
+	double rightTicksPer100MS = -getTicksPer100MSFromVelocity(rightVelocity);
 
-	if (haveJoystick){
-		frontRightDrive.Set(ControlMode::Velocity, rightMotorTP100MS);
-		frontLeftDrive.Set(ControlMode::Velocity, leftMotorTP100MS);
-		backLeftDrive.Set(ControlMode::Velocity, leftMotorTP100MS);
-		backRightDrive.Set(ControlMode::Velocity, rightMotorTP100MS);
- 	}
+	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+
+	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 }
 
 void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
 	intake.setMode(cmd->data);
 }
 
-void sleepApp(int ms)
-{
-	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-}
-
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
-
-	ros::Subscriber sub = n.subscribe("drive", 10, setDriveCallback);
-	ros::Subscriber joySub = n.subscribe("joy", 10, joyCallback);
+	
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
 	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);

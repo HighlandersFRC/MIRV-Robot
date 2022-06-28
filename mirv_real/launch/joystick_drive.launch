@@ -1,4 +1,6 @@
 <launch>
-  <node name="joystick_input" pkg="joy" type="joy_node"/>
-  <node name="drive" pkg="mirv_real" type="drive"/>
+  <env name="ROS_MASTER_URI" value="http://172.250.250.213:11311"/>
+  <env name="ROS_IP" value="172.250.250.213"/>
+  <node name="Canbus" pkg="mirv_real" type="canbus"/>
+  <node name="Masters" pkg="mirv_control" type="remotedrive_master.py"/>
 </launch>
