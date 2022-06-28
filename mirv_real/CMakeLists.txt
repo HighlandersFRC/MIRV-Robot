@@ -209,7 +209,7 @@ include_directories(
 ## User Added Components ##
 ###########################
 
-add_subdirectory(drive)
+#add_subdirectory(drive)
 catkin_install_python(PROGRAMS GPS/RTKInput.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

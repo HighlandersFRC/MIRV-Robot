@@ -66,6 +66,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
+from custom_msg_python.msg import depth_and_color_msg as depthAndColorFrame
 
 br = CvBridge()
 
@@ -80,29 +81,39 @@ transform=transforms.Compose([
 
 detections = 0
 
-def gotFrame(img):
+def gotFrame(data):
     print("GOT A FRAME")
     initTime = time.time()
-    frame = ros_numpy.numpify(img)
-    print(frame.shape)
+    frame = ros_numpy.numpify(data.color_frame)
+    depthFrame = ros_numpy.numpify(data.depth_frame)
+    # print(frame.shape)
     tensorImg = transform(frame).to(device)
     if tensorImg.ndimension() == 3:
         tensorImg = tensorImg.unsqueeze(0)
-    detections = piLitDetect(tensorImg, frame)
+    detections = piLitDetect(tensorImg, frame, depthFrame)
     # cv2.imshow("detections", detections)
     # cv2.waitKey(1)
-    print("TIMEDIFF: ", time.time() - initTime)
+    # print("TIMEDIFF: ", time.time() - initTime)
     # cv2.destroyAllWindows()
 
-def piLitDetect(img, frame):
+def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
-    print(piLitPrediction)
+    # print(piLitPrediction)
     # print(piLitPrediction["scores"])
     bboxList = []
+    # print(depthFrame)
+    # print(depthFrame[0][0])
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
         x0,y0,x1,y1 = bbox
+        centerX = int((x0 + x1)/2)
+        centerY = int((y0 + y1)/2)
         bboxList.append(bbox)
         frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+
+        depth = depthFrame[centerY][centerX]
+        print("DEPTH: ", depth)
+
+        piLitLocationPub.publish(depth)
 
         # print("Looking in predictions")
 
@@ -114,8 +125,7 @@ def piLitDetect(img, frame):
         #     # print("MAYBE?")
     bboxMsg = Float64MultiArray()
     bboxMsg.data = bboxList
-    piLitLocationPub.publish(bboxMsg)
-    print("PUBLISHED LOCATIONS")
+    # print("PUBLISHED LOCATIONS")
     return frame
 
     # cv2.imshow("frame", frame)
@@ -153,8 +163,8 @@ piLitModel.eval()
 piLitModel = piLitModel.to(device)
 
 rospy.init_node('piLitDetector')
-rospy.Subscriber("CameraFrames", Image, gotFrame)
-piLitLocationPub = rospy.Publisher('piLitLocations', Float64MultiArray, queue_size=1)
+rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
+piLitLocationPub = rospy.Publisher('piLitDistance', Float64, queue_size=1)
 
 try:
     rospy.spin()
