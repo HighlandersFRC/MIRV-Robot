@@ -208,15 +208,7 @@ include_directories(
 ###########################
 ## User Added Components ##
 ###########################
-<<<<<<< HEAD
 add_subdirectory(Canbus)
-=======
-
-<<<<<<< HEAD
-add_subdirectory(canbus)
-=======
-add_subdirectory(drive)
->>>>>>> 9977a56d1f96523a094cfc738641f137bc017cd3
 catkin_install_python(PROGRAMS GPS/RTKInput.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
@@ -226,5 +218,3 @@ catkin_install_python(PROGRAMS DIOControl/DOControl.py
 catkin_install_python(PROGRAMS DIOControl/DIControl.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
->>>>>>> d9194df257f13d185327b8f7e3cac6379024cb2a

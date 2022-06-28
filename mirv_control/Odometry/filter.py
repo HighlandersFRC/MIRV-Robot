@@ -1,20 +1,36 @@
-    
+#!/usr/bin/env python
 from signal import sigpending
+import time
+import rospy
 
+encoder/velocity
 
 class KalmanFilter:
-    def __init__(self, mu, sig):
-        self.mu = mu
-        self.sig = sig
+    heading = 0
+    xPos = 0
+    yPos = 0
+    timeSinceUpdate = 0
+    WBWidth = 0.483
+    loopingRate = rospy.Rate(25)
 
-    def predict_position(self, mu_in, sig_in):
-        self.mu = (self.mu * sig_in + mu_in * self.sig) / (self.mu + mu_in)
-        self.sig = 1 / (1 / self.sig + 1 / sig_in)
+    def __init__(self):
+        encoderSub = rospy.Subscriber("encoder/velocity", Float64MultiArray, self.encoderCallBack)
+        IMUSub = rospy.Subscriber("encoder/velocity", Float64, self.IMUcallback)
+    def run(self):
+        print("one")
+        rospy.spin()
+        print("two")
 
-    def predict_motion(self, mu_in, sig_in):
-        self.mu += mu_in
-        self.sig += sig_in
 
-    def update(self, pos_mu, pos_sig, mot_mu, mot_sig):
-        self.predict_position(pos_mu, pos_sig)
-        self.predict_motion(mot_mu, mot_sig)
+
+    def Forward_Kinimatics(self, data):
+        pass
+    def IMUcallback(self, data):
+        pass
+    def encoderCallback(self):
+        pass
+
+test = KalmanFilter()
+if __name__ == "__main__":
+    rospy.init_node('Filter', anonymous=True)
+    test.run()
