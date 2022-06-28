@@ -30,7 +30,7 @@ using namespace ctre::phoenix::platform;
 using namespace ctre::phoenix::motorcontrol;
 using namespace ctre::phoenix::motorcontrol::can;
 using namespace std;
-
+double getTicksPer100MSFromVelocity(double velocity);
 /* make some talons for drive train */
 std::string interface = "can0";
 
@@ -39,11 +39,8 @@ TalonFX frontLeftDrive(2, interface);
 TalonFX backLeftDrive(3, interface); 
 TalonFX backRightDrive(4, interface);
 
-//ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(9);
-
-//ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(10);
-
-//ctre::phoenix::sensors::CANCoder intakeArmEncoder(5, interface);
+// ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(9);
+// ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(10);
 
 double pdpVoltage = 0.0;
 int pdpCurrentsFilled = 0;
@@ -52,28 +49,34 @@ double* pdpCurrents = {};
 double * voltagePtr = &pdpVoltage;
 int * currentsFilledPtr = &pdpCurrentsFilled;
 
-void initializeIntakeMotors(){
-	//intakeArmMotor.ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, 9);
-}
-
 void initializeDriveMotors(){
 	//PID config
-	float kP = 0.1;
-	float kI = 0.0;
-	float kD = 0.0;
+	float kF = 0.92;
+	float kP = 0.18;
+	float kI = 0.000;
+	float kD = 0.5;
+	float maxAllowedError = getTicksPer100MSFromVelocity(0.05);
 
+	frontRightDrive.ConfigAllowableClosedloopError(0, maxAllowedError);
+	frontRightDrive.Config_kF(0, kF);
 	frontRightDrive.Config_kP(0, kP);
 	frontRightDrive.Config_kI(0, kI);
 	frontRightDrive.Config_kD(0, kD);
 
+	frontLeftDrive.ConfigAllowableClosedloopError(0, maxAllowedError);
+	frontLeftDrive.Config_kF(0, kF);
 	frontLeftDrive.Config_kP(0, kP);
 	frontLeftDrive.Config_kI(0, kI);
 	frontLeftDrive.Config_kD(0, kD);
 
+	backLeftDrive.ConfigAllowableClosedloopError(0, maxAllowedError);
+	backLeftDrive.Config_kF(0, kF);
 	backLeftDrive.Config_kP(0, kP);
 	backLeftDrive.Config_kI(0, kI);
 	backLeftDrive.Config_kD(0, kD);
 
+	backRightDrive.ConfigAllowableClosedloopError(0, maxAllowedError);
+	backRightDrive.Config_kF(0, kF);
 	backRightDrive.Config_kP(0, kP);
 	backRightDrive.Config_kI(0, kI);
 	backRightDrive.Config_kD(0, kD);
@@ -213,7 +216,6 @@ class Publisher {
 
 	ros::Publisher batteryVoltagePub;
 	ros::Publisher encoderOdometryPub;
-	ros::Publisher intakeStatusPub;
 	ros::Publisher encoderVelocityPub;
 
 	void publishVoltage(){
@@ -231,16 +233,12 @@ class Publisher {
 		encoderOdometryPub.publish(pose);
 	}
 
-	void publishIntakeStatus(std_msgs::String status){
-		intakeStatusPub.publish(status);
-	}
-
 	void publishEncoderVelocity(){
 		double left = getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity());
 		double right = getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity());
-		std_msgs::Float64 velocity;
-		cout << velocity;
-		velocity.data = (left + right) / 2.0;
+		std_msgs::Float64MultiArray velocity;
+		velocity.data.push_back(left);
+		velocity.data.push_back(right);
 		encoderVelocityPub.publish(velocity);
 	}
 };
@@ -249,11 +247,9 @@ Publisher publisher;
 
 class Intake {
 	
-
 	public:
 	std::string mode = "disable";
 	std::string modes[4] = {"disable", "reset", "intake", "store"};
-	bool haveReported = false;
 
 	// void update(){
 	// 	//not moving at all
@@ -265,13 +261,6 @@ class Intake {
 	// 	if (mode == "reset"){
 	// 		if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
 	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 			intakeArmEncoder.SetPosition(0.0);
-	// 			if (!haveReported){
-	// 				std_msgs::String status;
-	// 				status.data = "reset finished";
-	// 				publisher.publishIntakeStatus(status);
-	// 			}
-	// 			haveReported = true;
 	// 		} else {
 	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.2);
 	// 		}
@@ -279,14 +268,26 @@ class Intake {
 
 	// 	if (mode == "intake"){
 	// 		intakeWheelMotor.Set(ControlMode::PercentOutput, 0.2);
-			
+	// 		if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
+	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+	// 		} else {
+	// 			intakeArmMotor.Set(ControlMode::PercentOutput, -0.2);
+	// 		}
+	// 	}
+
+	// 	if (mode == "store"){
+	// 		if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
+	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+	// 			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.2);
+	// 		} else {
+	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.2);
+	// 		}
 	// 	}
 	// }
 
 	void setMode(std::string cmd){
 
-		//check if command is valid
-		//set if it is
+		//check if command is valid before setting
 		bool isValid = false;
 		for (int i = 0; i < sizeof(modes); i ++){
 			if (modes[i] == cmd){
@@ -295,7 +296,6 @@ class Intake {
 		}
 		if (isValid){
 			mode = cmd;
-			haveReported = false;
 		}
 	}
 };
@@ -388,7 +388,6 @@ void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
 	intake.setMode(cmd->data);
 }
 
-/** simple wrapper for code cleanup */
 void sleepApp(int ms)
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
@@ -411,15 +410,10 @@ int main(int argc, char **argv) {
 	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
 	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
 
-	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64>("encoder/velocity", 10);
-	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
-
-	publisher.intakeStatusPub = n.advertise<std_msgs::String>("intake/status", 10);
-
-	
+	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64MultiArray>("encoder/velocity", 10);
+	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
 
 	initializeDriveMotors();
-	initializeIntakeMotors();
 
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);

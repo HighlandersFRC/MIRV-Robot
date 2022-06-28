@@ -1,5 +1,5 @@
 <launch>
-    <node name="canbus" pkg="mirv_real" type="canbus"/>
+    <node name="Canbus" pkg="mirv_real" type="canbus"/>
     <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
     <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/>
     <node name="talker" pkg="mirv_real" type="cameraPublisher.py"/>

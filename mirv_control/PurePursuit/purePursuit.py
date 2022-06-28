@@ -11,8 +11,9 @@ class PurePursuit():
     nextPointDistanceDec = 0
     maxDriveSpeed = 4.5
     currentMaxDriveSpeed = 1
+    startingTheta = 3.14159/2
     lookAheadDist = 1
-    allowedError = 1
+    allowedError = 0.5
     allowedErrorDist = 0.1
     robotCordList = []
     cordList = []
@@ -26,17 +27,21 @@ class PurePursuit():
     ##updates truck coordinate targets to rover cordites as rover moves
     def UpdateTargetPoints(self):
         newTruckCord = self.getTruckCord()
-        theta = (3.1415926*2 - newTruckCord[2] + 3.14159)%3.1415926
+        theta = (3.1415926*2 - newTruckCord[2] + 3.14159/2)%(2*3.1415926) - self.startingTheta
         xBRef = newTruckCord[0]
         yBRef = newTruckCord[1]
         # print([xBRef, yBRef, theta])
         length = 0
         for i in range(len(self.robotCordList)):
+            # xTBody = xBRef*math.cos(theta) + yBRef*math.sin(theta) - self.cordList[i][1]*math.sin(theta) - self.cordList[i][0]*math.cos(theta)
+            # yTBody = -xBRef*math.sin(theta) + yBRef*math.cos(theta) - self.cordList[i][1]*math.cos(theta) + self.cordList[i][0]*math.sin(theta)
+            # distToPoint = round(math.sqrt(math.pow(xTBody,2) + math.pow(yTBody,2)), 3)
+
             xTBody = self.cordList[i][0]*math.cos(theta) + self.cordList[i][1]*math.sin(theta) - yBRef*math.sin(theta) - xBRef*math.cos(theta)
             yTBody = -self.cordList[i][0]*math.sin(theta) + self.cordList[i][1]*math.cos(theta) - yBRef*math.cos(theta) + xBRef*math.sin(theta)
             distToPoint = round(math.sqrt(math.pow(xTBody,2) + math.pow(yTBody,2)), 3)
             self.robotCordList[i] = [xTBody, yTBody, distToPoint]
-        print("target X,Y: {}".format(self.robotCordList[0]))
+        print("target X,Y: {}, CurrentTheta: {}".format(self.robotCordList[0], theta))
         print("targetTruck X,Y: {}".format(self.cordList[0]))
     ## helper methods for update target points
     def getTruckCord(self):
@@ -44,7 +49,7 @@ class PurePursuit():
 
 
     def getPath(self):
-        pathList = [[10, 4]]
+        pathList = [[-3.5, 0], [-3,-11], [15, -11]]
         for point in pathList:
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])
@@ -56,7 +61,14 @@ class PurePursuit():
     def removeTargetPoint(self):
         if (abs(self.robotCordList[0][2]) < self.nextPointDistanceDec):
             self.nextPointDistanceDec = self.robotCordList[0][2]
-        elif (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist ):
+        elif (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist and len(self.robotCordList) > 1):
+            self.robotCordList.pop(0)
+            self.cordList.pop(0)
+            if(self.robotCordList):
+                self.nextPointDistanceDec = self.robotCordList[0][2]
+            else:
+                return True
+        elif (abs(self.robotCordList[0][2]) < (self.allowedError) and len(self.robotCordList) <= 1):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
             if(self.robotCordList):
@@ -162,12 +174,10 @@ class PurePursuit():
             isFinished = self.removeTargetPoint()
             if(output != "atDest" and not isFinished):
                 # print("{}, {}".format(output[0][0],output[0][1]))
-                # self.rosPubMsg.data = output[0]
-                self.rosPubMsg.data = [2.2, 4]
-                ## ros.drive.setvel(output[0][0], output[0][1])
+                self.rosPubMsg.data = output[0]
+                # self.rosPubMsg.data = [2.2, 4]
             else:
                 self.rosPubMsg.data = [0,0]
-                ## ros.drive.setvel(0,0)
 
 
             print(self.rosPubMsg.data)

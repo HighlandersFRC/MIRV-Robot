@@ -2,6 +2,7 @@ devel/
 logs/
 build/
 bin/
+lib/
 msg_gen/
 srv_gen/
 msg/*Action.msg
@@ -14,6 +15,7 @@ msg/*Result.msg
 msg/_*.py
 build_isolated/
 devel_isolated/
+recording*.csv
 
 #Environment variables
 setenv.sh
