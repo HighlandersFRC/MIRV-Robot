@@ -225,3 +225,12 @@ catkin_install_python(PROGRAMS Cloud/roverClient.py
 catkin_install_python(PROGRAMS PiLitControl/PiLitController.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+catkin_install_python(PROGRAMS MessageConversion/controllerFormatting.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Odometry/record.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Masters/remotedrive_master.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)

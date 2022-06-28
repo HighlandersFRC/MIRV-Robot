@@ -2,6 +2,7 @@ devel/
 logs/
 build/
 bin/
+lib/
 msg_gen/
 srv_gen/
 msg/*Action.msg
@@ -14,6 +15,10 @@ msg/*Result.msg
 msg/_*.py
 build_isolated/
 devel_isolated/
+recording*.csv
+
+#Debug launch files with env vars
+mirv_real/launch/joystick_drive.launch
 
 #Environment variables
 setenv.sh
