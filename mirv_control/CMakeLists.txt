@@ -210,6 +210,11 @@ catkin_install_python(PROGRAMS JoystickDrive/JoystickDrive.py
 catkin_install_python(PROGRAMS PurePursuit/purePursuit.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+<<<<<<< HEAD
+catkin_install_python(PROGRAMS Cloud/roverClient.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+=======
 catkin_install_python(PROGRAMS coordinateConversion/globalToTruck.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
@@ -225,3 +230,4 @@ catkin_install_python(PROGRAMS Cloud/roverClient.py
 catkin_install_python(PROGRAMS PiLitControl/PiLitController.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+>>>>>>> d9194df257f13d185327b8f7e3cac6379024cb2a
