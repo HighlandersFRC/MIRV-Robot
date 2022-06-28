@@ -9,12 +9,15 @@ from std_msgs.msg import Float64MultiArray
 class PurePursuit():
     wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
+
     maxDriveSpeed = 4.5
     currentMaxDriveSpeed = 1
     startingTheta = 3.14159/2
     lookAheadDist = 1
     allowedError = 0.5
     allowedErrorDist = 0.1
+    lookAheadDist = 4
+    allowedError = 0.05
     robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
