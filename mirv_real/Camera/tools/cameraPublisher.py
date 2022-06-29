@@ -63,7 +63,7 @@ from rospy_tutorials.msg import Floats
 from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
-from custom_msg_python.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
 
 def quat_2_radians(x, y, z, w):

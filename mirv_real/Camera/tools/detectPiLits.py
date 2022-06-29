@@ -67,7 +67,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
-from custom_msg_python.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
 br = CvBridge()
 
@@ -195,7 +195,7 @@ if os.path.exists(opt.save_dir):  # output dir
 os.makedirs(opt.save_dir)  # make new dir
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
-piLitModel = torch.load("weights/piLitModel.pth")
+piLitModel = torch.load("mirv_real/Camera/weights/piLitModel.pth")
 piLitModel.eval()
 piLitModel = piLitModel.to(device)
 

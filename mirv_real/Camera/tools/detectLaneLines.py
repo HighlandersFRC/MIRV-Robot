@@ -66,7 +66,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
-from custom_msg_python.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
 br = CvBridge()
 
@@ -123,7 +123,7 @@ def laneLineDetect(img, frame, depthFrame):
     ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
     # Lane line post-processing
     ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
-    ll_seg_mask = connect_lane(ll_seg_mask)
+    # ll_seg_mask = connect_lane(ll_seg_mask)
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 

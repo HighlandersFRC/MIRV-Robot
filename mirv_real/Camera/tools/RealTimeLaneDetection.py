@@ -114,7 +114,7 @@ def detectLaneLines(cfg, opt, img):
     ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
     # Lane line post-processing
     ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
-    ll_seg_mask = connect_lane(ll_seg_mask)
+    # ll_seg_mask = connect_lane(ll_seg_mask)
 
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
@@ -280,9 +280,9 @@ if __name__ == '__main__':
             tensorImg = transform(frame).to(device)
             if tensorImg.ndimension() == 3:
                 tensorImg = tensorImg.unsqueeze(0)
-            # cv2.imshow("frame", frame)
+            cv2.imshow("frame", frame)
             houghLines, laneDetection = detectLaneLines(cfg, opt, tensorImg)
-            cv2.imshow("lane", laneDetection)
+            # cv2.imshow("lane", laneDetection)
             # cv2.imshow("hough", houghLines)
             # piLitDetection = detectPiLits(cfg, opt, tensorImgQueue)
             endTime = time.time()
