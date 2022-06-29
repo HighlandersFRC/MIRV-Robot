@@ -41,6 +41,8 @@ TalonFX backRightDrive(4, interface);
 
 ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(11);
 ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(9);
+ctre::phoenix::motorcontrol::can::TalonSRX leftConvMotor(12);
+ctre::phoenix::motorcontrol::can::TalonSRX rightConvMotor(10);
 
 
 double pdpVoltage = 0.0;
@@ -346,6 +348,17 @@ void velocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
 	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 }
 
+void powerDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& powers){
+	double left = powers->data[0];
+	double right = powers->data[1];
+
+	frontRightDrive.Set(ControlMode::PercentOutput, right);
+	backRightDrive.Set(ControlMode::PercentOutput, right);
+
+	frontLeftDrive.Set(ControlMode::PercentOutput, left);
+	backLeftDrive.Set(ControlMode::PercentOutput, left);
+}
+
 void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
 	intake.setMode(cmd->data);
 }
@@ -358,6 +371,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
 	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
+	ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
 
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
