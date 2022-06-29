@@ -231,6 +231,6 @@ catkin_install_python(PROGRAMS MessageConversion/controllerFormatting.py
 catkin_install_python(PROGRAMS Odometry/record.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS Masters/remotedrive_master.py
+catkin_install_python(PROGRAMS Controllers/remotedrive_master.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

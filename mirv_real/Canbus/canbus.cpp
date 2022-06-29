@@ -39,8 +39,9 @@ TalonFX frontLeftDrive(2, interface);
 TalonFX backLeftDrive(3, interface); 
 TalonFX backRightDrive(4, interface);
 
-// ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(9);
-// ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(10);
+ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(11);
+ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(9);
+
 
 double pdpVoltage = 0.0;
 int pdpCurrentsFilled = 0;
@@ -99,6 +100,12 @@ void initializeDriveMotors(){
 	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 	backRightDrive.Set(ControlMode::Velocity, 0.0);
+}
+
+void initializeIntakeMotors(){
+	intakeArmMotor.SetInverted(true);
+	intakeArmMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+	intakeArmMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 }
 
 //maximum rpm of drive motors
@@ -249,52 +256,56 @@ class Intake {
 	
 	public:
 	std::string mode = "disable";
-	std::string modes[4] = {"disable", "reset", "intake", "store"};
+	//char* modes[4] = {"disable", "reset", "intake", "store"};
 
-	// void update(){
-	// 	//not moving at all
-	// 	if (mode == "disable"){
-	// 		intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 	}
+	//disable: all motors off
+	//reset: move to upright position
+	//intake: run wheels and move to downwards position
+	//store: move to upwards position then reverse wheels
+
+	//limit switches: fwd - up, rev - down
+
+	void update(){
+		//not moving at all
+		if (mode == "disable"){
+			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+		}
 		
-	// 	//move to upright and zero
-	// 	if (mode == "reset"){
-	// 		if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 		} else {
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.2);
-	// 		}
-	// 	}
+		//move to upright and zero
+		if (mode == "reset"){
+			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+			} else {
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
+			}
+		}
 
-	// 	if (mode == "intake"){
-	// 		intakeWheelMotor.Set(ControlMode::PercentOutput, 0.2);
-	// 		if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 		} else {
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, -0.2);
-	// 		}
-	// 	}
+		if (mode == "intake"){
+			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.0);
+			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+			} else {
+				intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+			}
+		}
 
-	// 	if (mode == "store"){
-	// 		if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.2);
-	// 		} else {
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.2);
-	// 		}
-	// 	}
-	// }
+		if (mode == "store"){
+			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4);
+			} else {
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+			}
+		}
+	}
 
 	void setMode(std::string cmd){
 
 		//check if command is valid before setting
-		bool isValid = false;
-		for (int i = 0; i < sizeof(modes); i ++){
-			if (modes[i] == cmd){
-				isValid = true;
-			}
-		}
-		if (isValid){
+		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store"){
 			mode = cmd;
 		}
 	}
@@ -358,12 +369,13 @@ int main(int argc, char **argv) {
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
 
 	initializeDriveMotors();
+	initializeIntakeMotors();
 
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
 
 		odometry.update();
-		//intake.update();
+		intake.update();
 
 		ros::spinOnce();
 	}
