@@ -21,6 +21,7 @@
 #include "diagnostic_msgs/DiagnosticStatus.h"
 #include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Float64.h"
+#include <time.h>
 
 #include <ctime>
 
@@ -258,6 +259,7 @@ class Intake {
 	
 	public:
 	std::string mode = "disable";
+	time_t startTime;
 	//char* modes[4] = {"disable", "reset", "intake", "store"};
 
 	//disable: all motors off
@@ -285,7 +287,7 @@ class Intake {
 		}
 
 		if (mode == "intake"){
-			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.0);
+			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4);
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			} else {
@@ -297,9 +299,29 @@ class Intake {
 			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4);
+				if (time(NULL) - startTime > 3){
+					mode = "reset";
+				}
 			} else {
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				startTime = time(NULL);
+			}
+		}
+
+		if (mode == "deposit"){
+			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4);
+			} else {
+				if (time(NULL) - startTime < 3){
+					rightConvMotor.Set(ControlMode::PercentOutput, -0.4);
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4);
+					intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				} else {
+					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+					intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+				}
 			}
 		}
 	}
@@ -307,7 +329,10 @@ class Intake {
 	void setMode(std::string cmd){
 
 		//check if command is valid before setting
-		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store"){
+		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit"){
+			if (cmd == "deposit"){
+				startTime = time(NULL);
+			}
 			mode = cmd;
 		}
 	}

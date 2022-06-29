@@ -11,7 +11,7 @@ Joystick Buttons:
 1 - B - intake reset
 2 - X - intake intake
 3 - Y - intake store
-4 - LB
+4 - LB - intake deposit
 5 - RB
 6 - Back
 7 - Start
@@ -37,6 +37,8 @@ def joy_callback(msg):
         mirv.set_intake_state("intake")
     if buttons[3]:
         mirv.set_intake_state("store")
+    if buttons[4]:
+        mirv.set_intake_state("deposit")
 
 def run():
     rospy.init_node("RemoteDrive")
