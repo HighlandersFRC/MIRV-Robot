@@ -1,0 +1,6 @@
+<launch>
+    <env name="ROS_MASTER_URI" value="http://172.250.250.213:11311"/>
+    <env name="ROS_IP" value="localhost"/>
+    <param name="joy_node/dev" value="/dev/input/js1"/>
+    <node name="joy_node" pkg="joy" type="joy_node"/>
+</launch>
