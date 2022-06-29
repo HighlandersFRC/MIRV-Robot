@@ -113,32 +113,26 @@ def detectLaneLines(cfg, opt, img):
     _, ll_seg_mask = torch.max(ll_seg_mask, 1)
     ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
     # Lane line post-processing
-    # ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
-    # ll_seg_mask = connect_lane(ll_seg_mask)
+    ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
+    ll_seg_mask = connect_lane(ll_seg_mask)
+
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 
-    # print(ll_seg_mask.shape)
-    nonZero = np.nonzero(ll_seg_mask)
-
-    closestDetectedIndex = np.argmin(nonZero[1])
-
-    print("CLOSEST: ", closestDetectedIndex)
-
-    print(ll_seg_mask[closestDetectedIndex][closestDetectedIndex])
-    # print(xVals.length)
-    # print(yVals.length)
-
-    # if(xVals.shape != (0, )):
-    #     for x,y in xVals, yVals:
-    #             print("FOUND LANE LINES")
-    #             cv2.circle(frame, (x,y), 3, (255, 0, 0), -1)
-
+    print(ll_seg_mask.shape)
     img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
 
     # print("RESIZED IMAGE")
 
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
+
+    ll_seg_mask = cv2.resize(ll_seg_mask, (480, 640), interpolation = cv2.INTER_LINEAR)
+
+    for row in ll_seg_mask:
+        nonZero = np.nonzero(row)
+        for column in nonZero:
+            for pixel in column:
+                print("PIXEL: ", pixel)
 
     return img_det
 
@@ -197,11 +191,10 @@ controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
 ctrl.setManualExposure(expTime, sensIso)
 # ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.OFF)
-cam_rgb.initialControl.setManualFocus(200) # value from 0 - 255
-cam_rgb.initialControl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.OFF)
-# ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
-ctrl.setManualFocus(0)
+ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
+ctrl.setAutoFocusTrigger()
 controlQueue.send(ctrl)
+# ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
@@ -295,7 +288,7 @@ if __name__ == '__main__':
             if tensorImg.ndimension() == 3:
                 tensorImg = tensorImg.unsqueeze(0)
             laneDetection = detectLaneLines(cfg, opt, tensorImg)
-            cv2.imshow("lane", laneDetection)
+            cv2.imshow("lane", frame)
             # piLitDetection = detectPiLits(cfg, opt, tensorImgQueue)
             endTime = time.time()
             print("TIME DIFF: ", endTime - initTime)

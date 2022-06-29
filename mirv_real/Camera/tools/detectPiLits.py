@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 import queue
 import threading
 import cv2
@@ -81,6 +82,14 @@ transform=transforms.Compose([
 
 detections = 0
 
+hFOV = 52
+horizontalPixels = 640
+verticalPixels = 480
+degreesPerPixel = hFOV/horizontalPixels
+
+latestOdometryX = 0
+latestOdometryY = 1
+
 def gotFrame(data):
     print("GOT A FRAME")
     initTime = time.time()
@@ -96,6 +105,18 @@ def gotFrame(data):
     # print("TIMEDIFF: ", time.time() - initTime)
     # cv2.destroyAllWindows()
 
+def gotOdometry(data):
+    x = data[0]
+    y = data[1]
+    updateLatestOdometry([x, y])
+
+def updateLatestOdometry(odometry):
+    latestOdometryX = odometry[0]
+    latestOdometryY = odometry[1]
+
+def getLatestOdometry():
+    return [latestOdometryX, latestOdometryY]
+
 def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
     # print(piLitPrediction)
@@ -104,16 +125,22 @@ def piLitDetect(img, frame, depthFrame):
     # print(depthFrame)
     # print(depthFrame[0][0])
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        x0,y0,x1,y1 = bbox
-        centerX = int((x0 + x1)/2)
-        centerY = int((y0 + y1)/2)
-        bboxList.append(bbox)
-        frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+        if(score > 75):
+            print("GOT A PI LIT")    
+            x0,y0,x1,y1 = bbox
+            centerX = int((x0 + x1)/2)
+            centerY = int((y0 + y1)/2)
+            bboxList.append(bbox)
+            frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
 
-        depth = depthFrame[centerY][centerX]
-        print("DEPTH: ", depth)
+            angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
 
-        piLitLocationPub.publish(depth)
+            depth = depthFrame[centerY][centerX]
+            print("DEPTH: ", depth, "ANGLE: ", angleToPiLit)
+
+            piLitLocation = [depth, angleToPiLit]
+
+            piLitLocationPub.publish(piLitLocation)
 
         # print("Looking in predictions")
 
@@ -164,7 +191,8 @@ piLitModel = piLitModel.to(device)
 
 rospy.init_node('piLitDetector')
 rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
-piLitLocationPub = rospy.Publisher('piLitDistance', Float64, queue_size=1)
+rospy.Subscriber("fusedOdometry", Float64MultiArray, updateOdometry)
+piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
 
 try:
     rospy.spin()
