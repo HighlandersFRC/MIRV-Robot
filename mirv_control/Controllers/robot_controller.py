@@ -11,4 +11,6 @@ class RobotController:
         self.intake_command_pub.publish(state)
 
     def power_drive(self, left, right):
-        self.powerdrive_pub.publish([left, right])
+        powers = Float64MultiArray()
+        powers.data = [left, right]
+        self.powerdrive_pub.publish(powers)
