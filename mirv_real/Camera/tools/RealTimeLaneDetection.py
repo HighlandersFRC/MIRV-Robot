@@ -119,14 +119,15 @@ def detectLaneLines(cfg, opt, img):
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 
-    lines = cv2.HoughLinesP(ll_seg_mask,1,np.pi/180, 1, 5, 25)
+    lines = cv2.HoughLinesP(ll_seg_mask,1,np.pi/180, 10, 5, 25)
 
     # print(ll_seg_mask.shape)
     img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
 
     # print("RESIZED IMAGE")
 
-    for x1,y1,x2,y2 in lines[0]:
+    for line in lines:
+        x1,y1,x2,y2 = line[0]
         cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
 
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
