@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import time
+from turtle import heading
 import rospy
 import math
 from std_msgs.msg import Float64MultiArray
@@ -31,14 +32,15 @@ class EncoderOdomety:
             rate.sleep()
 
     def computePos(self):
-        runTime = self.timeSinceUpdate-time.time()
+        runTime = time.time()-self.timeSinceUpdate
         self.timeSinceUpdate = time.time()
-        if(self.leftVel == self.rightVel):
+        print("{}  ,  {}".format(runTime, self.heading))
+        if(abs(self.leftVel - self.rightVel)<0.02):
             xP = self.xPos+(self.leftVel*runTime*math.cos(self.heading))
             yP = self.yPos+(self.leftVel*runTime*math.sin(self.heading))
-            newTheta = self.heading
         else:
-            radius = (self.WBWidth/2)*((self.rightVel+self.leftVel)/(self.rightVel-self.leftVel))
+            radius = (1/2)*((self.rightVel+self.leftVel)/(self.rightVel-self.leftVel))
+            print(radius)
             iCCX = (self.xPos - radius*math.sin(self.heading))
             iCCY = (self.yPos + radius*math.cos(self.heading))
             thetaP = self.heading-self.lastTheta
@@ -57,7 +59,7 @@ class EncoderOdomety:
     def encoderCallback(self,data):
         temp = data.data
         self.leftVel = temp[0]
-        self.rightVel = temp[1]
+        self.rightVel = -temp[1]
 
 if __name__ == "__main__":
     test = EncoderOdomety()
