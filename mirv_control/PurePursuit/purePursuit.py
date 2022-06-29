@@ -9,6 +9,7 @@ from std_msgs.msg import Float64MultiArray
 class PurePursuit():
     wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
+    logData = []
 
     maxDriveSpeed = 1.5
     currentMaxDriveSpeed = 1
@@ -18,7 +19,7 @@ class PurePursuit():
     allowedErrorDist = 0.1
     lookAheadDist = 4
     allowedError = 0.05
-    robotCordList = []
+    robotCordList = [0,0]
     cordList = []
     currentTruckCord = [0,0,0]
     rosPubMsg = Float64MultiArray()
@@ -26,7 +27,6 @@ class PurePursuit():
 
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)
-
     ##updates truck coordinate targets to rover cordites as rover moves
     def UpdateTargetPoints(self):
         newTruckCord = self.getTruckCord()
@@ -36,9 +36,6 @@ class PurePursuit():
         # print([xBRef, yBRef, theta])
         length = 0
         for i in range(len(self.robotCordList)):
-            # xTBody = xBRef*math.cos(theta) + yBRef*math.sin(theta) - self.cordList[i][1]*math.sin(theta) - self.cordList[i][0]*math.cos(theta)
-            # yTBody = -xBRef*math.sin(theta) + yBRef*math.cos(theta) - self.cordList[i][1]*math.cos(theta) + self.cordList[i][0]*math.sin(theta)
-            # distToPoint = round(math.sqrt(math.pow(xTBody,2) + math.pow(yTBody,2)), 3)
 
             xTBody = self.cordList[i][0]*math.cos(theta) + self.cordList[i][1]*math.sin(theta) - yBRef*math.sin(theta) - xBRef*math.cos(theta)
             yTBody = -self.cordList[i][0]*math.sin(theta) + self.cordList[i][1]*math.cos(theta) - yBRef*math.cos(theta) + xBRef*math.sin(theta)
@@ -56,8 +53,10 @@ class PurePursuit():
         for point in pathList:
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])
+        print("uploaded path")
         self.UpdateTargetPoints()
         self.nextPointDistanceDec = self.robotCordList[0][2]
+       
 
 
 
@@ -168,7 +167,7 @@ class PurePursuit():
                     return [farPoint[0], farPoint[1]]
         return farPoint
 
-    def callbackOdom(self, data):
+    def callBackOdom(self, data):
         self.currentTruckCord = data.data
         # print(data.data)
         if (self.cordList):
@@ -178,8 +177,10 @@ class PurePursuit():
             if(output != "atDest" and not isFinished):
                 # print("{}, {}".format(output[0][0],output[0][1]))
                 self.rosPubMsg.data = output[0]
+                self.logData = output[0]
                 # self.rosPubMsg.data = [2.2, 4]
             else:
+                self.logData = [0,0]
                 self.rosPubMsg.data = [0,0]
 
 
@@ -193,6 +194,13 @@ class PurePursuit():
         
         self.pub.publish(self.rosPubMsg)
 
+    def run(self):
+        self.getPath()
+
+        sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.callBackOdom)
+        rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
+        rospy.spin()
+
     def __del__(self):
         print("exiting Program")
         self.rosPubMsg.data = [0,0]
@@ -201,15 +209,8 @@ class PurePursuit():
         print("exited")
 
 
-controller = PurePursuit()
-def run():
-    controller.getPath()
-    sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, callBack)
-    rospy.spin()
-
-def callBack(data):
-    controller.callbackOdom(data)
 
 if __name__ == '__main__':
-    run()
+    controller = PurePursuit()
+    controller.run()
    
