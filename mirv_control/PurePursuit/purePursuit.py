@@ -4,12 +4,13 @@ import numpy as np
 from numpy import array
 import time
 import rospy
+import sys
 from std_msgs.msg import Float64MultiArray
 
 class PurePursuit():
     wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
-    logData = []
+    logData = [0,0]
 
     maxDriveSpeed = 1.5
     currentMaxDriveSpeed = 1
@@ -54,8 +55,8 @@ class PurePursuit():
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])
         print("uploaded path")
-        self.UpdateTargetPoints()
-        self.nextPointDistanceDec = self.robotCordList[0][2]
+        # self.UpdateTargetPoints()
+        self.nextPointDistanceDec = sys.float_info.max
        
 
 
@@ -169,7 +170,7 @@ class PurePursuit():
 
     def callBackOdom(self, data):
         self.currentTruckCord = data.data
-        # print(data.data)
+        print(data.data)
         if (self.cordList):
             self.UpdateTargetPoints()
             output = self.getTargetCordAndDriveSpeed(self.lookAheadDist, self.currentMaxDriveSpeed)
@@ -195,9 +196,9 @@ class PurePursuit():
         self.pub.publish(self.rosPubMsg)
 
     def run(self):
-        self.getPath()
 
         sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.callBackOdom)
+        self.getPath()
         rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
         rospy.spin()
 
