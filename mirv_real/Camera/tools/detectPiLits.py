@@ -114,7 +114,9 @@ def updateLatestOdometry(odometry):
     latestOdometryX = odometry[0]
     latestOdometryY = odometry[1]
 
-def getLatestOdometry():
+def convertPiLitLocations(relativeLocation):
+    relativeX = relativeLocation[0]
+    relativeY = relativeLocation[1]
     return [latestOdometryX, latestOdometryY]
 
 def piLitDetect(img, frame, depthFrame):

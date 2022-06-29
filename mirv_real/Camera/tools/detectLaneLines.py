@@ -174,7 +174,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
             break
         i += 1
 
-    if(laneLineDepthLeft == 0 or laneLineDepthRight == 0):    
+    if(laneLineDepthLeft != 0 or laneLineDepthRight != 0):    
         laneOffsetFromCenterLeft = laneLineDepthLeft * math.sin(laneLineAngleInFrameLeft)
         laneOffsetFromCenterRight = laneLineDepthRight * math.sin(laneLineAngleInFrameRight)
 
