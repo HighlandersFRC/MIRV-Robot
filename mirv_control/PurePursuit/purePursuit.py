@@ -10,7 +10,7 @@ class PurePursuit():
     wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
 
-    maxDriveSpeed = 4.5
+    maxDriveSpeed = 1.5
     currentMaxDriveSpeed = 1
     startingTheta = 3.14159/2
     lookAheadDist = 1
@@ -52,7 +52,7 @@ class PurePursuit():
 
 
     def getPath(self):
-        pathList = [[-3.5, 0], [-3,-11], [15, -11]]
+        pathList = [[0,5]]
         for point in pathList:
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])

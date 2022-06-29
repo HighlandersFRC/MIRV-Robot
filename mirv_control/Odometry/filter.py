@@ -49,12 +49,12 @@ class EncoderOdomety:
 
     def IMUcallback(self, data):
         temp = data.data
-        if (not setStartTheta):
+        if (not self.setStartTheta):
             self.startingTheta = math.radians(temp)
             self.setStartTheta = True
             self.lastTheta = math.radians(temp)
-        self.heading = startingTheta-math.radians(temp)+3.14159/2
-    def encoderCallback(self):
+        self.heading = self.startingTheta-math.radians(temp)+3.14159/2
+    def encoderCallback(self,data):
         temp = data.data
         self.leftVel = temp[0]
         self.rightVel = temp[1]
