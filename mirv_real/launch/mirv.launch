@@ -5,5 +5,6 @@
     <node name="talker" pkg="mirv_real" type="cameraPublisher.py"/>
     <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
     <node name="OdometyDataUnfiltered" pkg="mirv_control" type="controllerFormatting.py"/>
+    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py"/>
     <node name="record" pkg="mirv_control" type="record.py"/>
 </launch>
