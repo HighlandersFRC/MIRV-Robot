@@ -19,8 +19,8 @@ class PurePursuit():
     allowedError = 0.5
     allowedErrorDist = 0.1
     lookAheadDist = 4
-    allowedError = 0.05
-    robotCordList = [0,0]
+    allowedError = 0.5
+    robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
     rosPubMsg = Float64MultiArray()
@@ -37,7 +37,7 @@ class PurePursuit():
         # print([xBRef, yBRef, theta])
         length = 0
         for i in range(len(self.robotCordList)):
-
+            print("here: {}".format(self.cordList[i]))
             xTBody = self.cordList[i][0]*math.cos(theta) + self.cordList[i][1]*math.sin(theta) - yBRef*math.sin(theta) - xBRef*math.cos(theta)
             yTBody = -self.cordList[i][0]*math.sin(theta) + self.cordList[i][1]*math.cos(theta) - yBRef*math.cos(theta) + xBRef*math.sin(theta)
             distToPoint = round(math.sqrt(math.pow(xTBody,2) + math.pow(yTBody,2)), 3)
@@ -50,35 +50,33 @@ class PurePursuit():
 
 
     def getPath(self):
-        pathList = [[0,5]]
+        pathList = [[4,5]]
         for point in pathList:
+            print("uploading point: {}".format(point))
             self.cordList.append([point[0],point[1],0])
             self.robotCordList.append([point[0],point[1],0])
         print("uploaded path")
         # self.UpdateTargetPoints()
-        self.nextPointDistanceDec = sys.float_info.max
        
 
 
 
     def removeTargetPoint(self):
-        if (abs(self.robotCordList[0][2]) < self.nextPointDistanceDec):
-            self.nextPointDistanceDec = self.robotCordList[0][2]
-        elif (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist and len(self.robotCordList) > 1):
+
+        print((self.robotCordList[0][2] < self.allowedError and len(self.robotCordList) <= 1))
+        if (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist and len(self.robotCordList) > 1):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
+            print("removing target point")
             if(self.robotCordList):
                 self.nextPointDistanceDec = self.robotCordList[0][2]
             else:
                 return True
-        elif (abs(self.robotCordList[0][2]) < (self.allowedError) and len(self.robotCordList) <= 1):
+        elif (self.robotCordList[0][2] < self.allowedError and len(self.robotCordList) <= 1):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
-            if(self.robotCordList):
-                self.nextPointDistanceDec = self.robotCordList[0][2]
-            else:
-                return True
-        return False
+            print("removing target point")
+            return True
 
     ## calulates wheel velocity's for that given frame
     def calculateSpeedSide(self, maxSpeed, x, y, la):
@@ -170,7 +168,6 @@ class PurePursuit():
 
     def callBackOdom(self, data):
         self.currentTruckCord = data.data
-        print(data.data)
         if (self.cordList):
             self.UpdateTargetPoints()
             output = self.getTargetCordAndDriveSpeed(self.lookAheadDist, self.currentMaxDriveSpeed)
@@ -196,9 +193,8 @@ class PurePursuit():
         self.pub.publish(self.rosPubMsg)
 
     def run(self):
-
-        sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.callBackOdom)
         self.getPath()
+        sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.callBackOdom)
         rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
         rospy.spin()
 

@@ -51,12 +51,12 @@ int * currentsFilledPtr = &pdpCurrentsFilled;
 
 void initializeDriveMotors(){
 	//PID config
-	float kF = 0.044;
-	// float kP = 0.18;
+	float kF = 0.05;
+	float kP = 0.22;
 	// float kI = 0.000;
 	// float kD = 0.5;
 	// float kF = 0.0;
-	float kP = 0.0;
+	// float kP = 0.0;
 	float kI = 0.000;
 	float kD = 0.0;
 	float maxAllowedError = getTicksPer100MSFromVelocity(0.05);
