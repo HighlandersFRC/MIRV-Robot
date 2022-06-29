@@ -119,22 +119,21 @@ def detectLaneLines(cfg, opt, img):
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 
-    print(ll_seg_mask.shape)
+    lines = cv2.HoughLinesP(ll_seg_mask,1,np.pi/180, 1, 5, 25)
+
+    # print(ll_seg_mask.shape)
     img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
 
     # print("RESIZED IMAGE")
+
+    for x1,y1,x2,y2 in lines[0]:
+        cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
 
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
     ll_seg_mask = cv2.resize(ll_seg_mask, (480, 640), interpolation = cv2.INTER_LINEAR)
 
-    for row in ll_seg_mask:
-        nonZero = np.nonzero(row)
-        for column in nonZero:
-            for pixel in column:
-                print("PIXEL: ", pixel)
-
-    return img_det
+    return img
 
     # if len(det):
     #     det[:,:4] = scale_coords(img.shape[2:],det[:,:4],img_det.shape).round()
@@ -156,17 +155,7 @@ pipeline = depthai.Pipeline()
 cam_rgb = pipeline.create(depthai.node.ColorCamera)
 cam_rgb.setPreviewSize(640, 480)
 cam_rgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-# cam_rgb.setIspScale(2, 3)
-# cam_rgb.setPreviewSize(cameraResolutionWidth, cameraResolutionHeight)
 cam_rgb.setPreviewKeepAspectRatio(True)
-
-# manipConfig = depthai.ImageManipConfig()
-# manipConfig.setCropRect(0.2, 0.2, 0, 0)
-
-# configQueue.send(manipConfig)
-# manip = pipeline.create(depthai.node.ImageManip)
-
-# manip.setResizeThumbnail(200,200, 200, 200, 200)
 
 xout_rgb = pipeline.create(depthai.node.XLinkOut)
 configIn = pipeline.create(depthai.node.XLinkIn)
@@ -190,11 +179,9 @@ frame = None
 controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
 ctrl.setManualExposure(expTime, sensIso)
-# ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.OFF)
 ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoFocusTrigger()
 controlQueue.send(ctrl)
-# ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
@@ -287,8 +274,9 @@ if __name__ == '__main__':
             tensorImg = transform(frame).to(device)
             if tensorImg.ndimension() == 3:
                 tensorImg = tensorImg.unsqueeze(0)
+            cv2.imshow("frame", frame)
             laneDetection = detectLaneLines(cfg, opt, tensorImg)
-            cv2.imshow("lane", frame)
+            cv2.imshow("lane", laneDetection)
             # piLitDetection = detectPiLits(cfg, opt, tensorImgQueue)
             endTime = time.time()
             print("TIME DIFF: ", endTime - initTime)

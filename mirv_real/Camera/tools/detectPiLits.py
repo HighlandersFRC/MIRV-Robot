@@ -89,6 +89,7 @@ degreesPerPixel = hFOV/horizontalPixels
 
 latestOdometryX = 0
 latestOdometryY = 1
+latestOdometryTheta = 0
 
 def gotFrame(data):
     print("GOT A FRAME")
@@ -108,15 +109,22 @@ def gotFrame(data):
 def gotOdometry(data):
     x = data[0]
     y = data[1]
-    updateLatestOdometry([x, y])
+    odometry = data[2]
+    updateLatestOdometry([x, y, odometry])
 
 def updateLatestOdometry(odometry):
     latestOdometryX = odometry[0]
     latestOdometryY = odometry[1]
+    latestOdometryTheta = odometry[2]
 
 def convertPiLitLocations(relativeLocation):
     relativeX = relativeLocation[0]
     relativeY = relativeLocation[1]
+
+
+    truckRelativeX = relativeX*math.cos(latestOdometryTheta) + relativeY*-math.sin(latestOdometryTheta) + latestOdometryX
+    yTBody = relativeX*math.sin(latestOdometryTheta) + relativeY*math.cos(latestOdometryTheta) - yBRef*math.cos(latestOdometryTheta) + xBRef*math.sin(latestOdometryTheta)
+
     return [latestOdometryX, latestOdometryY]
 
 def piLitDetect(img, frame, depthFrame):
@@ -193,7 +201,7 @@ piLitModel = piLitModel.to(device)
 
 rospy.init_node('piLitDetector')
 rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
-rospy.Subscriber("fusedOdometry", Float64MultiArray, updateOdometry)
+rospy.Subscriber("fusedOdometry", Float64MultiArray, gotOdometry)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
 
 try:

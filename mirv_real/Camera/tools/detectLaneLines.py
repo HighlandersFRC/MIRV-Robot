@@ -136,7 +136,11 @@ def laneLineDetect(img, frame, depthFrame):
 
     ll_seg_mask = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
 
-    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask, "LEFT")
+    freeSpaceArea = np.nonzero(da_seg_mask)
+
+    print("Num Free Spaces: ", len(freeSpaceArea))
+
+    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask, "RIGHT")
 
     print(piLitLocations)
 
