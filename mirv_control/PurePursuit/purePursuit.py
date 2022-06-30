@@ -191,10 +191,16 @@ class PurePursuit():
         self.pub.publish(self.rosPubMsg)
 
     def run(self):
-        self.getPath()
-        sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.callBackOdom)
-        rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
-        rospy.spin()
+        try:
+            self.getPath()
+            sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.callBackOdom)
+            rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
+            rospy.spin()
+        except KeyboardInterrupt:
+            self.rosPubMsg.data = [0,0]
+            self.pub.publish(self.rosPubMsg)
+        except:
+            print("an error occurred in purePursuit.py")
 
     def __del__(self):
         print("exiting Program")
