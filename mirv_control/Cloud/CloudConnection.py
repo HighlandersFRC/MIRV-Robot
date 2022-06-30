@@ -43,9 +43,9 @@ if ROVER_COMMON_NAME is None:
 pcs = set()
 
 
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+#cap = cv2.VideoCapture(0)
+#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 
 frames = []
@@ -82,11 +82,14 @@ class RobotVideoStreamTrack(VideoStreamTrack):
         super().__init__()  # don't forget this!
         
     async def recv(self):
-        ret, frame = cap.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        
-        #frame = VideoFrame.from_ndarray(frames[0])
-        #frames.remove(frames[0])
+        #ret, frame = cap.read()
+        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        if len(frames > 0):
+            frame = VideoFrame.from_ndarray(frames[0])
+        else:
+            blank_image = np.zeros((480,640,3), np.uint8)
+            frame = VideoFrame.from_ndarray(blank_image)
+        frames.remove(frames[0])
         pts, time_base = await self.next_timestamp()
         frame.pts = pts
         frame.time_base = time_base
