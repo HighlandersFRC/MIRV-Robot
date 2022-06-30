@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-<<<<<<< HEAD
 from cmath import pi
 import math
-=======
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 import queue
 import threading
 import cv2
@@ -69,10 +66,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
-<<<<<<< HEAD
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
-=======
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
 br = CvBridge()
 
@@ -87,7 +81,6 @@ transform=transforms.Compose([
 
 detections = 0
 
-<<<<<<< HEAD
 hFOV = 52
 horizontalPixels = 640
 verticalPixels = 480
@@ -104,27 +97,12 @@ def gotFrame(data):
     if tensorImg.ndimension() == 3:
         tensorImg = tensorImg.unsqueeze(0)
     detections = laneLineDetect(tensorImg, frame, depthFrame)
-=======
-def gotFrame(img):
-    print("GOT A FRAME")
-    initTime = time.time()
-    frame = ros_numpy.numpify(img)
-    print(frame.shape)
-    tensorImg = transform(frame).to(device)
-    if tensorImg.ndimension() == 3:
-        tensorImg = tensorImg.unsqueeze(0)
-    detections = laneLineDetect(tensorImg, frame)
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
     # cv2.imshow("detections", detections)
     # cv2.waitKey(1)
     print("TIMEDIFF: ", time.time() - initTime)
     # cv2.destroyAllWindows()
 
-<<<<<<< HEAD
 def laneLineDetect(img, frame, depthFrame):
-=======
-def laneLineDetect(img, frame):
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
     det_out, da_seg_out,ll_seg_out= model(img)
 
     _, _, height, width = img.shape
@@ -138,51 +116,73 @@ def laneLineDetect(img, frame):
     _, da_seg_mask = torch.max(da_seg_mask, 1)
     da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
     # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
-<<<<<<< HEAD
-=======
-
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
     
     ll_predict = ll_seg_out[:, :,pad_h:(height-pad_h),pad_w:(width-pad_w)]
     ll_seg_mask = torch.nn.functional.interpolate(ll_predict, scale_factor=int(1/ratio), mode='bilinear')
     _, ll_seg_mask = torch.max(ll_seg_mask, 1)
     ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
     # Lane line post-processing
-<<<<<<< HEAD
     ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
     # ll_seg_mask = connect_lane(ll_seg_mask)
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 
       
-=======
-    #ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
-    #ll_seg_mask = connect_lane(ll_seg_mask)
-    # print("DA: ", da_seg_mask.shape)
-    # print("FOUND LANE LINE MASK")
-
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
     img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
 
     # print("RESIZED IMAGE")
 
-<<<<<<< HEAD
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
-    ll_seg_mask = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
+    ll_seg_mask_resized = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
 
-    freeSpaceArea = np.nonzero(da_seg_mask)
+    lines = cv2.HoughLinesP(ll_seg_mask_resized,3,np.pi/180, 50, 35, 100)
 
-    print("Num Free Spaces: ", len(freeSpaceArea))
+    # print(ll_seg_mask.shape)
+    img = cv2.resize(frame, (640,480), interpolation=cv2.INTER_LINEAR)
 
-    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask, "RIGHT")
+    # print("RESIZED IMAGE")
 
-    print(piLitLocations)
+    numLines = 0
+    piLitLocations = None
+    laneType = "CENTER"
+    try:
+        if(len(lines)%2 == 0):
+            mirvLeftLaneNum = (len(lines)/2)
+            mirvRightLaneNum = (len(lines)/2) + 1
+        else:
+            mirvLeftLaneNum = math.floor(len(lines)/2)
+            mirvRightLaneNum = math.ceil(len(lines)/2)
+        # print("LEFT LANE NUM: ", mirvLeftLaneNum)
+        # print("RIGHT LANE NUM: ", mirvRightLaneNum)
 
-    if(piLitLocations != None): 
-        placementPublisher.publish(piLitLocations)
-    else:
+        if(mirvLeftLaneNum > 2):
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "RIGHT"
+        else:
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "LEFT"
+        
+        print(laneType)
+
+        # for line in lines:
+        #     numLines += 1
+        #     if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
+        #         x1,y1,x2,y2 = line[0]
+        #         cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
+    except:
         print("COULD NOT FIND LANE LINES, TRYING AGAIN")
+
+    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask_resized, laneType)
+
+    if(piLitLocations != None):
+        locations = Float64MultiArray()
+        locations.data = piLitLocations
+        placementPublisher.publish(locations)
 
 def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
     i = 0
@@ -196,7 +196,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
             for pixel in column:
                 laneLineDepthLeft = (depthFrame[i][pixel])/1000
                 laneLineAngleInFrameLeft = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                print("Left Depth: ", laneLineDepthLeft)
+                # print("Left Depth: ", laneLineDepthLeft)
                 if(laneLineDepthLeft != 0):
                     break
             if(laneLineDepthLeft != 0):
@@ -204,7 +204,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
             for pixel in reversed(column):
                 laneLineDepthRight = (depthFrame[i][pixel])/1000
                 laneLineAngleInFrameRight = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                print("Right Depth: ", laneLineDepthRight)
+                # print("Right Depth: ", laneLineDepthRight)
                 if(laneLineDepthRight != 0):
                     break
             if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
@@ -222,7 +222,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
         laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
         piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
 
-        print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
+        # print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
 
         piLitIntervalX = laneWidth/7
         lineSlope = piLitPlacementLineLength/laneWidth
@@ -237,11 +237,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
                 piLitLocationX = laneWidth - (i * piLitIntervalX)
                 piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            for i in range(len(piLitPlacementList)):
-                location = piLitPlacementList[i]
-                piLitPlacementList[i] = [location[0] - laneOffsetFromCenterRight, location[1] + yTruckOffset]
-        
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])        
         elif(laneType == "RIGHT"):
             # 8 loop throughs for each pi lit
             for i in range(8):
@@ -249,23 +245,30 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
                 piLitLocationY = (lineSlope * (piLitLocationX))
 
                 piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            for i in range(len(piLitPlacementList)):
-                location = piLitPlacementList[i]
-                piLitPlacementList[i] = [location[0] + laneOffsetFromCenterLeft, location[1] + yTruckOffset]
+        elif(laneType == "CENTER"):
+            spearSidesDistance = depthToFarthestPoint/2
+            lineSlope = ((depthToFarthestPoint - spearSidesDistance)/laneWidth)
+            for i in range(4):
+                piLitLocationX = i * piLitIntervalX
+                piLitLocationY = (lineSlope * piLitLocationX) + spearSidesDistance
+
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])
+            for i in range(4, 8):
+                piLitLocationX = i * piLitIntervalX
+                piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
+            
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])
+            
+        for i in range(len(piLitPlacementList)):
+            location = piLitPlacementList[i]
+            piLitPlacementList[i] = [location[0] - laneOffsetFromCenterLeft, location[1] + yTruckOffset]
         
         return piLitPlacementList
     else:
         return None
-=======
-    # img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _,)
-
-    # return img_det
-
-    # cv2.imshow("frame", frame)
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
+parser.add_argument('--weights', nargs='+', type=str, default='mirv_real/Camera/weights/End-to-end.pth', help='model.pth path(s)')
 parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
 parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
 parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
@@ -302,15 +305,11 @@ model.eval()
 model.cuda()
 
 rospy.init_node('laneLineDetector')
-<<<<<<< HEAD
 rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
 
 placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
 
 # self.showFrame = True
-=======
-rospy.Subscriber("CameraFrames", Image, gotFrame)
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
 try:
     rospy.spin()
