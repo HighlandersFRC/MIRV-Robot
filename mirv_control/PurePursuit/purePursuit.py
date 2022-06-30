@@ -62,8 +62,6 @@ class PurePursuit():
 
 
     def removeTargetPoint(self):
-
-        print((self.robotCordList[0][2] < self.allowedError and len(self.robotCordList) <= 1))
         if (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist and len(self.robotCordList) > 1):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
