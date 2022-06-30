@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+import queue
 import time
 from turtle import heading
 import rospy
@@ -37,7 +38,6 @@ class Filter:
         IMUSub = rospy.Subscriber("CameraIMU", Float64, self.IMUcallback)
         timeSinceUpdate  = time.time()
     def run(self):
-        print("one")
         rate = rospy.Rate(self.refreshRate)
         while not rospy.is_shutdown():
             self.computePos()
@@ -55,7 +55,6 @@ class Filter:
             yP = self.yPos+(self.leftVel*runTime*math.sin(self.heading))
         else:
             radius = (1/2)*((self.rightVel+self.leftVel)/(self.rightVel-self.leftVel))
-            print(radius)
             iCCX = (self.xPos - radius*math.sin(self.heading))
             iCCY = (self.yPos + radius*math.cos(self.heading))
             thetaP = self.heading-self.lastTheta
@@ -79,12 +78,12 @@ class Filter:
         temp = data.data
         self.GPSXPos = temp[0]
         self.GPSYPos = temp[1]
-    def updateQueue(self, data):
+    def updateQueue(self):
         tempVel = self.averageVel*self.velQueue.qsize()
-        if(self.velQueue.full())
+        if(self.velQueue.full()):
             tempVel = tempVel - self.velQueue.get()
         currentAvgVel = (self.leftVel+self.rightVel)/2
-        velQueue.put(currentAvgVel)
+        self.velQueue.put(currentAvgVel)
         tempVel = tempVel + currentAvgVel
         self.averageVel =  tempVel
     def kalmanFilter(self):
@@ -101,7 +100,7 @@ class Filter:
         temp = temp/self.maxVelocity
         return temp
     def kinematicsConfidence(self):
-        diffTemp = abs(leftVel-rightVel)
+        diffTemp = abs(self.leftVel-self.rightVel)
         diffTemp = 1/(diffTemp+1)
         moveTemp = 1/(0.5*self.averageVel+1)
         temp = (diffTemp + moveTemp)/2
