@@ -1,3 +1,4 @@
+import math
 import queue
 import threading
 import cv2
@@ -121,19 +122,32 @@ def detectLaneLines(cfg, opt, img):
 
     ll_seg_mask_resized = cv2.resize(ll_seg_mask, (640, 480), interpolation=cv2.INTER_LINEAR)
 
-    lines = cv2.HoughLinesP(ll_seg_mask,1,np.pi/180, 10, 25, 25)
+    lines = cv2.HoughLinesP(ll_seg_mask_resized,3,np.pi/180, 50, 35, 100)
 
     # print(ll_seg_mask.shape)
     img = cv2.resize(frame, (640,480), interpolation=cv2.INTER_LINEAR)
 
     # print("RESIZED IMAGE")
 
+    numLines = 0
     try:
+        if(len(lines)%2 == 0):
+            mirvLeftLaneNum = lines/2
+            mirvRightLaneNum = (lines/2) + 1
+        else:
+            mirvLeftLaneNum = math.floor(lines/2)
+            mirvRightLaneNum = math.ceil(lines/2)
+
+        cv2.line(img,(0,0),(300,300),(255,0,0),5)
         for line in lines:
-            x1,y1,x2,y2 = line[0]
-            cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
+            numLines += 1
+            if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
+                x1,y1,x2,y2 = line[0]
+                cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
     except:
         print("NO LINES")
+    
+    print(numLines)
 
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
@@ -211,10 +225,7 @@ img_det_shape = (720, 1280, 3)
 logger, _, _ = create_logger(
     cfg, cfg.LOG_DIR, 'demo')
 
-device = select_device(logger,opt.device)
-if os.path.exists(opt.save_dir):  # output dir
-    shutil.rmtree(opt.save_dir)  # delete dir
-os.makedirs(opt.save_dir)  # make new dir
+device = select_device(device = opt.device)
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
 def detectPiLits(frameQueue):
@@ -267,7 +278,6 @@ if __name__ == '__main__':
     piLitModel.eval()
     piLitModel = piLitModel.to(device)
 
-    frame = cv2.imread("PXL_20220614_204008153.jpg")
     piLitThread = mp.Process(target = detectPiLits, args=(frameQueue, ))
 
     piLitThread.start()
@@ -280,9 +290,9 @@ if __name__ == '__main__':
             tensorImg = transform(frame).to(device)
             if tensorImg.ndimension() == 3:
                 tensorImg = tensorImg.unsqueeze(0)
-            cv2.imshow("frame", frame)
+            # cv2.imshow("frame", frame)
             houghLines, laneDetection = detectLaneLines(cfg, opt, tensorImg)
-            # cv2.imshow("lane", laneDetection)
+            cv2.imshow("lane", laneDetection)
             # cv2.imshow("hough", houghLines)
             # piLitDetection = detectPiLits(cfg, opt, tensorImgQueue)
             endTime = time.time()
