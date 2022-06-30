@@ -1,59 +1,96 @@
+#!/usr/bin/env python3
+
 import socketio
 import json
-
-import argparse
 import asyncio
 import logging
-import os
-import ssl
 import uuid
-import numpy as np
-import math
-from aiohttp import web
 import cv2
-from av import VideoFrame
-import aiohttp_cors
-from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
-from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, MediaRelay
-from aiortc.contrib.signaling import BYE, add_signaling_arguments, create_signaling
 import requests
+import os
+import sys
+import rospy
+from std_msgs.msg import String
+from aiohttp import web
+from av import VideoFrame
+from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR+'/../')
+print(sys.path)
+#from custom_messages.msg import depth_and_color_msg as depthAndColorFrame
+#from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
 
-CLOUD_HOST = "127.0.0.1"
-CLOUD_PORT = 8000
+CLOUD_HOST = os.getenv('MIRV_CLOUD_SERVER_IP')
+CLOUD_PORT = os.getenv('MIRV_CLOUD_SERVER_PORT')
+ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
 
 
+if CLOUD_HOST is None:
+    print("Please set the MIRV_CLOUD_SERVER_IP Environment Variable to the IP of the cloud server")
+    exit()
+
+if CLOUD_PORT is None:
+    print("Please set the MIRV_CLOUD_SERVER_PORT Environment Variable to the PORT of the cloud server")
+    exit()
+
+if ROVER_COMMON_NAME is None:
+    print("Please set the ROVER_COMMON_NAME Environment Variable to the proper Rover ID in order to connect to cloud resources")
+    exit()
 
 # Setup webtrc connection components
-logger = logging.getLogger("pc")
 pcs = set()
-relay = MediaRelay()
 
-# Setup OpenCV Capture Components
-# TODO replace with stream read from camera topic
+
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 
+frames = []
+
+def frameSubscriber(data):
+    frame = ros_numpy.numpify(data.color_frame)
+    frames.append(frame)
+    if len(frames >5):
+        frames.remove(0)
+        
+    #depthFrame = ros_numpy.numpify(data.depth_frame)
+    # print(frame.shape)
+    #tensorImg = transform(frame).to(device)
+    #if tensorImg.ndimension() == 3:
+    #    tensorImg = tensorImg.unsqueeze(0)
+    #detections = piLitDetect(tensorImg, frame, depthFrame)
+    # cv2.imshow("detections", detections)
+    # cv2.waitKey(1)
+    # print("TIMEDIFF: ", time.time() - initTime)
+    # cv2.destroyAllWindows()
+
+
 # Setup Socket Connection with the cloud
 sio = socketio.Client()
 
-
+rospy.init_node("CloudConnection")
+#rospy.Subscriber("CameraFrames", depthAndColorFrame)
+command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 
 
 # Class Describing how to send VideoStreams to the Cloud
-class FlagVideoStreamTrack(VideoStreamTrack):
+class RobotVideoStreamTrack(VideoStreamTrack):
     def __init__(self):
         super().__init__()  # don't forget this!
         
     async def recv(self):
         ret, frame = cap.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        frame = VideoFrame.from_ndarray(frame)
+        
+        #frame = VideoFrame.from_ndarray(frames[0])
+        #frames.remove(frames[0])
         pts, time_base = await self.next_timestamp()
         frame.pts = pts
         frame.time_base = time_base
+
         return frame
 
 # Website posts an offer to python server
@@ -64,7 +101,7 @@ async def offer(request):
     offer = RTCSessionDescription(sdp=params["offer"]["sdp"], type=params["offer"]["type"])
 
     pc = RTCPeerConnection()
-    pc.addTrack(FlagVideoStreamTrack())
+    pc.addTrack(RobotVideoStreamTrack())
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
     pcs.add(pc)
     
@@ -74,6 +111,8 @@ async def offer(request):
         @channel.on("message")
         def on_message(message):
             print("Received: ", message)
+            command_pub.publish(message)
+
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -106,6 +145,7 @@ async def on_shutdown(app):
     coros = [pc.close() for pc in pcs]
     await asyncio.gather(*coros)
     pcs.clear()
+    sio.disconnect()
 
   
 
@@ -145,22 +185,16 @@ def send(type: str, msg):
     sio.emit(type, msg)
 
 
-def on_shutdown():
-    # close peer connections
-    coros = [pc.close() for pc in pcs]
-    asyncio.gather(*coros)
-    pcs.clear()
-
 
 
 
 
 # Send sample Rover Status to Cloud
 print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
-sio.connect(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": "rover_6"},
+sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": "rover_6"},
             auth={"password": None}, socketio_path="/ws/socket.io")
 send("data", {
-    "roverId": "rover_6",
+    "roverId": f"{ROVER_COMMON_NAME}",
     "state": "docked",
     "status": "available",
     "battery-percent": 12,
@@ -189,3 +223,6 @@ app.router.add_post("/offer", offer)
 web.run_app(
     app, access_log=None, host="0.0.0.0", port=8080
 )
+#send("disconnect","disconnect")
+
+

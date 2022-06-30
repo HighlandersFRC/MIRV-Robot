@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from cmath import pi
+import math
 import queue
 import threading
 import cv2
@@ -64,6 +66,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
+from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
 br = CvBridge()
 
@@ -78,21 +81,28 @@ transform=transforms.Compose([
 
 detections = 0
 
-def gotFrame(img):
+hFOV = 52
+horizontalPixels = 640
+verticalPixels = 480
+degreesPerPixel = hFOV/horizontalPixels
+
+
+def gotFrame(data):
     print("GOT A FRAME")
     initTime = time.time()
-    frame = ros_numpy.numpify(img)
-    print(frame.shape)
+    frame = ros_numpy.numpify(data.color_frame)
+    depthFrame = ros_numpy.numpify(data.depth_frame)
+    # print(frame.shape)
     tensorImg = transform(frame).to(device)
     if tensorImg.ndimension() == 3:
         tensorImg = tensorImg.unsqueeze(0)
-    detections = laneLineDetect(tensorImg, frame)
+    detections = laneLineDetect(tensorImg, frame, depthFrame)
     # cv2.imshow("detections", detections)
     # cv2.waitKey(1)
     print("TIMEDIFF: ", time.time() - initTime)
     # cv2.destroyAllWindows()
 
-def laneLineDetect(img, frame):
+def laneLineDetect(img, frame, depthFrame):
     det_out, da_seg_out,ll_seg_out= model(img)
 
     _, _, height, width = img.shape
@@ -106,27 +116,111 @@ def laneLineDetect(img, frame):
     _, da_seg_mask = torch.max(da_seg_mask, 1)
     da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
     # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
-
     
     ll_predict = ll_seg_out[:, :,pad_h:(height-pad_h),pad_w:(width-pad_w)]
     ll_seg_mask = torch.nn.functional.interpolate(ll_predict, scale_factor=int(1/ratio), mode='bilinear')
     _, ll_seg_mask = torch.max(ll_seg_mask, 1)
     ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
     # Lane line post-processing
-    #ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
-    #ll_seg_mask = connect_lane(ll_seg_mask)
+    ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
+    # ll_seg_mask = connect_lane(ll_seg_mask)
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 
+      
     img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
 
     # print("RESIZED IMAGE")
 
-    # img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _,)
+    img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
-    # return img_det
+    ll_seg_mask = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
 
-    # cv2.imshow("frame", frame)
+    freeSpaceArea = np.nonzero(da_seg_mask)
+
+    print("Num Free Spaces: ", len(freeSpaceArea))
+
+    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask, "RIGHT")
+
+    print(piLitLocations)
+
+    if(piLitLocations != None): 
+        placementPublisher.publish(piLitLocations)
+    else:
+        print("COULD NOT FIND LANE LINES, TRYING AGAIN")
+
+def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
+    i = 0
+    laneLineDepthLeft = 0
+    laneLineDepthRight = 0
+    laneLineAngleInFrameLeft = 0
+    laneLineAngleInFrameRight = 0
+    for row in laneLineMask:
+        nonZero = np.nonzero(row)
+        for column in nonZero:
+            for pixel in column:
+                laneLineDepthLeft = (depthFrame[i][pixel])/1000
+                laneLineAngleInFrameLeft = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
+                print("Left Depth: ", laneLineDepthLeft)
+                if(laneLineDepthLeft != 0):
+                    break
+            if(laneLineDepthLeft != 0):
+                break
+            for pixel in reversed(column):
+                laneLineDepthRight = (depthFrame[i][pixel])/1000
+                laneLineAngleInFrameRight = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
+                print("Right Depth: ", laneLineDepthRight)
+                if(laneLineDepthRight != 0):
+                    break
+            if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
+                break
+        if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
+            break
+        i += 1
+
+    if(laneLineDepthLeft != 0 or laneLineDepthRight != 0):    
+        laneOffsetFromCenterLeft = laneLineDepthLeft * math.sin(laneLineAngleInFrameLeft)
+        laneOffsetFromCenterRight = laneLineDepthRight * math.sin(laneLineAngleInFrameRight)
+
+        depthToFarthestPoint = 91.44 #meters, converts to 200 ft
+
+        laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
+        piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
+
+        print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
+
+        piLitIntervalX = laneWidth/7
+        lineSlope = piLitPlacementLineLength/laneWidth
+
+        piLitPlacementList = []
+
+        yTruckOffset = 3.048 #meters, converts to 10 ft
+
+        if(laneType == "LEFT"):
+            # 8 loop throughs for each pi lit
+            for i in range(8):
+                piLitLocationX = laneWidth - (i * piLitIntervalX)
+                piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
+
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])
+            for i in range(len(piLitPlacementList)):
+                location = piLitPlacementList[i]
+                piLitPlacementList[i] = [location[0] - laneOffsetFromCenterRight, location[1] + yTruckOffset]
+        
+        elif(laneType == "RIGHT"):
+            # 8 loop throughs for each pi lit
+            for i in range(8):
+                piLitLocationX = i * piLitIntervalX
+                piLitLocationY = (lineSlope * (piLitLocationX))
+
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])
+            for i in range(len(piLitPlacementList)):
+                location = piLitPlacementList[i]
+                piLitPlacementList[i] = [location[0] + laneOffsetFromCenterLeft, location[1] + yTruckOffset]
+        
+        return piLitPlacementList
+    else:
+        return None
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
@@ -166,7 +260,11 @@ model.eval()
 model.cuda()
 
 rospy.init_node('laneLineDetector')
-rospy.Subscriber("CameraFrames", Image, gotFrame)
+rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
+
+placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
+
+# self.showFrame = True
 
 try:
     rospy.spin()
