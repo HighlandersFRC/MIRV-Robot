@@ -234,4 +234,6 @@ catkin_install_python(PROGRAMS Odometry/record.py
 catkin_install_python(PROGRAMS Controllers/remotedrive_master.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
+catkin_install_python(PROGRAMS Controllers/tablet_controller.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
