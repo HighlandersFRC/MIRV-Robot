@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = MCnet(YOLOP)
-    checkpoint = torch.load('./weights/End-to-end.pth', map_location=device)
+    checkpoint = torch.load('.mirv_real/Camera/weights/End-to-end.pth', map_location=device)
     model.load_state_dict(checkpoint['state_dict'])
     model.eval()
 
