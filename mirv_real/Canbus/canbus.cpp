@@ -349,12 +349,14 @@ class Intake {
 	void setMode(std::string cmd){
 
 		//check if command is valid before setting
-		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch"){
+		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch_left" || cmd == "switch_right"){
 			if (cmd == "deposit"){
 				startTime = time(NULL);
 			}
-			if (cmd == "switch"){
-				side = side * -1.0;
+			if (cmd == "switch_left"){
+				side = -1;
+			} else if (cmd == "switch_right"){
+				side = 1;
 			} else {
 				mode = cmd;
 			}
