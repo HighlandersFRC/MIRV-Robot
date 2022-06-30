@@ -1,3 +1,6 @@
+
+
+import math
 import queue
 import threading
 import cv2
@@ -93,27 +96,8 @@ transform=transforms.Compose([
             normalize,
         ])
 
-
-
 def detectLaneLines(cfg, opt, img):
-    # frame = asarray(frame)
-    # img = transform(frame).to(device)
-
-    # frameArray = asarray(frame)
-    # img = transform(frameArray).to(device)
-
-    # if img.ndimension() == 3:
-    #     img = img.unsqueeze(0)
-    
-    # img = img.half() if half else img.float()  # uint8 to fp16/32
-
     det_out, da_seg_out,ll_seg_out= model(img)
-
-    # print(ll_seg_out)
-
-    
-
-    inf_out, _ = det_out
 
     _, _, height, width = img.shape
     pad_w, pad_h = shapes[1][1]
@@ -126,25 +110,66 @@ def detectLaneLines(cfg, opt, img):
     _, da_seg_mask = torch.max(da_seg_mask, 1)
     da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
     # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
-
     
     ll_predict = ll_seg_out[:, :,pad_h:(height-pad_h),pad_w:(width-pad_w)]
     ll_seg_mask = torch.nn.functional.interpolate(ll_predict, scale_factor=int(1/ratio), mode='bilinear')
     _, ll_seg_mask = torch.max(ll_seg_mask, 1)
     ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
     # Lane line post-processing
-    #ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
-    #ll_seg_mask = connect_lane(ll_seg_mask)
+    ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
+    # ll_seg_mask = connect_lane(ll_seg_mask)
+
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 
-    img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
+    ll_seg_mask_resized = cv2.resize(ll_seg_mask, (640, 480), interpolation=cv2.INTER_LINEAR)
+
+    lines = cv2.HoughLinesP(ll_seg_mask_resized,3,np.pi/180, 50, 35, 100)
+
+    # print(ll_seg_mask.shape)
+    img = cv2.resize(frame, (640,480), interpolation=cv2.INTER_LINEAR)
 
     # print("RESIZED IMAGE")
 
+    numLines = 0
+    try:
+        if(len(lines)%2 == 0):
+            mirvLeftLaneNum = (len(lines)/2)
+            mirvRightLaneNum = (len(lines)/2) + 1
+        else:
+            mirvLeftLaneNum = math.floor(len(lines)/2)
+            mirvRightLaneNum = math.ceil(len(lines)/2)
+        # print("LEFT LANE NUM: ", mirvLeftLaneNum)
+        # print("RIGHT LANE NUM: ", mirvRightLaneNum)
+
+        if(mirvLeftLaneNum > 2):
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "RIGHT"
+        else:
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "LEFT"
+        
+        print(laneType)
+        # cv2.line(img,(0,0),(300,300),(255,0,0),5)
+        # for line in lines:
+        #     numLines += 1
+        #     if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
+        #         x1,y1,x2,y2 = line[0]
+        #         cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
+    except:
+        print("NO LINES")
+    
+    print(numLines)
+
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
-    return img_det
+    ll_seg_mask = cv2.resize(ll_seg_mask, (480, 640), interpolation = cv2.INTER_LINEAR)
+
+    return img, img_det
 
     # if len(det):
     #     det[:,:4] = scale_coords(img.shape[2:],det[:,:4],img_det.shape).round()
@@ -166,17 +191,7 @@ pipeline = depthai.Pipeline()
 cam_rgb = pipeline.create(depthai.node.ColorCamera)
 cam_rgb.setPreviewSize(640, 480)
 cam_rgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-# cam_rgb.setIspScale(2, 3)
-# cam_rgb.setPreviewSize(cameraResolutionWidth, cameraResolutionHeight)
 cam_rgb.setPreviewKeepAspectRatio(True)
-
-# manipConfig = depthai.ImageManipConfig()
-# manipConfig.setCropRect(0.2, 0.2, 0, 0)
-
-# configQueue.send(manipConfig)
-# manip = pipeline.create(depthai.node.ImageManip)
-
-# manip.setResizeThumbnail(200,200, 200, 200, 200)
 
 xout_rgb = pipeline.create(depthai.node.XLinkOut)
 configIn = pipeline.create(depthai.node.XLinkIn)
@@ -188,7 +203,7 @@ controlIn = pipeline.create(depthai.node.XLinkIn)
 controlIn.setStreamName('control')
 controlIn.out.link(cam_rgb.inputControl)
 
-expTime = 7500
+expTime = 5000
 sensIso = 500
 
 depthaiDevice = depthai.Device(pipeline)
@@ -201,8 +216,7 @@ controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
 ctrl.setManualExposure(expTime, sensIso)
 ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
-# ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
-ctrl.setManualFocus(0)
+ctrl.setAutoFocusTrigger()
 controlQueue.send(ctrl)
 
 parser = argparse.ArgumentParser()
@@ -227,10 +241,7 @@ img_det_shape = (720, 1280, 3)
 logger, _, _ = create_logger(
     cfg, cfg.LOG_DIR, 'demo')
 
-device = select_device(logger,opt.device)
-if os.path.exists(opt.save_dir):  # output dir
-    shutil.rmtree(opt.save_dir)  # delete dir
-os.makedirs(opt.save_dir)  # make new dir
+device = select_device(device = opt.device)
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
 def detectPiLits(frameQueue):
@@ -260,50 +271,14 @@ def detectPiLits(frameQueue):
         key = cv2.waitKey(1)
         if key == ord('q'):
             break
-
-# def piLitDetect(cfg, opt, img, frame):
-#     piLitPrediction = piLitModel(img)[0]
-#     # print(piLitPrediction)
-#     # print(piLitPrediction["scores"])
-#     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-#         x0,y0,x1,y1 = bbox
-
-#         if(score > 0.75):
-#             frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
-#         elif(score > 0.5):
-#             frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 0, 255), 3)
-
-#     cv2.imshow("frame", frame)
-
-# if half:
-#     piLitModel.half()
-
 # # Load model
-# model = get_net(cfg)
-# checkpoint = torch.load(opt.weights, map_location= device)
-# model.load_state_dict(checkpoint['state_dict'])
-# model = model.to(device)
-# # if half:
-# #     model.half()  # to FP16
+model = get_net(cfg)
+checkpoint = torch.load(opt.weights, map_location= device)
+model.load_state_dict(checkpoint['state_dict'])
+model = model.to(device)
 
-# # Set Dataloader
-# if opt.source.isnumeric():
-#     cudnn.benchmark = True  # set True to speed up constant image size inference
-#     dataset = LoadStreams(opt.source, img_size=opt.img_size)
-#     bs = len(dataset)  # batch_size
-# else:
-#     dataset = LoadImages(opt.source, img_size=opt.img_size)
-#     bs = 1  # batch_size
-
-# # Get names and colors
-# names = model.module.names if hasattr(model, 'module') else model.names
-# colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
-
-# img = torch.zeros((1, 3, opt.img_size, opt.img_size), device=device)  # init img
-# # _ = model(img.half() if half else img) if device.type != 'cpu' else None  # run once
-# model.eval()
-# model.cuda()
-
+model.eval()
+model.cuda()
 
 # piLitModel.eval()
 # piLitModel.cuda()
@@ -313,23 +288,12 @@ if __name__ == '__main__':
     tensorImgQueue = mp.Queue()
     frameQueue = mp.Queue()
 
-
     piLitModel = torch.load("weights/piLitModel.pth")
 
     print(type(piLitModel))
     piLitModel.eval()
     piLitModel = piLitModel.to(device)
 
-    # thread1 = mp.Process(target = testThread1, args=())
-    # thread2 = mp.Process(target = testThread2, args=())
-
-    # thread1.start()
-    # thread2.start()
-
-    # thread1.join()
-    # thread2.join()
-
-    frame = cv2.imread("PXL_20220614_204008153.jpg")
     piLitThread = mp.Process(target = detectPiLits, args=(frameQueue, ))
 
     piLitThread.start()
@@ -339,13 +303,13 @@ if __name__ == '__main__':
         in_rgb = q_rgb.tryGet()
         if in_rgb is not None:
             frame = in_rgb.getCvFrame()
-            frameQueue.put(frame)
-            piLitThread.join()
-
-
-            # piLitDetect(cfg, opt, tensorImg, frame)
-
-            # laneDetection = detectLaneLines(cfg, opt, tensorImg)
+            tensorImg = transform(frame).to(device)
+            if tensorImg.ndimension() == 3:
+                tensorImg = tensorImg.unsqueeze(0)
+            # cv2.imshow("frame", frame)
+            houghLines, laneDetection = detectLaneLines(cfg, opt, tensorImg)
+            cv2.imshow("lane", laneDetection)
+            # cv2.imshow("hough", houghLines)
             # piLitDetection = detectPiLits(cfg, opt, tensorImgQueue)
             endTime = time.time()
             print("TIME DIFF: ", endTime - initTime)

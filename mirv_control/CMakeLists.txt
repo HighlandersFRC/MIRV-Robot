@@ -207,6 +207,33 @@ include_directories(
 catkin_install_python(PROGRAMS JoystickDrive/JoystickDrive.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+catkin_install_python(PROGRAMS PurePursuit/purePursuit.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS coordinateConversion/globalToTruck.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Diagnostic/GPSLogger.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS RoverHeading/headingBasedOnCoordinate.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Cloud/roverClient.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 catkin_install_python(PROGRAMS PiLitControl/PiLitController.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS MessageConversion/controllerFormatting.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Odometry/record.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Controllers/remotedrive_master.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Controllers/tablet_controller.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

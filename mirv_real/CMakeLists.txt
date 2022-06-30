@@ -191,6 +191,9 @@ include_directories(
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+install(PROGRAMS launch/connect_cores.sh
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 #############
 ## Testing ##
@@ -209,11 +212,16 @@ include_directories(
 ## User Added Components ##
 ###########################
 
-##add_subdirectory(drive)
+#add_subdirectory(drive)
+add_subdirectory(Canbus)
+catkin_install_python(PROGRAMS GPS/RTKInput.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 catkin_install_python(PROGRAMS DIOControl/DOControl.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS DIOControl/DIControl.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
 
