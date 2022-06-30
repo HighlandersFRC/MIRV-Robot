@@ -10,6 +10,7 @@ import requests
 import os
 import sys
 import rospy
+import ros_numpy
 from std_msgs.msg import String
 from aiohttp import web
 from av import VideoFrame
@@ -17,22 +18,21 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR+'/../')
-print(sys.path)
 #from custom_messages.msg import depth_and_color_msg as depthAndColorFrame
-#from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
 
-CLOUD_HOST = os.getenv('MIRV_CLOUD_SERVER_IP')
-CLOUD_PORT = os.getenv('MIRV_CLOUD_SERVER_PORT')
+CLOUD_HOST = os.getenv('API_HOST')
+CLOUD_PORT = os.getenv('API_PORT')
 ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
 
 
 if CLOUD_HOST is None:
-    print("Please set the MIRV_CLOUD_SERVER_IP Environment Variable to the IP of the cloud server")
+    print("Please set the API_HOST Environment Variable to the IP of the cloud server")
     exit()
 
 if CLOUD_PORT is None:
-    print("Please set the MIRV_CLOUD_SERVER_PORT Environment Variable to the PORT of the cloud server")
+    print("Please set the API_PORT Environment Variable to the PORT of the cloud server")
     exit()
 
 if ROVER_COMMON_NAME is None:
@@ -51,10 +51,11 @@ pcs = set()
 frames = []
 
 def frameSubscriber(data):
+    #print("Received Camera Frame")
     frame = ros_numpy.numpify(data.color_frame)
     frames.append(frame)
-    if len(frames >5):
-        frames.remove(0)
+    if len(frames) >5:
+        frames.remove(frames[0])
         
     #depthFrame = ros_numpy.numpify(data.depth_frame)
     # print(frame.shape)
@@ -72,7 +73,7 @@ def frameSubscriber(data):
 sio = socketio.Client()
 
 rospy.init_node("CloudConnection")
-#rospy.Subscriber("CameraFrames", depthAndColorFrame)
+rospy.Subscriber("CameraFrames", depthAndColorFrame, frameSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 
 
@@ -82,14 +83,15 @@ class RobotVideoStreamTrack(VideoStreamTrack):
         super().__init__()  # don't forget this!
         
     async def recv(self):
+        print("Recv")
         #ret, frame = cap.read()
         #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         if len(frames > 0):
             frame = VideoFrame.from_ndarray(frames[0])
+            frames.remove(frames[0])
         else:
             blank_image = np.zeros((480,640,3), np.uint8)
             frame = VideoFrame.from_ndarray(blank_image)
-        frames.remove(frames[0])
         pts, time_base = await self.next_timestamp()
         frame.pts = pts
         frame.time_base = time_base

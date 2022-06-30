@@ -5,8 +5,8 @@ sudo ifconfig can0 up
 sudo ifconfig can0 txqueuelen 1000
 
 
-./setenv.sh
-roslaunch mirv_real mirv.launch
+source setenv.sh
+#roslaunch mirv_real mirv.launch
 
 function exposeDI() {
     echo $1 >/sys/class/gpio/export 2>/dev/null
