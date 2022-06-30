@@ -122,7 +122,7 @@ spatialLocationCalculator.initialConfig.addROI(config)
 spatialLocationCalculator.out.link(xoutSpatialData.input)
 xinSpatialCalcConfig.out.link(spatialLocationCalculator.inputConfig)
 
-expTime = 7000
+expTime = 5000
 sensIso = 500
 
 depthaiDevice = depthai.Device(pipeline)
@@ -146,6 +146,8 @@ ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 # ctrl.setManualFocus(0)
 controlQueue.send(ctrl)
 
+firstLoop = True
+
 while True:
     initTime = time.time()
     in_rgb = q_rgb.tryGet()
@@ -154,9 +156,9 @@ while True:
     inDepth = depthQueue.get()
     print("PAST QUEUE GET")
     depthFrame = inDepth.getFrame()
-    # depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
-    # depthFrameColor = cv2.equalizeHist(depthFrame)
-    # depthFrameColor = cv2.applyColorMap(depthFrame, cv2.COLORMAP_OCEAN)
+    depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
+    depthFrameColor = cv2.equalizeHist(depthFrameColor)
+    depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_OCEAN)
 
     imuPackets = imuData.packets
     for imuPacket in imuPackets:
@@ -174,17 +176,24 @@ while True:
         roll = roll * 180/math.pi
 
 
-        if(pitch < 0):
-            pitch = abs(pitch)
-        elif(pitch > 0):
-            pitch = 360 - pitch
+        # if(pitch < 0):
+        #     pitch = abs(pitch)
+        # elif(pitch > 0):
+        #     pitch = 360 - pitch
 
-        if(pitch > 90):
-            pitch = pitch - 90
-        else:
-            pitch = pitch + 270
+        # if(pitch > 90):
+        #     pitch = pitch - 90
+        # else:
+        #     pitch = pitch + 270
 
-        # print("PITCH: ", pitch)
+        pitch = pitch - 270
+
+        pitch = pitch + 360
+        pitch = pitch%360
+
+        # pitch = pitch
+
+        print("PITCH: ", pitch)
 
         imuPub.publish(pitch)
         # rate.sleep()
