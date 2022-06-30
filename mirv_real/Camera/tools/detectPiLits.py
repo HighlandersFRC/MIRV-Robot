@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
+<<<<<<< HEAD
 import math
+=======
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 import queue
 import threading
 import cv2
@@ -67,7 +70,10 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
+<<<<<<< HEAD
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+=======
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
 br = CvBridge()
 
@@ -82,6 +88,7 @@ transform=transforms.Compose([
 
 detections = 0
 
+<<<<<<< HEAD
 hFOV = 52
 horizontalPixels = 640
 verticalPixels = 480
@@ -151,6 +158,31 @@ def piLitDetect(img, frame, depthFrame):
             piLitLocation = [depth, angleToPiLit]
 
             piLitLocationPub.publish(piLitLocation)
+=======
+def gotFrame(img):
+    print("GOT A FRAME")
+    initTime = time.time()
+    frame = ros_numpy.numpify(img)
+    print(frame.shape)
+    tensorImg = transform(frame).to(device)
+    if tensorImg.ndimension() == 3:
+        tensorImg = tensorImg.unsqueeze(0)
+    detections = piLitDetect(tensorImg, frame)
+    # cv2.imshow("detections", detections)
+    # cv2.waitKey(1)
+    print("TIMEDIFF: ", time.time() - initTime)
+    # cv2.destroyAllWindows()
+
+def piLitDetect(img, frame):
+    piLitPrediction = piLitModel(img)[0]
+    print(piLitPrediction)
+    # print(piLitPrediction["scores"])
+    bboxList = []
+    for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
+        x0,y0,x1,y1 = bbox
+        bboxList.append(bbox)
+        frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
         # print("Looking in predictions")
 
@@ -162,7 +194,12 @@ def piLitDetect(img, frame, depthFrame):
         #     # print("MAYBE?")
     bboxMsg = Float64MultiArray()
     bboxMsg.data = bboxList
+<<<<<<< HEAD
     # print("PUBLISHED LOCATIONS")
+=======
+    piLitLocationPub.publish(bboxMsg)
+    print("PUBLISHED LOCATIONS")
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
     return frame
 
     # cv2.imshow("frame", frame)
@@ -195,14 +232,23 @@ if os.path.exists(opt.save_dir):  # output dir
 os.makedirs(opt.save_dir)  # make new dir
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
+<<<<<<< HEAD
 piLitModel = torch.load("mirv_real/Camera/weights/piLitModel.pth")
+=======
+piLitModel = torch.load("weights/piLitModel.pth")
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 piLitModel.eval()
 piLitModel = piLitModel.to(device)
 
 rospy.init_node('piLitDetector')
+<<<<<<< HEAD
 rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
 rospy.Subscriber("fusedOdometry", Float64MultiArray, gotOdometry)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
+=======
+rospy.Subscriber("CameraFrames", Image, gotFrame)
+piLitLocationPub = rospy.Publisher('piLitLocations', Float64MultiArray, queue_size=1)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
 try:
     rospy.spin()

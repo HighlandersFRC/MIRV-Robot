@@ -1,4 +1,14 @@
 <launch>
+<<<<<<< HEAD
     <node name="control" pkg="mirv_real" type="control"/>
     <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
+=======
+    <node name="Canbus" pkg="mirv_real" type="canbus"/>
+    <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
+    <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/>
+    <node name="talker" pkg="mirv_real" type="cameraPublisher.py"/>
+    <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
+    <node name="OdometyDataUnfiltered" pkg="mirv_control" type="controllerFormatting.py"/>
+    <node name="record" pkg="mirv_control" type="record.py"/>
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 </launch>

@@ -136,6 +136,17 @@ studio.sh
 ```
 After launching android studio, click through the menu's and install the android 30 SDK
 
+### Make a boot rule so we can access serial ports
+
+# navigate to rules.d directory
+cd /etc/udev/rules.d
+#create a new rule file
+sudo touch mirv_permissions.rules
+# open the file
+sudo vim mirv_permissions.rules
+# add the following
+KERNEL=="ttyACM0", MODE="0666"
+
 
 ### Installing Flutter
 Install Flutter using snapd

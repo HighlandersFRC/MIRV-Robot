@@ -69,7 +69,12 @@ def gotPiLitLocations(locations):
     print("GOT A LOCATION")
     print(locations)
 
+<<<<<<< HEAD
 rospy.init_node('locationSubscriber', anonymous=True)
 rospy.Subscriber("piLit", Float64MultiArray, gotPiLitLocations)
+=======
+rospy.init_node('piLitLocationSubscriber')
+rospy.Subscriber("piLitLocations", Float64MultiArray, gotPiLitLocations)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
 rospy.spin()

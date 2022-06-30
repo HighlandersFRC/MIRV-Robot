@@ -63,7 +63,11 @@ from rospy_tutorials.msg import Floats
 from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
+<<<<<<< HEAD
 
+=======
+# from custom_msg_python.msg import depth_and_color_msg as depthAndColorMsg
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 from cv_bridge import CvBridge
 
 def quat_2_radians(x, y, z, w):
@@ -149,7 +153,11 @@ def gotPiLitLocations(data):
 br = CvBridge()
 
 # imgPub = rospy.Publisher('CameraFrames', numpy_msg(Floats),queue_size=10)
+<<<<<<< HEAD
 imgPub = rospy.Publisher('CameraFrames', depthAndColorFrame, queue_size=1)
+=======
+imgPub = rospy.Publisher('CameraFrames', Image, queue_size=1)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 rospy.init_node('talker', anonymous=True)
 
 imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
@@ -226,8 +234,13 @@ stereo.setSubpixel(subpixel)
 monoLeft.out.link(stereo.left)
 monoRight.out.link(stereo.right)
 
+<<<<<<< HEAD
 # spatialLocationCalculator.passthroughDepth.link(xoutDepth.input)
 stereo.depth.link(xoutDepth.input)
+=======
+spatialLocationCalculator.passthroughDepth.link(xoutDepth.input)
+stereo.depth.link(spatialLocationCalculator.inputDepth)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
 topLeft = depthai.Point2f(0.4, 0.4)
 bottomRight = depthai.Point2f(0.6, 0.6)
@@ -241,7 +254,11 @@ spatialLocationCalculator.initialConfig.addROI(config)
 spatialLocationCalculator.out.link(xoutSpatialData.input)
 xinSpatialCalcConfig.out.link(spatialLocationCalculator.inputConfig)
 
+<<<<<<< HEAD
 expTime = 7000
+=======
+expTime = 5000
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 sensIso = 500
 
 depthaiDevice = depthai.Device(pipeline)
@@ -259,12 +276,22 @@ disparityMultiplier = 255 / stereo.getMaxDisparity()
 controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
 ctrl.setManualExposure(expTime, sensIso)
+<<<<<<< HEAD
 # ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 # ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
 # ctrl.setManualFocus(0)
 controlQueue.send(ctrl)
 
+=======
+ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
+# ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
+ctrl.setManualFocus(0)
+controlQueue.send(ctrl)
+
+firstLoop = True
+
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 while True:
     initTime = time.time()
     in_rgb = q_rgb.tryGet()
@@ -273,9 +300,15 @@ while True:
     inDepth = depthQueue.get()
     print("PAST QUEUE GET")
     depthFrame = inDepth.getFrame()
+<<<<<<< HEAD
     # depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
     # depthFrameColor = cv2.equalizeHist(depthFrame)
     # depthFrameColor = cv2.applyColorMap(depthFrame, cv2.COLORMAP_OCEAN)
+=======
+    depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
+    depthFrameColor = cv2.equalizeHist(depthFrameColor)
+    depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_OCEAN)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
     imuPackets = imuData.packets
     for imuPacket in imuPackets:
@@ -293,6 +326,7 @@ while True:
         roll = roll * 180/math.pi
 
 
+<<<<<<< HEAD
         if(pitch < 0):
             pitch = abs(pitch)
         elif(pitch > 0):
@@ -304,6 +338,26 @@ while True:
             pitch = pitch + 270
 
         # print("PITCH: ", pitch)
+=======
+        # if(pitch < 0):
+        #     pitch = abs(pitch)
+        # elif(pitch > 0):
+        #     pitch = 360 - pitch
+
+        # if(pitch > 90):
+        #     pitch = pitch - 90
+        # else:
+        #     pitch = pitch + 270
+
+        pitch = pitch - 270
+
+        pitch = pitch + 360
+        pitch = pitch%360
+
+        # pitch = pitch
+
+        print("PITCH: ", pitch)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
 
         imuPub.publish(pitch)
         # rate.sleep()
@@ -311,6 +365,7 @@ while True:
     if in_rgb is not None and inDepth is not None:
         # print("IN RGB IS NOT NONE")
         frame = in_rgb.getCvFrame()
+<<<<<<< HEAD
         framesMessage = depthAndColorFrame()
         framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
         framesMessage.color_frame = br.cv2_to_imgmsg(frame)
@@ -322,6 +377,15 @@ while True:
     
         cv2.imshow("frame", frame)
         cv2.imshow("depth", depthFrame)
+=======
+        print("got rgb frame")
+        imgPub.publish(br.cv2_to_imgmsg(frame))
+        endTime = time.time()
+        # print("TIME DIFF: ", endTime - initTime)
+    
+        # cv2.imshow("frame", frame)
+        # cv2.imshow("depth", depthFrameColor)
+>>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
     
     if cv2.waitKey(1) == ord('q'):
             break
