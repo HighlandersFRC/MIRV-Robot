@@ -130,6 +130,9 @@ def piLitDetect(img, frame, depthFrame):
     bboxList = []
     # print(depthFrame)
     # print(depthFrame[0][0])
+
+    intakeSide = "RIGHT"
+    
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
         if(score > 0.75):
             print("GOT A PI LIT")    
@@ -141,10 +144,30 @@ def piLitDetect(img, frame, depthFrame):
 
             angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
 
-            depth = depthFrame[centerY][centerX]
-            print("DEPTH: ", depth, "ANGLE: ", angleToPiLit)
+            depth = (depthFrame[centerY][centerX])/1000
 
-            piLitLocation = [depth, angleToPiLit]
+            if(intakeSide == "RIGHT"):
+                if(angleToPiLit > 0):
+                    intakeOffset = -0.0889
+                else:
+                    intakeOffset = 0.0889
+            else:
+                if(angleToPiLit > 0):
+                    intakeOffset = 0.0889
+                else:
+                    intakeOffset = -0.0889
+
+            complementaryAngle = 90 - angleToPiLit
+
+            horizontalOffsetToPiLit = depth * math.cos(math.radians(complementaryAngle))
+
+            verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
+
+            angleToPiLitFromIntake = math.atan2(verticalOffsetToPiLit, horizontalOffsetToPiLit + intakeOffset)
+
+            print("DEPTH: ", depth, "ANGLE: ", angleToPiLitFromIntake)
+
+            piLitLocation = [depth, angleToPiLitFromIntake]
 
             locations = Float64MultiArray()
             locations.data = piLitLocation
