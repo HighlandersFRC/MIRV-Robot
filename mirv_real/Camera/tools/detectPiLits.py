@@ -146,7 +146,10 @@ def piLitDetect(img, frame, depthFrame):
 
             piLitLocation = [depth, angleToPiLit]
 
-            piLitLocationPub.publish(piLitLocation)
+            locations = Float64MultiArray()
+            locations.data = piLitLocation
+
+            piLitLocationPub.publish(locations)
     # return frame
 
 parser = argparse.ArgumentParser()
