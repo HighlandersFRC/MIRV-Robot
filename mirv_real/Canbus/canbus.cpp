@@ -42,8 +42,8 @@ TalonFX backRightDrive(4, interface);
 
 ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(11);
 ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(9);
-ctre::phoenix::motorcontrol::can::TalonSRX leftConvMotor(12);
-ctre::phoenix::motorcontrol::can::TalonSRX rightConvMotor(10);
+ctre::phoenix::motorcontrol::can::TalonSRX leftConvMotor(10);
+ctre::phoenix::motorcontrol::can::TalonSRX rightConvMotor(12);
 
 
 double pdpVoltage = 0.0;
@@ -55,7 +55,7 @@ int * currentsFilledPtr = &pdpCurrentsFilled;
 
 void initializeDriveMotors(){
 	//PID config
-	float kF = 0.92;
+	float kF = 0.05;
 	float kP = 0.18;
 	float kI = 0.000;
 	float kD = 0.5;
@@ -106,7 +106,7 @@ void initializeDriveMotors(){
 }
 
 void initializeIntakeMotors(){
-	intakeArmMotor.SetInverted(true);
+	intakeArmMotor.SetInverted(false);
 	intakeArmMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 	intakeArmMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 }
@@ -260,6 +260,7 @@ class Intake {
 	public:
 	std::string mode = "disable";
 	time_t startTime;
+	double side = 1;
 	//char* modes[4] = {"disable", "reset", "intake", "store"};
 
 	//disable: all motors off
@@ -274,11 +275,13 @@ class Intake {
 		if (mode == "disable"){
 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 		}
 		
 		//move to upright and zero
 		if (mode == "reset"){
 			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			} else {
@@ -287,7 +290,7 @@ class Intake {
 		}
 
 		if (mode == "intake"){
-			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4);
+			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			} else {
@@ -298,8 +301,9 @@ class Intake {
 		if (mode == "store"){
 			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4);
-				if (time(NULL) - startTime > 3){
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
+				rightConvMotor.Set(ControlMode::PercentOutput, -0.4);
+				if (time(NULL) - startTime > 1){
 					mode = "reset";
 				}
 			} else {
@@ -312,15 +316,16 @@ class Intake {
 		if (mode == "deposit"){
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4);
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
 			} else {
 				if (time(NULL) - startTime < 3){
-					rightConvMotor.Set(ControlMode::PercentOutput, -0.4);
-					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4);
+					rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
 					intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 					intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				}
 			}
 		}
@@ -329,11 +334,15 @@ class Intake {
 	void setMode(std::string cmd){
 
 		//check if command is valid before setting
-		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit"){
+		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch"){
 			if (cmd == "deposit"){
 				startTime = time(NULL);
 			}
-			mode = cmd;
+			if (cmd == "switch"){
+				side = side * -1.0;
+			} else {
+				mode = cmd;
+			}
 		}
 	}
 };
