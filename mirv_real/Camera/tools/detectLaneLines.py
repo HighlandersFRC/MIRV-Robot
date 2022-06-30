@@ -134,20 +134,55 @@ def laneLineDetect(img, frame, depthFrame):
 
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
-    ll_seg_mask = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
+    ll_seg_mask_resized = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
 
-    freeSpaceArea = np.nonzero(da_seg_mask)
+    lines = cv2.HoughLinesP(ll_seg_mask_resized,3,np.pi/180, 50, 35, 100)
 
-    print("Num Free Spaces: ", len(freeSpaceArea))
+    # print(ll_seg_mask.shape)
+    img = cv2.resize(frame, (640,480), interpolation=cv2.INTER_LINEAR)
 
-    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask, "RIGHT")
+    # print("RESIZED IMAGE")
 
-    print(piLitLocations)
+    numLines = 0
+    piLitLocations = None
+    laneType = "CENTER"
+    try:
+        if(len(lines)%2 == 0):
+            mirvLeftLaneNum = (len(lines)/2)
+            mirvRightLaneNum = (len(lines)/2) + 1
+        else:
+            mirvLeftLaneNum = math.floor(len(lines)/2)
+            mirvRightLaneNum = math.ceil(len(lines)/2)
+        # print("LEFT LANE NUM: ", mirvLeftLaneNum)
+        # print("RIGHT LANE NUM: ", mirvRightLaneNum)
 
-    if(piLitLocations != None): 
-        placementPublisher.publish(piLitLocations)
-    else:
+        if(mirvLeftLaneNum > 2):
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "RIGHT"
+        else:
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "LEFT"
+        
+        print(laneType)
+
+        # for line in lines:
+        #     numLines += 1
+        #     if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
+        #         x1,y1,x2,y2 = line[0]
+        #         cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
+    except:
         print("COULD NOT FIND LANE LINES, TRYING AGAIN")
+
+    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask_resized, laneType)
+
+    if(piLitLocations != None):
+        locations = Float64MultiArray()
+        locations.data = piLitLocations
+        placementPublisher.publish(locations)
 
 def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
     i = 0
@@ -161,7 +196,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
             for pixel in column:
                 laneLineDepthLeft = (depthFrame[i][pixel])/1000
                 laneLineAngleInFrameLeft = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                print("Left Depth: ", laneLineDepthLeft)
+                # print("Left Depth: ", laneLineDepthLeft)
                 if(laneLineDepthLeft != 0):
                     break
             if(laneLineDepthLeft != 0):
@@ -169,7 +204,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
             for pixel in reversed(column):
                 laneLineDepthRight = (depthFrame[i][pixel])/1000
                 laneLineAngleInFrameRight = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                print("Right Depth: ", laneLineDepthRight)
+                # print("Right Depth: ", laneLineDepthRight)
                 if(laneLineDepthRight != 0):
                     break
             if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
@@ -187,7 +222,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
         laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
         piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
 
-        print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
+        # print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
 
         piLitIntervalX = laneWidth/7
         lineSlope = piLitPlacementLineLength/laneWidth
@@ -202,11 +237,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
                 piLitLocationX = laneWidth - (i * piLitIntervalX)
                 piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            for i in range(len(piLitPlacementList)):
-                location = piLitPlacementList[i]
-                piLitPlacementList[i] = [location[0] - laneOffsetFromCenterRight, location[1] + yTruckOffset]
-        
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])        
         elif(laneType == "RIGHT"):
             # 8 loop throughs for each pi lit
             for i in range(8):
@@ -214,16 +245,30 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
                 piLitLocationY = (lineSlope * (piLitLocationX))
 
                 piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            for i in range(len(piLitPlacementList)):
-                location = piLitPlacementList[i]
-                piLitPlacementList[i] = [location[0] + laneOffsetFromCenterLeft, location[1] + yTruckOffset]
+        elif(laneType == "CENTER"):
+            spearSidesDistance = depthToFarthestPoint/2
+            lineSlope = ((depthToFarthestPoint - spearSidesDistance)/laneWidth)
+            for i in range(4):
+                piLitLocationX = i * piLitIntervalX
+                piLitLocationY = (lineSlope * piLitLocationX) + spearSidesDistance
+
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])
+            for i in range(4, 8):
+                piLitLocationX = i * piLitIntervalX
+                piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
+            
+                piLitPlacementList.append([piLitLocationX, piLitLocationY])
+            
+        for i in range(len(piLitPlacementList)):
+            location = piLitPlacementList[i]
+            piLitPlacementList[i] = [location[0] - laneOffsetFromCenterLeft, location[1] + yTruckOffset]
         
         return piLitPlacementList
     else:
         return None
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
+parser.add_argument('--weights', nargs='+', type=str, default='mirv_real/Camera/weights/End-to-end.pth', help='model.pth path(s)')
 parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
 parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
 parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')

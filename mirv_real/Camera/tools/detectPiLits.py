@@ -91,21 +91,6 @@ latestOdometryX = 0
 latestOdometryY = 1
 latestOdometryTheta = 0
 
-def gotFrame(data):
-    print("GOT A FRAME")
-    initTime = time.time()
-    frame = ros_numpy.numpify(data.color_frame)
-    depthFrame = ros_numpy.numpify(data.depth_frame)
-    # print(frame.shape)
-    tensorImg = transform(frame).to(device)
-    if tensorImg.ndimension() == 3:
-        tensorImg = tensorImg.unsqueeze(0)
-    detections = piLitDetect(tensorImg, frame, depthFrame)
-    # cv2.imshow("detections", detections)
-    # cv2.waitKey(1)
-    # print("TIMEDIFF: ", time.time() - initTime)
-    # cv2.destroyAllWindows()
-
 def gotOdometry(data):
     x = data[0]
     y = data[1]
@@ -127,6 +112,17 @@ def convertPiLitLocations(relativeLocation):
 
     return [latestOdometryX, latestOdometryY]
 
+def gotFrame(data):
+    print("GOT A FRAME")
+    initTime = time.time()
+    frame = ros_numpy.numpify(data.color_frame)
+    depthFrame = ros_numpy.numpify(data.depth_frame)
+    # print(frame.shape)
+    tensorImg = transform(frame).to(device)
+    if tensorImg.ndimension() == 3:
+        tensorImg = tensorImg.unsqueeze(0)
+    piLitDetect(tensorImg, frame, depthFrame)
+
 def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
     # print(piLitPrediction)
@@ -135,7 +131,7 @@ def piLitDetect(img, frame, depthFrame):
     # print(depthFrame)
     # print(depthFrame[0][0])
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 75):
+        if(score > 0.75):
             print("GOT A PI LIT")    
             x0,y0,x1,y1 = bbox
             centerX = int((x0 + x1)/2)
@@ -151,21 +147,7 @@ def piLitDetect(img, frame, depthFrame):
             piLitLocation = [depth, angleToPiLit]
 
             piLitLocationPub.publish(piLitLocation)
-
-        # print("Looking in predictions")
-
-        # if(score > 0.75):
-        #     frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
-        #     # print("GOT ONE")
-        # elif(score > 0.5):
-        #     frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 0, 255), 3)
-        #     # print("MAYBE?")
-    bboxMsg = Float64MultiArray()
-    bboxMsg.data = bboxList
-    # print("PUBLISHED LOCATIONS")
-    return frame
-
-    # cv2.imshow("frame", frame)
+    # return frame
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')

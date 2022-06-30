@@ -132,18 +132,32 @@ def detectLaneLines(cfg, opt, img):
     numLines = 0
     try:
         if(len(lines)%2 == 0):
-            mirvLeftLaneNum = lines/2
-            mirvRightLaneNum = (lines/2) + 1
+            mirvLeftLaneNum = (len(lines)/2)
+            mirvRightLaneNum = (len(lines)/2) + 1
         else:
-            mirvLeftLaneNum = math.floor(lines/2)
-            mirvRightLaneNum = math.ceil(lines/2)
+            mirvLeftLaneNum = math.floor(len(lines)/2)
+            mirvRightLaneNum = math.ceil(len(lines)/2)
+        # print("LEFT LANE NUM: ", mirvLeftLaneNum)
+        # print("RIGHT LANE NUM: ", mirvRightLaneNum)
 
-        cv2.line(img,(0,0),(300,300),(255,0,0),5)
-        for line in lines:
-            numLines += 1
-            if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
-                x1,y1,x2,y2 = line[0]
-                cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
+        if(mirvLeftLaneNum > 2):
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "RIGHT"
+        else:
+            if(len(lines) - mirvRightLaneNum > 2):
+                laneType = "CENTER"
+            else:
+                laneType = "LEFT"
+        
+        print(laneType)
+        # cv2.line(img,(0,0),(300,300),(255,0,0),5)
+        # for line in lines:
+        #     numLines += 1
+        #     if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
+        #         x1,y1,x2,y2 = line[0]
+        #         cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
     except:
         print("NO LINES")
     
@@ -187,7 +201,7 @@ controlIn = pipeline.create(depthai.node.XLinkIn)
 controlIn.setStreamName('control')
 controlIn.out.link(cam_rgb.inputControl)
 
-expTime = 7500
+expTime = 5000
 sensIso = 500
 
 depthaiDevice = depthai.Device(pipeline)
