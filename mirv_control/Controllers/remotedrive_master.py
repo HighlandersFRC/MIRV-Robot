@@ -41,6 +41,8 @@ def joy_callback(msg):
         mirv.set_intake_state("deposit")
     if buttons[5]:
         mirv.set_intake_state("switch")
+    if buttons[11]:
+        mirv.turnToPiLit()
 
 def run():
     rospy.init_node("RemoteDrive")

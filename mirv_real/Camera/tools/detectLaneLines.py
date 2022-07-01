@@ -286,13 +286,8 @@ mp.set_start_method('spawn', force=True)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
-logger, _, _ = create_logger(
-    cfg, cfg.LOG_DIR, 'demo')
 
-device = select_device(logger,opt.device)
-if os.path.exists(opt.save_dir):  # output dir
-    shutil.rmtree(opt.save_dir)  # delete dir
-os.makedirs(opt.save_dir)  # make new dir
+device = torch.device('cuda:0')
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
 # Load model

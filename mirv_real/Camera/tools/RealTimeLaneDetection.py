@@ -21,24 +21,14 @@ from typing import Optional, List, Tuple
 from dataclasses import field
 
 from lib.config import cfg
-from lib.config import update_config
-from lib.utils.utils import create_logger, select_device, time_synchronized
 from lib.models import get_net
-from lib.dataset import LoadImages, LoadStreams
-from lib.core.general import bbox_iou, non_max_suppression, scale_coords
-from lib.utils import plot_one_box,show_seg_result
+from lib.utils import plot_one_box, show_seg_result
 from lib.core.function import AverageMeter
 from lib.core.postprocess import morphological_process, connect_lane
 from tqdm import tqdm
 import depthai
 
 from faster_RCNN import get_faster_rcnn_resnet
-from transformations import ComposeDouble
-from transformations import ComposeSingle
-from transformations import FunctionWrapperDouble
-from transformations import FunctionWrapperSingle
-from transformations import apply_nms, apply_score_threshold
-from transformations import normalize_01
 
 from backbone_resnet import ResNetBackbones
 from PIL import Image
@@ -236,10 +226,9 @@ mp.set_start_method('spawn', force=True)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
-logger, _, _ = create_logger(
-    cfg, cfg.LOG_DIR, 'demo')
 
-device = select_device(device = opt.device)
+# device = select_device(device = opt.device)
+device = torch.device('cuda:0')
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
 def detectPiLits(frameQueue):
