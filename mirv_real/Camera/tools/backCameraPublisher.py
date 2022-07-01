@@ -26,8 +26,8 @@ cameraY = 480
 br = CvBridge()
 
 # imgPub = rospy.Publisher('CameraFrames', numpy_msg(Floats),queue_size=10)
-imgPub = rospy.Publisher('CameraFrames', depthAndColorFrame, queue_size=1)
-rospy.init_node('cameraPublisher', anonymous=True)
+imgPub = rospy.Publisher('BackCameraFrames', depthAndColorFrame, queue_size=1)
+rospy.init_node('backCameraPublisher', anonymous=True)
 
 imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
 
@@ -120,7 +120,7 @@ xinSpatialCalcConfig.out.link(spatialLocationCalculator.inputConfig)
 expTime = 5000
 sensIso = 500
 
-found, device_info = depthai.Device.getDeviceByMxId("10.0.10.3")
+found, device_info = depthai.Device.getDeviceByMxId("10.0.10.2")
 
 depthaiDevice = depthai.Device(pipeline, device_info)
 depthaiDevice.startPipeline()
