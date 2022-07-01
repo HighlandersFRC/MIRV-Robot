@@ -125,7 +125,9 @@ xinSpatialCalcConfig.out.link(spatialLocationCalculator.inputConfig)
 expTime = 5000
 sensIso = 500
 
-depthaiDevice = depthai.Device(pipeline)
+found, device_info = depthai.Device.getDeviceByMxId("10.0.10.3")
+
+depthaiDevice = depthai.Device(pipeline, device_info)
 depthaiDevice.startPipeline()
 
 q_rgb = depthaiDevice.getOutputQueue("rgb", maxSize=1, blocking=False)
