@@ -118,7 +118,7 @@ xinSpatialCalcConfig.out.link(spatialLocationCalculator.inputConfig)
 expTime = 5000
 sensIso = 500
 
-found, device_info = depthai.Device.getDeviceByMxId("10.0.10.4")
+found, device_info = depthai.Device.getDeviceByMxId("10.0.20.2")
 
 depthaiDevice = depthai.Device(pipeline, device_info)
 depthaiDevice.startPipeline()
