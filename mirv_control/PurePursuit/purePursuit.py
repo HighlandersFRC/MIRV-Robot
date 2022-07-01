@@ -50,7 +50,7 @@ class PurePursuit():
 
 
     def getPath(self):
-        pathList = [[4,5]]
+        pathList = [[0,5]]
         for point in pathList:
             print("uploading point: {}".format(point))
             self.cordList.append([point[0],point[1],0])

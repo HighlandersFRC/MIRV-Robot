@@ -34,7 +34,7 @@ class Filter:
     def __init__(self):
         rospy.init_node('Filter', anonymous=True)
         encoderSub = rospy.Subscriber("encoder/velocity", Float64MultiArray, self.encoderCallback)
-        GPSSub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.encoderCallback)
+        GPSSub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.GPSCallback)
         IMUSub = rospy.Subscriber("CameraIMU", Float64, self.IMUcallback)
         timeSinceUpdate  = time.time()
     def run(self):
@@ -49,12 +49,20 @@ class Filter:
     def computePos(self):
         runTime = time.time()-self.timeSinceUpdate
         self.timeSinceUpdate = time.time()
-        print("{}  ,  {}".format(runTime, self.heading))
-        if(abs(self.leftVel - self.rightVel)<0.02):
-            xP = self.xPos+(self.leftVel*runTime*math.cos(self.heading))
-            yP = self.yPos+(self.leftVel*runTime*math.sin(self.heading))
+        leftVel = self.leftVel
+        rightVel = self.rightVel
+        if(leftVel == 0 and rightVel == 0):
+            print("State: No Change")
+            xP = self.xPos
+            yP = self.yPos
+        elif(abs(leftVel - rightVel)<0.02):
+            print("State: move forward or back")
+            xP = self.xPos+(leftVel*runTime*math.cos(self.heading))
+            yP = self.yPos+(leftVel*runTime*math.sin(self.heading))
+            print("{}, {}".format(xP, yP))
         else:
-            radius = (1/2)*((self.rightVel+self.leftVel)/(self.rightVel-self.leftVel))
+            print("Sate: Turning")
+            radius = (1/2)*((rightVel+leftVel)/(rightVel-leftVel))
             iCCX = (self.xPos - radius*math.sin(self.heading))
             iCCY = (self.yPos + radius*math.cos(self.heading))
             thetaP = self.heading-self.lastTheta
@@ -85,19 +93,20 @@ class Filter:
         currentAvgVel = (self.leftVel+self.rightVel)/2
         self.velQueue.put(currentAvgVel)
         tempVel = tempVel + currentAvgVel
-        self.averageVel =  tempVel
+        self.averageVel =  tempVel/self.velQueue.qsize()
     def kalmanFilter(self):
         kinProb = self.kinematicsConfidence()*self.kinematicsTrust
         GPSProb = self.GPSConfidence()*self.GPSTrust
         NKP = kinProb/(kinProb+GPSProb)
         NGP = GPSProb/(kinProb+GPSProb)
+        print("GPS Point: {}, {} GPS Prob: {} KinimaticsPoint: {}, {}, kinimatics Prob: {}".format(self.GPSXPos, self.GPSYPos, NGP, self.xPos, self.yPos, NKP))
         self.filterX = self.xPos*NKP + self.GPSXPos*NGP
         self.filterY = self.yPos*NKP + self.GPSYPos*NGP
         self.xPos = self.filterX
         self.yPos = self.filterY
     def GPSConfidence(self):
-        temp = 1/((abs(self.averageVel)+1)/self.maxVelocity)
-        temp = temp/self.maxVelocity
+        temp = 1/((abs(self.averageVel)+1))
+        print(self.averageVel)
         return temp
     def kinematicsConfidence(self):
         diffTemp = abs(self.leftVel-self.rightVel)

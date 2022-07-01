@@ -12,6 +12,7 @@
 #include <thread>
 #include <SDL2/SDL.h>
 #include <unistd.h>
+#include <ctime>
 #include <math.h>
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -240,9 +241,11 @@ class Publisher {
 	void publishEncoderVelocity(){
 		double left = getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity());
 		double right = getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity());
+		double time = (double)std::time(0);
 		std_msgs::Float64MultiArray velocity;
 		velocity.data.push_back(left);
 		velocity.data.push_back(right);
+		velocity.data.push_back(time);
 		encoderVelocityPub.publish(velocity);
 	}
 };
