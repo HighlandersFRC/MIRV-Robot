@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 import math
-import queue
-import threading
 import cv2
-import argparse
-import os, sys
-import shutil
 import time
 from pathlib import Path
 import depthai
