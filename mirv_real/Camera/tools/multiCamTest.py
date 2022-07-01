@@ -76,4 +76,4 @@ with contextlib.ExitStack() as stack:
                 cv2.imshow(stream_name, in_rgb.getCvFrame())
 
         if cv2.waitKey(1) == ord('q'):
-            breakq
+            break
