@@ -24,7 +24,7 @@ with serial.Serial('/dev/ttyACM0', 115200, timeout=1) as ser:
                 currentVTG.loadMessage(line)
             if (line[0] == "$GNGGA"):
                 currentGGA.loadMessage(line)
-                rosPubMsg.data = [currentGGA.getLatitude(),currentGGA.getLongitude()]
+                rosPubMsg.data = [currentGGA.getLatitude(),currentGGA.getLongitude(), currentGGA.getAltitude()]
                 pub.publish(rosPubMsg)
                 print(line)
         except KeyboardInterrupt:
