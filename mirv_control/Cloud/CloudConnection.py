@@ -11,6 +11,8 @@ import os
 import sys
 import rospy
 import ros_numpy
+import numpy
+import math
 from std_msgs.msg import String
 from aiohttp import web
 from av import VideoFrame
@@ -41,32 +43,25 @@ if ROVER_COMMON_NAME is None:
 
 # Setup webtrc connection components
 pcs = set()
+channels = []
 
-
-#cap = cv2.VideoCapture(0)
-#cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-#cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-
+#Cache incoming frames for sending
 frames = []
 
+
+def send_rtc(msg):
+    for channel in channels:
+        print("Sending: " + msg)
+        channel.send(msg)
+
 def frameSubscriber(data):
-    #print("Received Camera Frame")
     frame = ros_numpy.numpify(data.color_frame)
     frames.append(frame)
     if len(frames) >5:
         frames.remove(frames[0])
-        
-    #depthFrame = ros_numpy.numpify(data.depth_frame)
-    # print(frame.shape)
-    #tensorImg = transform(frame).to(device)
-    #if tensorImg.ndimension() == 3:
-    #    tensorImg = tensorImg.unsqueeze(0)
-    #detections = piLitDetect(tensorImg, frame, depthFrame)
-    # cv2.imshow("detections", detections)
-    # cv2.waitKey(1)
-    # print("TIMEDIFF: ", time.time() - initTime)
-    # cv2.destroyAllWindows()
+
+def statusSubscriber(data):
+    send_rtc(str(data))
 
 
 # Setup Socket Connection with the cloud
@@ -74,28 +69,28 @@ sio = socketio.Client()
 
 rospy.init_node("CloudConnection")
 rospy.Subscriber("CameraFrames", depthAndColorFrame, frameSubscriber)
+rospy.Subscriber("RobotStatus", String, statusSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
+
 
 
 # Class Describing how to send VideoStreams to the Cloud
 class RobotVideoStreamTrack(VideoStreamTrack):
     def __init__(self):
         super().__init__()  # don't forget this!
+        self.counter = 0
         
     async def recv(self):
-        print("Recv")
-        #ret, frame = cap.read()
-        #frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        if len(frames > 0):
+        pts, time_base = await self.next_timestamp()
+        if len(frames) > 0:
             frame = VideoFrame.from_ndarray(frames[0])
             frames.remove(frames[0])
         else:
             blank_image = np.zeros((480,640,3), np.uint8)
             frame = VideoFrame.from_ndarray(blank_image)
-        pts, time_base = await self.next_timestamp()
+        
         frame.pts = pts
         frame.time_base = time_base
-
         return frame
 
 # Website posts an offer to python server
@@ -106,6 +101,8 @@ async def offer(request):
     offer = RTCSessionDescription(sdp=params["offer"]["sdp"], type=params["offer"]["type"])
 
     pc = RTCPeerConnection()
+    channel = pc.createDataChannel("RoverStatus");
+    channels.append(channel)
     pc.addTrack(RobotVideoStreamTrack())
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
     pcs.add(pc)
@@ -117,6 +114,8 @@ async def offer(request):
         def on_message(message):
             print("Received: ", message)
             command_pub.publish(message)
+            #channel.send("I Like Turtles")
+            #send_rtc("I Really Like Turtles!")
 
 
     @pc.on("connectionstatechange")
@@ -188,6 +187,8 @@ def disconnect():
 
 def send(type: str, msg):
     sio.emit(type, msg)
+
+    
 
 
 

@@ -11,7 +11,7 @@ import requests
 import numpy
 import math
 
-CLOUD_HOST = "127.0.0.1"
+CLOUD_HOST = "44.202.152.178"
 CLOUD_PORT = 8000
 
 
@@ -19,9 +19,8 @@ CLOUD_PORT = 8000
 # Setup webtrc connection components
 logger = logging.getLogger("pc")
 pcs = set()
-
+channels = []
 # Setup OpenCV Capture Components
-# TODO replace with stream read from camera topic
 
 # Setup Socket Connection with the cloud
 sio = socketio.Client()
@@ -82,6 +81,9 @@ class FlagVideoStreamTrack(VideoStreamTrack):
         frame.pts = pts
         frame.time_base = time_base
         self.counter += 1
+        #for channel in channels:
+        #    channel.send("I Like Turtles!")
+
         return frame
 
     def _create_rectangle(self, width, height, color):
@@ -97,6 +99,9 @@ async def offer(request):
     offer = RTCSessionDescription(sdp=params["offer"]["sdp"], type=params["offer"]["type"])
 
     pc = RTCPeerConnection()
+    channel = pc.createDataChannel("chat")
+    channels.append(channel)
+
     pc.addTrack(FlagVideoStreamTrack())
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
     pcs.add(pc)
@@ -107,6 +112,7 @@ async def offer(request):
         @channel.on("message")
         def on_message(message):
             print("Received: ", message)
+            channel.send("I Like Turtles")
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -139,6 +145,7 @@ async def on_shutdown(app):
     coros = [pc.close() for pc in pcs]
     await asyncio.gather(*coros)
     pcs.clear()
+    sio.disconnect()
 
   
 
@@ -177,12 +184,6 @@ def disconnect():
 def send(type: str, msg):
     sio.emit(type, msg)
 
-
-def on_shutdown():
-    # close peer connections
-    coros = [pc.close() for pc in pcs]
-    asyncio.gather(*coros)
-    pcs.clear()
 
 
 
