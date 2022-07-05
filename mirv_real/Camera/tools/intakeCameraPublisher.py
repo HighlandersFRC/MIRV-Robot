@@ -117,8 +117,8 @@ spatialLocationCalculator.initialConfig.addROI(config)
 spatialLocationCalculator.out.link(xoutSpatialData.input)
 xinSpatialCalcConfig.out.link(spatialLocationCalculator.inputConfig)
 
-expTime = 5000
-sensIso = 500
+expTime = 1
+sensIso = 0
 
 found, device_info = depthai.Device.getDeviceByMxId("10.0.20.2")
 
@@ -139,6 +139,7 @@ ctrl = depthai.CameraControl()
 ctrl.setManualExposure(expTime, sensIso)
 # ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
+ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.DAYLIGHT)
 # ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
 # ctrl.setManualFocus(0)
 controlQueue.send(ctrl)

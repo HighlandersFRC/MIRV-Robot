@@ -127,9 +127,9 @@ def piLitDetect(img, frame, depthFrame):
                 else:
                     intakeOffset = -0.0889
 
-            complementaryAngle = 90 - angleToPiLit
+            complementaryAngle = math.pi/2 - angleToPiLit
 
-            horizontalOffsetToPiLit = depth * math.cos(math.radians(complementaryAngle))
+            horizontalOffsetToPiLit = depth * math.cos(complementaryAngle)
 
             verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
