@@ -13,14 +13,11 @@ import rospy
 import ros_numpy
 import numpy
 import math
+import json
 from std_msgs.msg import String
 from aiohttp import web
 from av import VideoFrame
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_DIR+'/../')
-#from custom_messages.msg import depth_and_color_msg as depthAndColorFrame
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
 
@@ -49,24 +46,41 @@ channels = []
 frames = []
 
 
-def send_rtc(msg):
+# Helper function, sends status updates to both over webrtc and to the cloud
+def send(type: str, msg):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        sio.emit(type, msg)
+        
+    except Exception as e:
+        print("Unable to Send Message to Server", e)
+    str_msg = json.dumps(msg)
+    print(len(channels))
     for channel in channels:
-        print("Sending: " + msg)
-        channel.send(msg)
-
+        print("Sending: " + str_msg)
+        channel.send(str_msg)
+    
+# Receives ROS frames and adds them to internal buffer to be sent to the cloud
 def frameSubscriber(data):
     frame = ros_numpy.numpify(data.color_frame)
     frames.append(frame)
     if len(frames) >5:
         frames.remove(frames[0])
 
+# Receives data about robot status and passes it on to the Cloud
 def statusSubscriber(data):
-    send_rtc(str(data))
+    if data is not None and len(str(data.data)) > 0:
+        print(data.data)
+        json_data = json.loads(str(data.data))
+        print(json_data)
+        send("data", json_data)
+    else:
+        print("Received Data with Type None", data)
 
 
 # Setup Socket Connection with the cloud
 sio = socketio.Client()
-
 rospy.init_node("CloudConnection")
 rospy.Subscriber("CameraFrames", depthAndColorFrame, frameSubscriber)
 rospy.Subscriber("RobotStatus", String, statusSubscriber)
@@ -112,9 +126,9 @@ async def offer(request):
     def on_datachannel(channel):
         @channel.on("message")
         def on_message(message):
-            print("Received: ", message)
             command_pub.publish(message)
-            #channel.send("I Like Turtles")
+            channel.send("")
+            
             #send_rtc("I Really Like Turtles!")
 
 
@@ -183,15 +197,6 @@ def connection_offer(data):
 @sio.on('disconnect')
 def disconnect():
     print('disconnected from server')
-
-
-def send(type: str, msg):
-    sio.emit(type, msg)
-
-    
-
-
-
 
 
 
