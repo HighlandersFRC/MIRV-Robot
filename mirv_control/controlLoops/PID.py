@@ -44,3 +44,6 @@ class PID:
 
         else:
             return input
+    
+    def setSetPoint(self, setPoint):
+        self.setPoint = setPoint

@@ -188,6 +188,9 @@ while True:
         pitch = pitch + 360
         pitch = pitch%360
 
+        pitch = pitch + 180
+        pitch = pitch%360
+
         # pitch = pitch
 
         print("PITCH: ", pitch)
