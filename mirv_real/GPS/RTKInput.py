@@ -2,12 +2,13 @@
 import serial
 from GGAData import GGAData
 from VTGData import VTGData
+from sensor.msgs.msg import NavSatFix, NavSatStatus
 from std_msgs.msg import Float64MultiArray
 import rospy
 import time
 
-pub = rospy.Publisher("GPSCoordinates", Float64MultiArray, queue_size = 4)
-rosPubMsg = Float64MultiArray()
+pub = rospy.Publisher("GPSCoordinates", NavSatFix, queue_size = 4)
+rosPubMsg = NavSatFix()
 rospy.init_node('RTKModule', anonymous=True)
 currentGGA = GGAData()
 currentVTG = VTGData()
@@ -24,7 +25,13 @@ with serial.Serial('/dev/ttyUSB0', 115200, timeout=1) as ser:
                 currentVTG.loadMessage(line)
             if (line[0] == "$GNGGA"):
                 currentGGA.loadMessage(line)
-                rosPubMsg.data = [currentGGA.getLatitude(),currentGGA.getLongitude(), currentGGA.getAltitude(), currentGGA.getHdot()]
+                rosPubMsg.header.stamp = rospy.Time.now()
+                rosPubMsg.header.frame_id = "global"
+                rosPubMsg.latitude = currentGGA.getLatitude()
+                rosPubMsg.longitude = currentGGA.getLongitude()
+                rosPubMsg.altitude = currentGGA.getAltitude()
+                rosPubMsg.status.status = currentGGA.getQualityIndicator()
+                rosPubMsg.position_covariance = currentGGA.getCovariance()
                 pub.publish(rosPubMsg)
                 print(line)
         except KeyboardInterrupt:
