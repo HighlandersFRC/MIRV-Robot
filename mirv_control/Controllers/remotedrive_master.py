@@ -29,6 +29,7 @@ def joy_callback(msg):
     mirv.power_drive(left, right)
 
     buttons = msg.buttons
+    axes = msg.axes
     if buttons[0]:
         mirv.set_intake_state("disable")
     if buttons[1]:
@@ -41,7 +42,7 @@ def joy_callback(msg):
         mirv.set_intake_state("deposit")
     if buttons[5]:
         mirv.set_intake_state("switch")
-    if buttons[11]:
+    if axes[5]:
         mirv.turnToPiLit()
 
 def run():
