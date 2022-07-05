@@ -2,12 +2,12 @@
 import serial
 from GGAData import GGAData
 from VTGData import VTGData
-from sensor.msgs.msg import NavSatFix, NavSatStatus
+from sensor_msgs.msg import NavSatFix, NavSatStatus
 from std_msgs.msg import Float64MultiArray
 import rospy
 import time
 
-pub = rospy.Publisher("GPSCoordinates", NavSatFix, queue_size = 4)
+pub = rospy.Publisher("gps/fix", NavSatFix, queue_size = 4)
 rosPubMsg = NavSatFix()
 rospy.init_node('RTKModule', anonymous=True)
 currentGGA = GGAData()
@@ -21,9 +21,9 @@ with serial.Serial('/dev/ttyUSB0', 115200, timeout=1) as ser:
         except:
             pass
         try:
-            if (line[0] == "$GNVTG"):
+            if (line[0] == "$GPVTG"):
                 currentVTG.loadMessage(line)
-            if (line[0] == "$GNGGA"):
+            if (line[0] == "$GPGGA"):
                 currentGGA.loadMessage(line)
                 rosPubMsg.header.stamp = rospy.Time.now()
                 rosPubMsg.header.frame_id = "global"
