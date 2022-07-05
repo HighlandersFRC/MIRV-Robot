@@ -46,9 +46,6 @@ class RobotController:
 
     def turnToPiLit(self):
         while True:
-            if(self.updatedLocation):
-                targetAngle = self.imu + self.piLitAngle
-                self.updatedLocation = False
             result = self.piLitPID.updatePID(self.imuAngle)
 
             self.power_drive(-result, result)
