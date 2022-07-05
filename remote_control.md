@@ -6,15 +6,15 @@ Connect to the wifi access point on MIRV from the computer
 ## Setup ROS environment variables
 In computer terminal:
 ```
-export ROS_MASTER_URI=http://[agx ip]:11311
-export ROS_IP=[computer ip]
+export ROS_MASTER_URI=http://[AGX_IP]:11311
+export ROS_IP=$(hostname -I | awk '{print $1}')
 rosparam set joy_node/dev "/dev/input/js1"
 ```
 
 In AGX terminal:
 ```
-export ROS_MASTER_URI=http://[agx ip]:11311
-export ROS_IP=[computer ip]
+export ROS_MASTER_URI=http://$(hostname -I | awk '{print $1}'):11311
+export ROS_IP=$(hostname -I | awk '{print $1}')
 ```
 
 ## Launch ROS nodes
