@@ -2,9 +2,7 @@
 import math
 import rospy
 from std_msgs.msg import Float64MultiArray, String, Float64
-import os
-os.chdir("src/MIRV-Robot/mirv_control")
-import controlLoops.PID as PID
+import PID
 
 class RobotController:
     def __init__(self):
