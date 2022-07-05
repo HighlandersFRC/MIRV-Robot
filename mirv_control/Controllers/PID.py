@@ -5,6 +5,10 @@ import math
 
 class PID:
     
+    def setPID(self, kP, kI, kD, target):
+        self.pVal = kP
+        self.iVal = kI
+        self.dVal = kD
 
     def __init__(self, kP, kI, kD, target):
         self.pVal = kP

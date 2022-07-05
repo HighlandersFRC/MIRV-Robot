@@ -2,7 +2,7 @@
 import math
 import rospy
 from std_msgs.msg import Float64MultiArray, String, Float64
-import PID
+from PID import PID
 
 class RobotController:
     def __init__(self):
