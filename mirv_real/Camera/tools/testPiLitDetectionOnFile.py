@@ -95,7 +95,7 @@ piLitModel.to(device)
 #     key = cv2.waitKey(1)
 #     if key == ord('q'):
 #         break
-frame = cv2.imread("PXL_20220614_204008153.jpg")
+frame = cv2.imread("PXL_20220705_193230585.jpg")
 
 # frame = cv2.resize(frame, (320, 640))
 # frame = cv2.imread("test.jpg")

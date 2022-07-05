@@ -77,8 +77,8 @@ def convertPiLitLocations(relativeLocation):
     relativeY = relativeLocation[1]
 
 
-    truckRelativeX = relativeX*math.cos(latestOdometryTheta) + relativeY*-math.sin(latestOdometryTheta) + latestOdometryX
-    yTBody = relativeX*math.sin(latestOdometryTheta) + relativeY*math.cos(latestOdometryTheta) - yBRef*math.cos(latestOdometryTheta) + xBRef*math.sin(latestOdometryTheta)
+    # truckRelativeX = relativeX*math.cos(latestOdometryTheta) + relativeY*-math.sin(latestOdometryTheta) + latestOdometryX
+    # yTBody = relativeX*math.sin(latestOdometryTheta) + relativeY*math.cos(latestOdometryTheta) - yBRef*math.cos(latestOdometryTheta) + xBRef*math.sin(latestOdometryTheta)
 
     return [latestOdometryX, latestOdometryY]
 

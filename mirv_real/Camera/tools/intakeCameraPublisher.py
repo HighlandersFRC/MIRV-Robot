@@ -29,6 +29,8 @@ br = CvBridge()
 imgPub = rospy.Publisher('IntakeCameraFrames', depthAndColorFrame, queue_size=1)
 rospy.init_node('intakeCameraPublisher', anonymous=True)
 
+imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
+
 # rospy.init_node('piLitLocationSubscriber', anonymous=True)
 # rospy.Subscriber("piLitLocations", Float64MultiArray, gotPiLitLocations)
 
@@ -146,13 +148,54 @@ firstLoop = True
 while True:
     initTime = time.time()
     in_rgb = q_rgb.tryGet()
-
+    
+    imuData = imuQueue.get()
     inDepth = depthQueue.get()
     print("PAST QUEUE GET")
     depthFrame = inDepth.getFrame()
     depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
     depthFrameColor = cv2.equalizeHist(depthFrameColor)
     depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_OCEAN)
+
+    imuPackets = imuData.packets
+    for imuPacket in imuPackets:
+        rVvalues = imuPacket.rotationVector
+
+        rotationI = rVvalues.i
+        rotationJ = rVvalues.j
+        rotationK = rVvalues.k
+        rotationReal = rVvalues.real
+        
+        pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
+
+        pitch = pitch * 180/math.pi
+        yaw = yaw * 180/math.pi
+        roll = roll * 180/math.pi
+
+
+        # if(pitch < 0):
+        #     pitch = abs(pitch)
+        # elif(pitch > 0):
+        #     pitch = 360 - pitch
+
+        # if(pitch > 90):
+        #     pitch = pitch - 90
+        # else:
+        #     pitch = pitch + 270
+
+        pitch = pitch - 270
+
+        pitch = pitch + 360
+        pitch = pitch%360
+
+        pitch = pitch + 180
+        pitch = pitch%360
+
+        # pitch = pitch
+
+        print("PITCH: ", pitch)
+
+        imuPub.publish(pitch)
 
     if in_rgb is not None and inDepth is not None:
         # print("IN RGB IS NOT NONE")
