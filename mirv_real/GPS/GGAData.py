@@ -7,6 +7,7 @@ class GGAData():
     longitude = 0.0
     qualityIndicator = 0
     satellitesUsed = 0
+    hdot = 0.0
     altitude = 0.0
     def loadMessage(self, message):
         try:
@@ -15,6 +16,7 @@ class GGAData():
             self.longitude = self.loadLongitude(float(message[4]), message[5])
             self.qualityIndicator = float(message[6])
             self.satellitesUsed = int(message[7])
+            self.hdot = double(message[8])
             self.altitude = float(message[9])
         except:
             raise Exception("Invalid Input message: " + message)
@@ -47,6 +49,8 @@ class GGAData():
         return self.qualityIndicator
     def getUTCTime(self):
         return self.UTCTime
+    def getHdot(self):
+        return self.hdot
     def getSatellitesUsed(self):
         return self.satellitesUsed
     

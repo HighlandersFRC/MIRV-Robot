@@ -31,7 +31,7 @@ class PurePursuit():
     ##updates truck coordinate targets to rover cordites as rover moves
     def UpdateTargetPoints(self):
         newTruckCord = self.getTruckCord()
-        theta = (3.1415926*2 - newTruckCord[2] + 3.14159/2)%(2*3.1415926) - self.startingTheta
+        theta = (3.1415926*2 - newTruckCord[2])%(2*3.1415926) - self.startingTheta
         xBRef = newTruckCord[0]
         yBRef = newTruckCord[1]
         # print([xBRef, yBRef, theta])
@@ -50,7 +50,7 @@ class PurePursuit():
 
 
     def getPath(self):
-        pathList = [[0,5]]
+        pathList = [[5,0]]
         for point in pathList:
             print("uploading point: {}".format(point))
             self.cordList.append([point[0],point[1],0])
