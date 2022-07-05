@@ -49,7 +49,7 @@ class RobotController:
 
             self.power_drive(-result, result)
 
-            if(math.abs(self.imuAngle - self.setPoint) < 0.1):
+            if(abs(self.imu - self.setPoint) < 0.1):
                 break
 
             rospy.sleep(0.5)
