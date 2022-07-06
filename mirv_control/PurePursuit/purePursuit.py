@@ -6,6 +6,7 @@ import time
 import rospy
 import sys
 from std_msgs.msg import Float64MultiArray
+from geometry_msgs.msg import Twist
 
 class PurePursuit():
     wheelBaseWidth = 0.483
@@ -23,15 +24,15 @@ class PurePursuit():
     robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
-    rosPubMsg = Float64MultiArray()
-    pub = rospy.Publisher("VelocityDrive", Float64MultiArray, queue_size = 10)
+    rosPubMsg = Twist()
+    pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
 
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)
     ##updates truck coordinate targets to rover cordites as rover moves
     def UpdateTargetPoints(self):
         newTruckCord = self.getTruckCord()
-        theta = (3.1415926*2 - newTruckCord[2])%(2*3.1415926) - self.startingTheta
+        theta = (3.1415926*2 - newTruckCord[2])%(2*3.1415926)
         xBRef = newTruckCord[0]
         yBRef = newTruckCord[1]
         # print([xBRef, yBRef, theta])
@@ -47,7 +48,6 @@ class PurePursuit():
     ## helper methods for update target points
     def getTruckCord(self):
         return self.currentTruckCord
-
 
     def getPath(self):
         pathList = [[5,0]]
@@ -78,25 +78,27 @@ class PurePursuit():
 
     ## calulates wheel velocity's for that given frame
     def calculateSpeedSide(self, maxSpeed, x, y, la):
-        leftVel = maxSpeed
-        rightVel = maxSpeed
+        RobotTwist = [maxSpeed,0]
         if(abs(x)>self.allowedErrorDist):
-            cRad = self.generateRadius(x, la)
-            iCirc = self.generateCircumference((cRad - (self.wheelBaseWidth/2)))
-            oCirc = self.generateCircumference((cRad + (self.wheelBaseWidth/2)))
-            innerSpeedRatio = (iCirc/oCirc)
-            turnRight = True
-            if(x>=0):  
-                rightVel = rightVel*innerSpeedRatio
-                # print("turningRight")
+            cRad = self.generateRadius(y, la)
+            ################################
+            # Take circ of radius 4 and max speed of 1
+            # circumference = 8*pi (4*2*pi)
+            # time to travel the circle = circumference/maxSpeed
+            # so it takes the same time to travel 2*pi radians
+            # by definition of velocity (displacement/time) 
+            # we get 2*pi/8*pi = 1/4
+            ################################
+            angularVel = maxSpeed/cRad
+            if(y>=0):  
+                RobotTwist = [maxSpeed, angularVel]                
             else:
-                leftVel = leftVel*innerSpeedRatio
-                # print("turningLeft")
-        return ([leftVel, rightVel])
+                RobotTwist = [maxSpeed, -angularVel]
+        return (RobotTwist)
 
     ##helper methods to calculateSpeedSides
-    def generateRadius(self,x,la):
-        return(math.pow(la,2)/(abs(2*x)))
+    def generateRadius(self,y,la):
+        return(math.pow(la,2)/(abs(2*y)))
     def generateCircumference(self, rad):
         return(2*3.141592*rad)
 
@@ -124,8 +126,8 @@ class PurePursuit():
         
         else:
             print("cannot determine target point")
-        sideSpeeds = self.calculateSpeedSide(maxSpeed, targetPoint[0], targetPoint[1], snapshotLa)
-        return([sideSpeeds,targetPoint])
+        RobotTwist = self.calculateSpeedSide(maxSpeed, targetPoint[0], targetPoint[1], snapshotLa)
+        return(RobotTwist)
 
     ##helper method for getTargetCord
     def vectorIntercept(self, closePoint, la):
@@ -166,21 +168,23 @@ class PurePursuit():
 
     def callBackOdom(self, data):
         self.currentTruckCord = data.data
+        print("got Data!")
         if (self.cordList):
             self.UpdateTargetPoints()
             output = self.getTargetCordAndDriveSpeed(self.lookAheadDist, self.currentMaxDriveSpeed)
             isFinished = self.removeTargetPoint()
             if(output != "atDest" and not isFinished):
                 # print("{}, {}".format(output[0][0],output[0][1]))
-                self.rosPubMsg.data = output[0]
-                self.logData = output[0]
+                self.rosPubMsg.linear.x = output[0]
+                self.rosPubMsg.angular.z = output[1]
+                self.logData = output
                 # self.rosPubMsg.data = [2.2, 4]
             else:
+                self.rosPubMsg.linear.x = 0
+                self.rosPubMsg.angular.z = 0
                 self.logData = [0,0]
-                self.rosPubMsg.data = [0,0]
 
-
-            print(self.rosPubMsg.data)
+            print(self.rosPubMsg)
         
         
         else:
