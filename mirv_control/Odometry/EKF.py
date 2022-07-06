@@ -14,7 +14,7 @@ from scipy import linalg
 sys.path.append('./')
 sys.path.append('../')
 sys.path.append('../../')
-import helpful_functions_lib
+import helpful_functions_lib as conversion_lib
 
 class DDEkf:
 
@@ -157,16 +157,16 @@ class DDEkf:
         # State prediction
         fwd_vel = self.LeftWheelVel + self.RightWheelVel
         ang_vel = self.RightWheelVel - self.LeftWheelVel
-        self.xp[0] = self.xf[0] + r/2 * dt * fwd_vel * np.cos(self.xf[2])
-        self.xp[1] = self.xf[1] + r/2 * dt * fwd_vel * np.sin(self.xf[2])
-        self.xp[2] = self.xf[2] + r/2 * dt/L * ang_vel
+        self.xp[0] = self.xf[0] + self.r/2 * dt * fwd_vel * np.cos(self.xf[2])
+        self.xp[1] = self.xf[1] + self.r/2 * dt * fwd_vel * np.sin(self.xf[2])
+        self.xp[2] = self.xf[2] + self.r/2 * dt/self.L * ang_vel
         # print(self.xp)
         # print(self.xf)
         # print()
 
         # Compute the motion jacobian H
-        F1 = [1, 0, -r/2 * dt * fwd_vel * np.sin(self.xf[2])]
-        F2 = [0, 1, r/2 * dt * fwd_vel * np.cos(self.xf[2])]
+        F1 = [1, 0, -self.r/2 * dt * fwd_vel * np.sin(self.xf[2])]
+        F2 = [0, 1, self.r/2 * dt * fwd_vel * np.cos(self.xf[2])]
         F = np.array([F1, F2, [0, 0, 1]])
 
 
@@ -237,8 +237,8 @@ def main():
             ekf.kalman_update()
     except KeyboardInterrupt:
         print("Shutting down")
-    except:
-        print('Shutting down from any')
+    # except:
+    #     print('Shutting down from any')
 
 
 if __name__ == '__main__':
