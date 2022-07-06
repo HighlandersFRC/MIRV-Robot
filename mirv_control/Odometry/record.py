@@ -7,6 +7,8 @@ from geometry_msgs.msg import Twist
 from odometrystate import State
 import math
 import sys
+sys.path.append('./')
+sys.path.append('../')
 sys.path.append('../../')
 import helpful_functions_lib
 

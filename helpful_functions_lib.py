@@ -10,30 +10,30 @@ from std_msgs.msg import MultiArrayLayout
 from std_msgs.msg import MultiArrayDimension
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
-import tf2_ros
-import tf2_geometry_msgs
+# import tf2_ros
+# import tf2_geometry_msgs
 
 import constants
 
 
-# From https://answers.ros.org/question/323075/transform-the-coordinate-frame-of-a-pose-from-one-fixed-frame-to-another/
-def transform_pose(input_pose, from_frame, to_frame):
-    # **Assuming /tf2 topic is being broadcasted
-    tf_buffer = tf2_ros.Buffer()
-    listener = tf2_ros.TransformListener(tf_buffer)
+# # From https://answers.ros.org/question/323075/transform-the-coordinate-frame-of-a-pose-from-one-fixed-frame-to-another/
+# def transform_pose(input_pose, from_frame, to_frame):
+#     # **Assuming /tf2 topic is being broadcasted
+#     tf_buffer = tf2_ros.Buffer()
+#     listener = tf2_ros.TransformListener(tf_buffer)
 
-    pose_stamped = tf2_geometry_msgs.PoseStamped()
-    pose_stamped.pose = input_pose
-    pose_stamped.header.frame_id = from_frame
-    pose_stamped.header.stamp = rospy.Time.now()
+#     pose_stamped = tf2_geometry_msgs.PoseStamped()
+#     pose_stamped.pose = input_pose
+#     pose_stamped.header.frame_id = from_frame
+#     pose_stamped.header.stamp = rospy.Time.now()
 
-    try:
-        # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
-        output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
-        return output_pose_stamped.pose
+#     try:
+#         # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+#         output_pose_stamped = tf_buffer.transform(pose_stamped, to_frame, rospy.Duration(1))
+#         return output_pose_stamped.pose
 
-    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-        raise
+#     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+#         raise
 
 
 def joint_state_from_link_poses(pose1, pose2, axis):

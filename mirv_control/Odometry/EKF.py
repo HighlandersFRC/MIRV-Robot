@@ -1,4 +1,4 @@
-!/usr/bin/env python
+#!/usr/bin/env python3
 
 import roslib
 import rospy
@@ -10,10 +10,13 @@ from geometry_msgs.msg import Vector3Stamped
 from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Float32
 from scipy import linalg
-import conversion_lib
 
+sys.path.append('./')
+sys.path.append('../')
+sys.path.append('../../')
+import helpful_functions_lib
 
-class AckEkf:
+class DDEkf:
 
     def __init__(self):
 
@@ -225,15 +228,17 @@ class AckEkf:
 
 def main():
     rospy.init_node('ack_ekf', anonymous=True)
-    ekf = AckEkf()
+    ekf = DDEkf()
     r = rospy.Rate(ekf.update_frequency)
     ekf.sensor_timeout = 1
     try:
-        while True:
+        while not rospy.is_shutdown():
             r.sleep()
             ekf.kalman_update()
     except KeyboardInterrupt:
         print("Shutting down")
+    except:
+        print('Shutting down from any')
 
 
 if __name__ == '__main__':
