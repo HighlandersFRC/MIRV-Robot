@@ -129,11 +129,11 @@ def piLitDetect(img, frame, depthFrame):
 
             complementaryAngle = math.pi/2 - angleToPiLit
 
-            horizontalOffsetToPiLit = depth * math.cos(complementaryAngle)
+            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle)) + intakeOffset
 
             verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
-            angleToPiLitFromIntake = math.atan2(verticalOffsetToPiLit, horizontalOffsetToPiLit + intakeOffset)
+            angleToPiLitFromIntake = math.atan2(verticalOffsetToPiLit, horizontalOffsetToPiLit)
 
             print("DEPTH: ", depth, "ANGLE: ", angleToPiLitFromIntake)
 
