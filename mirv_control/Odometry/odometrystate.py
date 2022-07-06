@@ -4,6 +4,7 @@ import csv
 import os
 from datetime import datetime
 
+
 class State:
     def __init__(self):
         self.gps_x = 0

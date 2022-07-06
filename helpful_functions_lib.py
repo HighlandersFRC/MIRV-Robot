@@ -102,6 +102,42 @@ def euler2quat_from_pose(orientation, euler):
     return orientation
 
 
+# Expects a pose in the form: x, y, z, w
+def state_from_pose_3D(pose):
+    euler_orientation = quat_from_pose2eul(pose.orientation)
+    x = np.array([pose.position.x, pose.position.y, euler_orientation[0]])[:, None]
+    return x
+
+
+# Expects a state in the form: x, y, eul_z
+def pose_from_state_3D(x):
+    pose = Pose()
+    pose.position.x = x[0, 0]
+    pose.position.y = x[1, 0]
+    pose.position.z = 0
+    euler_angles = np.array([x[2, 0], 0, 0])[:, None]
+    pose.orientation = euler2quat_from_pose(pose.orientation, euler_angles)
+    return pose
+
+
+# Expects a pose in the form: x, y, z, w
+def measurement_from_pose_3D(pose):
+    euler_orientation = quat_from_pose2eul(pose.orientation)
+    x = np.array([pose.position.x, pose.position.y, euler_orientation[0]])[:, None]
+    return x
+
+
+# Expects a state in the form: x, y, eul_z
+def pose_from_measurement_3D(x):
+    pose = Pose()
+    pose.position.x = x[0, 0]
+    pose.position.y = x[1, 0]
+    pose.position.z = 0
+    euler_angles = np.array([x[2, 0], 0, 0])[:, None]
+    pose.orientation = euler2quat_from_pose(pose.orientation, euler_angles)
+    return pose
+
+
 # Grab the relevant chunk from the input matrix
 def sub_matrix(matrix, ids, id, size):
     i = np.where(ids == id)[0][0]
@@ -175,3 +211,22 @@ def get_frame_transform(from_frame, to_frame):
     result.orientation.z = rz[2]
     result.orientation.w = rz[3]
     return result
+
+
+def state_cov_to_covariance_matrix(cov):
+    if np.shape(cov)[0] == 6:
+        output_3D = np.zeros((6, 6))
+        output_3D[0:2, 0:2] = cov[0:2, 0:2]
+        output_3D[0:2, 5] = cov[0:2, 2]
+        output_3D[5, 0:2] = cov[2, 0:2]
+        output_3D[5, 5] = cov[2, 2]
+    else:
+        output_3D = cov[0:6, 0:6]
+    return output_3D
+
+
+def covariance_to_ros_covariance(cov):
+    ros_cov = np.zeros(36, dtype=np.float64)
+    for i in range(6):
+        ros_cov[6*i : 6*(i+1)] = cov[i, :]
+    return ros_cov

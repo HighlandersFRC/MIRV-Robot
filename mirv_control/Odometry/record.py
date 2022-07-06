@@ -4,11 +4,13 @@ from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
-from odometrystate import State
 import math
 import sys
+sys.path.append('./')
+sys.path.append('../')
 sys.path.append('../../')
 import helpful_functions_lib
+from odometrystate import State
 
 state = State()
 
