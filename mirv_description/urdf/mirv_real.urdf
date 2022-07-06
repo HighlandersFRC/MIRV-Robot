@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<robot name="mirv">
+    <!-- Frames -->
+    <link name="base_link"/>
+    <link name="gps_link"/>
+    <link name="front_camera_link"/>
+    <link name="rear_camera_link"/>
+
+    <!-- GPS -->
+    <joint name="gps_joint" type="fixed" >
+        <parent link="base_link" />
+        <child link="gps_link" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </joint>
+
+    <!-- Front Camera -->
+    <joint name="front_camera_joint" type="fixed" >
+        <parent link="base_link" />
+        <child link="front_camera_link" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </joint>
+
+    <!-- Rear Camera -->
+    <joint name="rear_camera_joint" type="fixed" >
+        <parent link="base_link" />
+        <child link="rear_camera_link" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </joint>
+</robot>

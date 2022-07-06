@@ -26,7 +26,7 @@ with serial.Serial('/dev/ttyUSB0', 115200, timeout=1) as ser:
             if (line[0] == "$GPGGA"):
                 currentGGA.loadMessage(line)
                 rosPubMsg.header.stamp = rospy.Time.now()
-                rosPubMsg.header.frame_id = "global"
+                rosPubMsg.header.frame_id = "map"
                 rosPubMsg.latitude = currentGGA.getLatitude()
                 rosPubMsg.longitude = currentGGA.getLongitude()
                 rosPubMsg.altitude = currentGGA.getAltitude()

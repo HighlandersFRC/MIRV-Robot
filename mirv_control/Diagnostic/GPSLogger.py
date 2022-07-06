@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 import math
 import rospy
-from std_msgs.msg import Float64MultiArray
+from sensor_msgs.msg import NavSatFix
 import math
 import time
 import numpy as np
 from numpy import array
 import csv
 from datetime import datetime
+
+
 class Logger():
     points = []
     iterations = 0
+
     def __init__(self):
         rospy.init_node('TruckCoordinateLogger', anonymous=True)
         self.points.append(["Iteration", "lat", "lon"])
+
     def getPos(self, data):
         if(self.iterations < 1000):
             print(self.iterations)
-            point = data.data
-            self.points.append([self.iterations, point[0], point[1]])
+            self.points.append([self.iterations, data.latitude, data.longitude])
             self.iterations += 1
         else:
             self.logData()
@@ -34,12 +37,17 @@ class Logger():
 
 
 calculator = Logger()
+
+
 def run():
-    sub = rospy.Subscriber("GPSCoordinates", Float64MultiArray, callBack)
+    sub = rospy.Subscriber("fix/gps", NavSatFix, callBack)
     rospy.spin()
     calculator.logData()
+
+
 def callBack(data):
     calculator.getPos(data)
+
 
 if __name__ == '__main__':
     run()

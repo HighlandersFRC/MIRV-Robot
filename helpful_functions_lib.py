@@ -5,7 +5,6 @@ import numpy as np
 import datetime
 import time
 from geometry_msgs.msg import Pose
-from dse_msgs.msg import PoseMarkers
 from std_msgs.msg import Float64MultiArray
 from std_msgs.msg import MultiArrayLayout
 from std_msgs.msg import MultiArrayDimension

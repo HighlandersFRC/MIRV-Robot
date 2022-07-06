@@ -1,0 +1,9 @@
+<launch>
+  <arg name="device_ip" default="10.10.50.140"/>
+  <arg name="port" default="2369"/>
+  <arg name="frame_id" default="map"/>
+  <remap from="velodyne_points" to="filtered_cloud"/>
+  <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch" pass_all_args="true"/>
+  <node name="object_detector" pkg="multi_object_tracking_lidar" type="kf_tracker"/>
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mirv_real)/rviz/lidar_object_detection.rviz" />
+</launch>

@@ -5,8 +5,10 @@ import numpy as np
 import rospy
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import NavSatFix
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from nav_msgs.msg import Odometry
 import pymap3d as pm
+
+
 class GlobalToTruck():
     startingCord = [0, 0, 0]
     newCord = [0, 0, 0]
@@ -14,7 +16,8 @@ class GlobalToTruck():
     startCordSet = False
     # EarthSMaxis = 6378137
     # eccentricity = 0.08181919
-    gps_m_pub = rospy.Publisher("TruckCoordinates", PoseWithCovarianceStamped, queue_size=2)
+    gps_m_pub = rospy.Publisher("gps/odom", Odometry, queue_size=2)
+
     def __init__(self):
         rospy.init_node('TruckCoordinateConversion', anonymous=True)
 
@@ -58,17 +61,18 @@ class GlobalToTruck():
             self.setStartingPoint([data.latitude, data.longitude, data.altitude])
         output = self.convertToTruck()
 
-        gps_m_pose = PoseWithCovarianceStamped()
-        gps_m_pose.header.stamp = data.header.stamp
-        gps_m_pose.header.frame_id = 'truck'
-        gps_m_pose.pose.pose.position.x = output[0]
-        gps_m_pose.pose.pose.position.y = output[1]
-        gps_m_pose.pose.pose.position.z = 0
-        gps_m_pose.pose.pose.orientation.w = 1
-        gps_m_pose.pose.covariance[0:2] = data.position_covariance[0:2]
-        gps_m_pose.pose.covariance[6:8] = data.position_covariance[2:4]
+        gps_m_odom = Odometry()
+        gps_m_odom.header.stamp = data.header.stamp
+        gps_m_odom.header.frame_id = 'odom'
+        gps_m_odom.child_frame_id = 'odom'
+        gps_m_odom.pose.pose.position.x = output[0]
+        gps_m_odom.pose.pose.position.y = output[1]
+        gps_m_odom.pose.pose.position.z = 0
+        gps_m_odom.pose.pose.orientation.w = 1
+        gps_m_odom.pose.covariance[0:2] = data.position_covariance[0:2]
+        gps_m_odom.pose.covariance[6:8] = data.position_covariance[2:4]
 
-        self.gps_m_pub.publish(gps_m_pose)
+        self.gps_m_pub.publish(gps_m_odom)
 
         print("output: {}".format(output))
 
