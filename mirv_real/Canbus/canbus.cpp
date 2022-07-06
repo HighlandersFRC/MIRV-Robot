@@ -18,6 +18,8 @@
 #include "std_msgs/String.h"
 #include "std_msgs/Float32MultiArray.h"
 #include "sensor_msgs/Joy.h"
+#include "geometry_msgs/Twist.h"
+#include "geometry_msgs/Vector3.h"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include "diagnostic_msgs/DiagnosticStatus.h"
 #include "std_msgs/Float64MultiArray.h"
@@ -49,6 +51,10 @@ double* pdpCurrents = {};
 
 double * voltagePtr = &pdpVoltage;
 int * currentsFilledPtr = &pdpCurrentsFilled;
+
+double wheelBaseWidth = 0.0;
+double wheelRadius = 0.0;
+
 
 void initializeDriveMotors(){
 	//PID config
@@ -327,19 +333,35 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 	}
 }
 
-void velocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
+void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 
-	double leftVelocity = msg->data[0];
-	double rightVelocity = msg->data[1];
+	geometry_msgs::Vector3 linear = msg->linear;
+	geometry_msgs::Vector3 angular = msg->linear;
+
+	double V = msg->linear.x;
+	double w = msg->angular.z;
+
+
+
+	double leftVelocity = (V - w *( wheelBaseWidth / 2.0)) / wheelRadius;
+	double rightVelocity = -(V + w *( wheelBaseWidth / 2.0)) / wheelRadius;
+
+
+	cout << "Setting Wheel Velocity: " << leftVelocity << ", " << rightVelocity<<"\n";
+
+	//double leftVelocity = msg->data[0];
+	//double rightVelocity = msg->data[1];
 
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
-	double rightTicksPer100MS = -getTicksPer100MSFromVelocity(rightVelocity);
+	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
 	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 
 	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+
+
 }
 
 void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
@@ -350,9 +372,13 @@ int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
+
+
+	n.param("wheel_base_width", wheelBaseWidth, 0.483);
+	n.param("wheel_radius", wheelRadius, 0.1905);
 	
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
-	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, velocityDriveCallback);
+	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
 
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
@@ -363,6 +389,9 @@ int main(int argc, char **argv) {
 
 	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64MultiArray>("encoder/velocity", 10);
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
+
+
+	// /wheel_encoders
 
 	initializeDriveMotors();
 
