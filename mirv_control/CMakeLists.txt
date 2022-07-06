@@ -234,6 +234,6 @@ catkin_install_python(PROGRAMS Odometry/record.py
 catkin_install_python(PROGRAMS Masters/remotedrive_master.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS Odometry/filter.py
+catkin_install_python(PROGRAMS Odometry/EKF.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
