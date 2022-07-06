@@ -64,15 +64,8 @@ class DDEkf:
         self.H_imu[0, 2] = 1
         self.H_none = np.eye(3)
 
-        # Measurement covariance
-        gps_std = 0.25
         # gps_vel_std = 0.25
-        magnetometer_std = 0.05
         self.R = None
-        self.R_all = np.diag([gps_std**2, gps_std**2, magnetometer_std])
-        self.R_gps = np.diag([gps_std**2, gps_std**2])
-        self.R_imu = np.diag([magnetometer_std])
-        self.R_none = np.diag([gps_std**2, gps_std**2, magnetometer_std])
 
         # Vehicle motion model covariance
         xy_std = 0.05
@@ -97,7 +90,7 @@ class DDEkf:
 
         # Computes the current state estimate from the gps data
         self.gps_sub = rospy.Subscriber("/gps/odom", Odometry, self.gps_callback)
-        self.imu_sub = rospy.Subscriber("/imu", Imu, self.imu_cb)
+        self.imu_sub = rospy.Subscriber("/imu_raw", Imu, self.imu_cb)
 
         # Updates the local speed and wheel angle
         self.velocity_sub = rospy.Subscriber("/encoder/velocity", JointState, self.velocity_callback)
@@ -116,7 +109,7 @@ class DDEkf:
                 self.z = np.zeros(3)
                 self.z[0] = self.gps_x
                 self.z[1] = self.gps_y
-                self.R = self.R_all
+                self.R = np.diag([self.gps_var, self.gps_var, self.magnetometer_var])
                 if np.abs(self.mag_yaw - self.xf[2]) < np.pi:
                     self.z[2] = self.mag_yaw
                 else:
@@ -130,12 +123,12 @@ class DDEkf:
                 self.z = np.zeros(2)
                 self.z[0] = self.gps_x
                 self.z[1] = self.gps_y
-                self.R = self.R_gps
+                self.R = np.diag([self.gps_var, self.gps_var])
         elif self.last_time - self.last_imu_time < self.sensor_timeout:
             # We only have IMU data
             self.H = self.H_imu
             self.z = np.zeros(1)
-            self.R = self.R_imu
+            self.R = np.diag([self.magnetometer_var])
             if np.abs(self.mag_yaw - self.xf[2]) < np.pi:
                 self.z[0] = self.mag_yaw
             else:
@@ -148,7 +141,7 @@ class DDEkf:
             # We have no sensor data
             self.H = self.H_none
             self.z = None
-            self.R = self.R_none
+            self.R = None
 
         if self.last_time - self.last_gps_time > self.sensor_timeout:
             print('bad GPS data')
@@ -193,7 +186,7 @@ class DDEkf:
 
         # Publish the Pose estimate
         odom = Odometry()
-        odom.header.frame_id = 'world'
+        odom.header.frame_id = 'odom'
         odom.header.stamp = rospy.Time.now()
         odom.pose.pose = conversion_lib.pose_from_state_3D(self.xf[:, None])
         cov_6x6 = np.zeros((6, 6))
@@ -208,6 +201,7 @@ class DDEkf:
         # Convert the GPS coordinates to meters away from the first recorded coordinate
         self.gps_x = data.pose.pose.position.x
         self.gps_y = data.pose.pose.position.y
+        self.gps_var = data.pose.covariance[0]
             # print(self.gps_x, self.gps_y)
 
     # W is the vehicle's forward velocity in m/s
@@ -223,6 +217,7 @@ class DDEkf:
             self.mag_zero = conversion_lib.quat_from_pose2eul(msg.orientation)[0]
             self.t = 1
         self.mag_yaw = conversion_lib.quat_from_pose2eul(msg.orientation)[0] - self.mag_zero
+        self.magnetometer_var = msg.orientation_covariance[8]
         print(self.mag_yaw, self.mag_zero)
 
 
