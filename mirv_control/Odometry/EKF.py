@@ -11,9 +11,6 @@ from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Float32
 from scipy import linalg
 
-sys.path.append('./')
-sys.path.append('../')
-sys.path.append('../../')
 import helpful_functions_lib as conversion_lib
 
 class DDEkf:
@@ -186,6 +183,7 @@ class DDEkf:
 
         # Publish the Pose estimate
         odom = Odometry()
+        odom.child_frame_id = 'base_link'
         odom.header.frame_id = 'odom'
         odom.header.stamp = rospy.Time.now()
         odom.pose.pose = conversion_lib.pose_from_state_3D(self.xf[:, None])
