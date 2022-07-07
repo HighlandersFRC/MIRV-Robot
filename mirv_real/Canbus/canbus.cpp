@@ -347,6 +347,12 @@ class Intake {
 
 Intake intake;
 
+void justWork(){
+		frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
+		frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+		backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+		backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+}
 void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& statusMsg){
 	/*
 	Check whether joystick is connected
@@ -387,11 +393,17 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
 	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
-	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	// frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	// backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 
-	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	// frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	// backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+
+	frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+
+	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 
 
 }
@@ -412,7 +424,7 @@ int main(int argc, char **argv) {
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
 	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
-
+	justWork();
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
