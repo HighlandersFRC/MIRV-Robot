@@ -26,6 +26,10 @@ class PID:
         self.output = 0
         self.result = 0
 
+    def setMaxMinOutput(self, output):
+        self.maxOutput = output
+        self.minOutput = -output
+
     def updatePID(self, value):
         self.error = self.setPoint - value
 

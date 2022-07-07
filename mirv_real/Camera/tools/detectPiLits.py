@@ -102,6 +102,8 @@ def piLitDetect(img, frame, depthFrame):
     # print(depthFrame[0][0])
 
     intakeSide = "RIGHT"
+
+    print("DETECTING...")
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
         if(score > 0.75):
@@ -129,13 +131,16 @@ def piLitDetect(img, frame, depthFrame):
 
             complementaryAngle = math.pi/2 - angleToPiLit
 
-            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle)) + intakeOffset
+            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
 
             verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
-            angleToPiLitFromIntake = math.atan2(verticalOffsetToPiLit, horizontalOffsetToPiLit)
+            if(depth != 0):
+                angleToPiLitFromIntake = math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit)
+            else:
+                angleToPiLitFromIntake = angleToPiLit
 
-            print("DEPTH: ", depth, "ANGLE: ", angleToPiLitFromIntake)
+            print("DEPTH: ", depth, "ANGLE: ", math.degrees(angleToPiLitFromIntake), " SCORE: ", score)
 
             piLitLocation = [depth, angleToPiLitFromIntake]
 

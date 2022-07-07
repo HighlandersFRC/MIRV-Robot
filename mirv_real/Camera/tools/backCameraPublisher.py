@@ -210,8 +210,8 @@ while True:
         print(depthFrame.shape)
         # print("TIME DIFF: ", endTime - initTime)
     
-        cv2.imshow("frame", frame)
-        cv2.imshow("depth", depthFrame)
+        # cv2.imshow("frame", frame)
+        # cv2.imshow("depth", depthFrame)
     
     if cv2.waitKey(1) == ord('q'):
             break

@@ -9,12 +9,12 @@ xoutRgb = pipeline.createXLinkOut()
 xoutRgb.setStreamName("rgb")
 camRgb.preview.link(xoutRgb.input)
 
-found, device_info = dai.Device.getDeviceByMxId("10.0.10.3")
+found, device_info = dai.Device.getDeviceByMxId("10.0.20.2")
 
 with dai.Device(pipeline, device_info) as device:
     qRgb = device.getOutputQueue(name="rgb", maxSize=4, blocking=False)
     while True:
-        cv2.imshow("rgb", qRgb.get().getCvFrame())
+        # cv2.imshow("rgb", qRgb.get().getCvFrame())
         if cv2.waitKey(1) == ord('q'):
             break
 

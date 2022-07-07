@@ -14,6 +14,9 @@ from sensor_msgs.msg import Image
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
 
+from PIL import Image 
+import PIL 
+
 def quat_2_radians(x, y, z, w):
     pitch = math.atan2(2*x*w - 2*y*z, 1-2*x*x - 2* z*z)
     yaw = math.asin(2*x*y + 2*z*w)
@@ -22,6 +25,8 @@ def quat_2_radians(x, y, z, w):
 
 cameraX = 640
 cameraY = 480
+
+firstLoop = True
 
 br = CvBridge()
 
@@ -136,7 +141,7 @@ disparityMultiplier = 255 / stereo.getMaxDisparity()
 
 controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
-ctrl.setManualExposure(expTime, sensIso)
+# ctrl.setManualExposure(expTime, sensIso)
 # ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.DAYLIGHT)
@@ -201,6 +206,14 @@ while True:
     if in_rgb is not None and inDepth is not None:
         # print("IN RGB IS NOT NONE")
         frame = in_rgb.getCvFrame()
+
+        # if firstLoop:
+        result=cv2.imwrite(r'cameraFrame.jpg', frame)
+        if result==True:
+            print("SAVED!")
+            firstLoop = False
+        else:
+            print("DIDN'T SAVE")
         framesMessage = depthAndColorFrame()
         framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
         framesMessage.color_frame = br.cv2_to_imgmsg(frame)
@@ -210,8 +223,8 @@ while True:
         print(depthFrame.shape)
         # print("TIME DIFF: ", endTime - initTime)
     
-        cv2.imshow("frame", frame)
-        cv2.imshow("depth", depthFrame)
+        # cv2.imshow("frame", frame)
+        # cv2.imshow("depth", depthFrame)
     
     if cv2.waitKey(1) == ord('q'):
             break

@@ -384,19 +384,35 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 	}
 }
 
-void velocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
+void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 
-	double leftVelocity = msg->data[0];
-	double rightVelocity = msg->data[1];
+	geometry_msgs::Vector3 linear = msg->linear;
+	geometry_msgs::Vector3 angular = msg->linear;
+
+	double V = msg->linear.x;
+	double w = msg->angular.z;
+
+
+
+	double leftVelocity = (V - w *( wheelBaseWidth / 2.0)) / wheelRadius;
+	double rightVelocity = -(V + w *( wheelBaseWidth / 2.0)) / wheelRadius;
+
+
+	cout << "Setting Wheel Velocity: " << leftVelocity << ", " << rightVelocity<<"\n";
+
+	//double leftVelocity = msg->data[0];
+	//double rightVelocity = msg->data[1];
 
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
-	double rightTicksPer100MS = -getTicksPer100MSFromVelocity(rightVelocity);
+	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
 	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 
 	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+
+
 }
 
 void powerDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& powers){
@@ -420,7 +436,7 @@ int main(int argc, char **argv) {
 	ros::NodeHandle n;
 	
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
-	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, velocityDriveCallback);
+	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
 	ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
 
