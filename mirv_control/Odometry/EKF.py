@@ -24,7 +24,7 @@ class DDEkf:
         self.r = rospy.get_param('~wheel_radius', 0.1845)
         self.enc_ticks = rospy.get_param('~encoder_ticks_per_rotation', 24576)
         # Distance between axels
-        self.L = rospy.get_param('~wheel_base_width', 0.483)
+        self.L = rospy.get_param('~wheel_base_width', 0.4358)
         self.xf = np.array(rospy.get_param('~inital_state', [0, 0, 0]))
 
         # # Get params from launch file

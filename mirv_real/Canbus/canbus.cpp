@@ -123,13 +123,19 @@ double maxVelocity = 6380.0;
 
 //distance between right and left wheels (meters)
 //16 and 11/16 inches
-double wheelSpacing = 0.4238625;
+// From calibration driving, updated to 0.4358
+double wheelSpacing = 0.4358;
 
 //wheel circumference (meters)
-double wheelCircumference = 0.608447957;
+// used to be 0.608447957
+// From calibration driving, updated to 0.5796
+double wheelCircumference = 0.5796;
 
 //gear ratio of the drive motors
 double motorToWheelRatio = 12.0;
+
+//encoder ticks per motor rotation
+double ticksPerRev = 2048.0;
 
 //cancoder resolutions
 double cancoderTicksPerRevolution = 4096.0;
@@ -139,15 +145,15 @@ bool haveJoystick = true;
 
 //convert motor ticks to meters
 double getDistanceFromTicks(double ticks){
-	return (ticks / 2048.0) * wheelCircumference / motorToWheelRatio;
+	return (ticks / ticksPerRev) / motorToWheelRatio * wheelCircumference;
 }
 
 double getTicksPer100MSFromVelocity(double velocity){
-	return (((velocity / wheelCircumference) * 2048.0) / 10.0) * 12.0;
+	return ((velocity * ticksPerRev) / 10.0) * motorToWheelRatio;
 }
 
 double getVelocityFromTicksPer100MS(double ticksPer100MS){
-	return (((ticksPer100MS * 10.0) / 2048.0) * wheelCircumference) / 12.0;
+	return (((ticksPer100MS * 10.0) / ticksPerRev) / motorToWheelRatio;
 }
 
 //pose object for returning odometry info
@@ -384,9 +390,15 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	double w = msg->angular.z;
 
 
+    // 4800 ticks/sec -> 0.2 rot/sec -> 0.12 m/sec
+	// return (((velocity / wheelCircumference) * 2048.0) / 10.0) * 12.0;
+    // 0.1 m/sec -> 0.16666 rot/sec = 1 rad/sec
+    // 0.167 * 2048 / 10 * 12 =
+    // ticks per 100ms = 480
 
-	double leftVelocity = (V - w *( wheelBaseWidth / 2.0)) / wheelRadius;
-	double rightVelocity = -(V + w *( wheelBaseWidth / 2.0)) / wheelRadius;
+    // Angular velocity in rot/sec
+	double leftVelocity = (V - w * (wheelBaseWidth / 2.0)) / wheelCircumference;
+	double rightVelocity = -(V + w * (wheelBaseWidth / 2.0)) / wheelCircumference;
 
 
 	cout << "Setting Wheel Velocity: " << leftVelocity << ", " << rightVelocity<<"\n";
