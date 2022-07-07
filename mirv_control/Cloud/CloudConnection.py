@@ -19,12 +19,14 @@ from aiohttp import web
 from av import VideoFrame
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from time import sleep
+from threading import Thread
+
 
 
 CLOUD_HOST = os.getenv('API_HOST')
 CLOUD_PORT = os.getenv('API_PORT')
 ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
-
 
 if CLOUD_HOST is None:
     print("Please set the API_HOST Environment Variable to the IP of the cloud server")
@@ -38,28 +40,80 @@ if ROVER_COMMON_NAME is None:
     print("Please set the ROVER_COMMON_NAME Environment Variable to the proper Rover ID in order to connect to cloud resources")
     exit()
 
+
+DEFAULT_STATUS_MESSAGE = {
+    "roverId": f"{ROVER_COMMON_NAME}",
+    "state": "docked",
+    "status": "available",
+    "battery-percent": -1,
+    "battery-voltage": -1,
+    "health": {
+        "electronics": "unavailable",
+        "drivetrain": "unavailable",
+        "intake": "unavailable",
+        "sensors": "unavailable",
+        "garage": "unavailable",
+        "power": "unavailable",
+        "general": "unavailable"
+    },
+    "telemetry": {
+        "lat": 0,
+        "long": 0,
+        "heading": 0,
+        "speed": 0
+    }
+}
+
+
+
+
 # Setup webtrc connection components
 pcs = set()
 channels = []
 
 #Cache incoming frames for sending
 frames = []
+status_messages = []
+
+def get_webrtc_state():
+    if len(pcs) > 0:
+        return pcs[0].connectionState
+    else:
+        return "closed"
 
 
-# Helper function, sends status updates to both over webrtc and to the cloud
-def send(type: str, msg):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+# Tries to connect to Cloud API and form Socket Connection
+def connect_to_api():
+    print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
     try:
-        sio.emit(type, msg)
-        
+        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": "rover_6"},
+                auth={"password": None}, socketio_path="/ws/socket.io")
+        print("Connection Succeeded")
+    except socketio.exceptions.ConnectionError:
+        print(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
+
+
+# Sends a Message to the API
+def send_to_api(message, type="data"):
+    try:
+        if api_connected:
+            sio.emit(type, message)
+        else:
+            print("API Disconnected. Cannot Send Message")
+    except socketio.exceptions.BadNamespaceError:
+        print("Unable to send message to socket server")
+
+
+# Send a Message on Webrtc Channel
+def send_to_webrtc(message):
+    try:
+        str_msg = json.dumps(msg)
+        for channel in channels:
+            print("Sending", + str_msg)
+            channel.send(str_msg)
     except Exception as e:
-        print("Unable to Send Message to Server", e)
-    str_msg = json.dumps(msg)
-    print(len(channels))
-    for channel in channels:
-        print("Sending: " + str_msg)
-        channel.send(str_msg)
+        print("Unable to send message to webrtc")
+    
     
 # Receives ROS frames and adds them to internal buffer to be sent to the cloud
 def frameSubscriber(data):
@@ -71,16 +125,32 @@ def frameSubscriber(data):
 # Receives data about robot status and passes it on to the Cloud
 def statusSubscriber(data):
     if data is not None and len(str(data.data)) > 0:
-        print(data.data)
         json_data = json.loads(str(data.data))
-        print(json_data)
-        send("data", json_data)
+        status_messages[0] = json_data
     else:
         print("Received Data with Type None", data)
 
+def update_remote():
+    while True:
+        global socket_connection
+        if socket_connection is None:
+            print("Retrying Connection")
+            socket_connection = connect_to_api()
+        elif not socket_connection.connected:
+            print("Connection to API has been lost")
+        else:
+            pass
+        print("test")
+        sleep(5)
+
+    
 
 # Setup Socket Connection with the cloud
 sio = socketio.Client()
+api_connected = False
+
+
+# Activate ROS Nodes
 rospy.init_node("CloudConnection")
 rospy.Subscriber("CameraFrames", depthAndColorFrame, frameSubscriber)
 rospy.Subscriber("RobotStatus", String, statusSubscriber)
@@ -109,6 +179,16 @@ class RobotVideoStreamTrack(VideoStreamTrack):
 
 # Website posts an offer to python server
 async def offer(request):
+
+    if not get_webrtc_state() == 'closed':
+        print("Testing")
+        return web.Response(
+            content_type="application/json",
+            text=json.dumps(
+                {"error": "Robot not available."}
+            ),
+        )
+
     params = await request.json()
     print("Received Params")
     print(params)
@@ -134,7 +214,6 @@ async def offer(request):
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
-        #log_info("Connection state is %s", pc.connectionState)
         if pc.connectionState == "failed":
             await pc.close()
             pcs.discard(pc)
@@ -151,6 +230,8 @@ async def offer(request):
     print(json.dumps({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}))
 
 
+
+
     return web.Response(
         content_type="application/json",
         text=json.dumps(
@@ -158,19 +239,47 @@ async def offer(request):
         ),
     )
 
-async def on_shutdown(app):
-    # close peer connections
-    coros = [pc.close() for pc in pcs]
-    await asyncio.gather(*coros)
-    pcs.clear()
-    sio.disconnect()
 
+# Periodically tries to connect to the cloud if the system is not connected
+async def update_connection():
+
+    while True:
+        if not api_connected:
+            connect_to_api()
+        await asyncio.sleep(5)
+
+async def update_status():
+    
+    while True:        
+        if len(status_messages) > 0:
+            status = status_messages[-1]
+        else:
+            status = DEFAULT_STATUS_MESSAGE
+        
+        if api_connected:
+            send_to_api(status)
+        
+        #if get_webrtc_state == "connected":
+        #    send_to_webrtc(status)
+        await asyncio.sleep(5)
+
+
+def stop():
+    connection_task.cancel()
+    status_task.cancel()
   
 
 @sio.on('connect')
 def connect():
-    print('connection established')
+    print('API connection established')
+    global api_connected
+    api_connected = True
 
+@sio.event
+def disconnect():
+    print("API connection lost")
+    global api_connected
+    api_connected = False
 
 @sio.on('message')
 def message(data):
@@ -193,17 +302,21 @@ def connection_offer(data):
     return x.json()
 
 
+async def on_shutdown(app):
+    # close peer connections
+    coros = [pc.close() for pc in pcs]
+    await asyncio.gather(*coros)
+    pcs.clear()
+    sio.disconnect()
+    stop()
 
-@sio.on('disconnect')
-def disconnect():
-    print('disconnected from server')
 
+loop = asyncio.get_event_loop()
 
+status_task = loop.create_task(update_status())
+connection_task = loop.create_task(update_connection())
 
-# Send sample Rover Status to Cloud
-print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
-sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": "rover_6"},
-            auth={"password": None}, socketio_path="/ws/socket.io")
+'''
 send("data", {
     "roverId": f"{ROVER_COMMON_NAME}",
     "state": "docked",
@@ -226,6 +339,8 @@ send("data", {
         "speed": 0
     }
 })
+'''
+
 
 app = web.Application()
 app.on_shutdown.append(on_shutdown)
