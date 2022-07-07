@@ -21,7 +21,8 @@ class DDEkf:
         self.update_frequency = rospy.get_param('~frequency', 10)
         self.sensor_timeout = 1 / self.update_frequency
         # Define vehicle dimensions - wheel radius
-        self.r = rospy.get_param('~wheel_radius', 0.1905)
+        self.r = rospy.get_param('~wheel_radius', 0.1845)
+        self.enc_ticks = rospy.get_param('~encoder_ticks_per_rotation', 24576)
         # Distance between axels
         self.L = rospy.get_param('~wheel_base_width', 0.483)
         self.xf = np.array(rospy.get_param('~inital_state', [0, 0, 0]))
@@ -62,6 +63,8 @@ class DDEkf:
         self.H_none = np.eye(3)
 
         # gps_vel_std = 0.25
+        self.magnetometer_var = None
+        self.gps_var = None
         self.R = None
 
         # Vehicle motion model covariance
@@ -87,7 +90,7 @@ class DDEkf:
 
         # Computes the current state estimate from the gps data
         self.gps_sub = rospy.Subscriber("/gps/odom", Odometry, self.gps_callback)
-        self.imu_sub = rospy.Subscriber("/imu_raw", Imu, self.imu_cb)
+        self.imu_sub = rospy.Subscriber("/imu/filtered", Imu, self.imu_cb)
 
         # Updates the local speed and wheel angle
         self.velocity_sub = rospy.Subscriber("/encoder/velocity", JointState, self.velocity_callback)
@@ -159,7 +162,6 @@ class DDEkf:
         F2 = [0, 1, self.r/2 * dt * fwd_vel * np.cos(self.xf[2])]
         F = np.array([F1, F2, [0, 0, 1]])
 
-
         if self.z is None:
             # We had no measurements, just do the motion update
             pp = np.dot(F, np.dot(self.P, F.T)) + self.Q
@@ -193,30 +195,26 @@ class DDEkf:
         odom.pose.covariance = list(conversion_lib.covariance_to_ros_covariance(cov))
         self.pose_pub.publish(odom)
 
-
     def gps_callback(self, data):
         self.last_gps_time = rospy.Time.now().to_sec()
         # Convert the GPS coordinates to meters away from the first recorded coordinate
         self.gps_x = data.pose.pose.position.x
         self.gps_y = data.pose.pose.position.y
+
+        # GPS covariance is same for x and y, grab it from the first element of the covariance matrix
         self.gps_var = data.pose.covariance[0]
             # print(self.gps_x, self.gps_y)
 
     # W is the vehicle's forward velocity in m/s
     def velocity_callback(self, data):
         # Update w from data
-        self.LeftWheelVel = data.velocity[0]
-        self.RightWheelVel = data.velocity[1]
-
+        self.RightWheelVel = data.velocity[0] / self.enc_ticks
+        self.LeftWheelVel = data.velocity[1] / self.enc_ticks
 
     def imu_cb(self, msg):
         self.last_imu_time = rospy.Time.now().to_sec()
-        if self.t == 0:
-            self.mag_zero = conversion_lib.quat_from_pose2eul(msg.orientation)[0]
-            self.t = 1
-        self.mag_yaw = conversion_lib.quat_from_pose2eul(msg.orientation)[0] - self.mag_zero
+        self.mag_yaw = conversion_lib.quat_from_pose2eul(msg.orientation)[0]
         self.magnetometer_var = msg.orientation_covariance[8]
-        print(self.mag_yaw, self.mag_zero)
 
 
 def main():
