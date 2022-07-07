@@ -111,7 +111,11 @@ void initializeDriveMotors(){
 	frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-	backRightDrive.Set(ControlMode::Velocity, 0.0);
+	backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	// frontRightDrive.setNeutralMode(NeutralMode.Coast);
+	// frontLeftDrive.setNeutralMode(NeutralMode.Coast);
+	// backRightDrive.setNeutralMode(NeutralMode.Coast);
+	// backLeftDrive.setNeutralMode(NeutralMode.Caost);
 }
 
 //maximum rpm of drive motors
@@ -393,17 +397,17 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
 	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
-	// frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-	// backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 
-	// frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-	// backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 
-	frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
-	backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	// frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	// backRightDrive.Set(ControlMode::PercentOutput, 0.0);
 
-	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+	// frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+	// backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 
 
 }
@@ -424,7 +428,6 @@ int main(int argc, char **argv) {
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
 	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
-	justWork();
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 

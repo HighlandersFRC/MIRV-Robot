@@ -237,3 +237,6 @@ catkin_install_python(PROGRAMS Masters/remotedrive_master.py
 catkin_install_python(PROGRAMS Odometry/EKF.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+catkin_install_python(PROGRAMS Diagnostic/SimpleTwist.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
