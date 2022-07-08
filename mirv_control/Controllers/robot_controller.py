@@ -30,6 +30,7 @@ class RobotController:
         self.kD = 0
         self.setPoint = 0
         self.driveToPiLit = True
+        self.prevPiLitAngle = 0
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
         self.piLitPID.setMaxMinOutput(0.5)
@@ -47,29 +48,20 @@ class RobotController:
         self.piLitDepth = piLitLocation[0]
         self.piLitAngle = piLitLocation[1]
         self.setPoint = self.imu + self.piLitAngle
-        if(self.updatedLocation == False):
+        if(abs(self.piLitAngle - self.prevPiLitAngle) > 3):
             self.piLitPID.setSetPoint(self.setPoint)
-            self.updatedLocation = True
+            # self.updatedLocation = True
+        self.prevPiLitAngle = self.piLitAngle
 
     def updateIMU(self, data):
         self.imu = data.data
 
     def turnToPiLit(self):
-        self.updatedLocation = False
+        # self.updatedLocation = False
         while True:
             # print("ASDJFKLAJSDKLFJASLKDFJ")
-            result = self.piLitPID.updatePID(self.imu)
+            result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
             result = -result
-
-            # if(result > 0):
-            #     print("GREATER THAN ZERO")
-            #     result = result + 0.2
-            # elif(result < 0):
-            #     print("LESS THAN ZERO")
-            #     result = result - 0.2
-            # else:
-            #     print("ZERO")
-            #     result = 0
 
             print("RESULT: ", result)
 
