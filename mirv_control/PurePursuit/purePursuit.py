@@ -14,7 +14,7 @@ class PurePursuit():
     wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
     logData = [0,0]
-
+    maxAngularVel = 1.5
     maxDriveSpeed = .5
     currentMaxDriveSpeed = .5
     startingTheta = 3.14159/2
@@ -96,6 +96,10 @@ class PurePursuit():
                 RobotTwist = [maxSpeed, angularVel]                
             else:
                 RobotTwist = [maxSpeed, -angularVel]
+        else:
+            if(x < 0):
+                RobotTwist = [0, self.maxAngularVel]
+
         return (RobotTwist)
 
     ##helper methods to calculateSpeedSides
