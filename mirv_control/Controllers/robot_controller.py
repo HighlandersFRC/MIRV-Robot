@@ -22,6 +22,7 @@ class RobotController:
         self.piLitAngle = 0
 
         self.updatedLocation = False
+        self.running = False
 
         self.imu = 0
 
@@ -29,7 +30,7 @@ class RobotController:
         self.kI = 0
         self.kD = 0
         self.setPoint = 0
-        self.driveToPiLit = True
+        self.driveToPiLit = False
         self.prevPiLitAngle = 0
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
@@ -58,45 +59,53 @@ class RobotController:
 
     def turnToPiLit(self):
         # self.updatedLocation = False
-        while True:
-            # print("ASDJFKLAJSDKLFJASLKDFJ")
-            result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
-            result = -result
+        if(self.running == False):
+            self.running = True
+            while(self.driveToPiLit == False):
+                # print("ASDJFKLAJSDKLFJASLKDFJ")
+                result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+                result = -result
 
-            print("RESULT: ", result)
+                print("RESULT: ", result)
 
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = result
+
+                self.velocitydrive_pub.publish(self.velocityMsg)
+
+                # self.power_drive(-result, result)
+
+                if(abs(self.imu - self.setPoint) < 3):
+                    print("GOT TO TARGET!!!!")
+                    self.driveToPiLit = True
+                    break
+
+                if(abs(result) < 0.1):
+                    self.driveToPiLit = True
+                    break
+
+                # if(self.piLitAngle == 0):
+                #     self.driveToPiLit = False
+                #     break
+            
+            print("FINISHED")
+                # rospy.sleep(0.5)
+            initTime = time.time()
+
+            while(self.driveToPiLit):
+                print((time.time() - initTime))
+                self.velocityMsg.linear.x = self.piLitDepth/2
+                self.velocityMsg.angular.z = 0
+                self.velocitydrive_pub.publish(self.velocityMsg)
+                if(time.time() - initTime < 2):
+                    self.driveToPiLit = False
+            
             self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = result
-
+            self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
 
-            # self.power_drive(-result, result)
-
-            if(abs(self.imu - self.setPoint) < 3):
-                print("GOT TO TARGET!!!!")
-                self.driveToPiLit = True
-                break
-
-            if(abs(result) < 0.1):
-                self.driveToPiLit = True
-                break
-
-            # if(self.piLitAngle == 0):
-            #     self.driveToPiLit = False
-            #     break
+            self.running = False
         
-        print("FINISHED")
-            # rospy.sleep(0.5)
-        initTime = time.time()
-
-        # while((time.time() - initTime < 2) and self.driveToPiLit):
-        #     self.velocityMsg.linear.x = self.piLitDepth/2
-        #     self.velocityMsg.angular.z = 0
-        #     self.velocitydrive_pub.publish(self.velocityMsg)
-        
-        self.velocityMsg.linear.x = 0
-        self.velocityMsg.angular.z = 0
-        self.velocitydrive_pub.publish(self.velocityMsg)
 
         # while(time.time() - initTime < 3):
         #     self.set_intake_state("intake")
