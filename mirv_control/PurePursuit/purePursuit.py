@@ -19,15 +19,16 @@ class PurePursuit():
     currentMaxDriveSpeed = .5
     startingTheta = 3.14159/2
     lookAheadDist = 1
-    allowedError = 0.5
+    allowedError = 1.0
     allowedErrorDist = 0.1
     lookAheadDist = 4
-    allowedError = 0.5
     robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
     rosPubMsg = Twist()
     pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
+    debugPub = rospy.Publisher("PPdebug", Float64MultiArray, queue_size =5)
+    debugMsg = Float64MultiArray()
 
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)
@@ -40,11 +41,11 @@ class PurePursuit():
         # print([xBRef, yBRef, theta])
         length = 0
         for i in range(len(self.robotCordList)):
-            print("here: {}".format(self.cordList[i]))
             xTBody = self.cordList[i][0]*math.cos(theta) + self.cordList[i][1]*math.sin(theta) - yBRef*math.sin(theta) - xBRef*math.cos(theta)
             yTBody = -self.cordList[i][0]*math.sin(theta) + self.cordList[i][1]*math.cos(theta) - yBRef*math.cos(theta) + xBRef*math.sin(theta)
             distToPoint = round(math.sqrt(math.pow(xTBody,2) + math.pow(yTBody,2)), 3)
             self.robotCordList[i] = [xTBody, yTBody, distToPoint]
+        print("current Truck Position: {}".format(newTruckCord))
         print("target X,Y: {}, CurrentTheta: {}".format(self.robotCordList[0], theta))
         print("targetTruck X,Y: {}".format(self.cordList[0]))
     ## helper methods for update target points
@@ -191,7 +192,7 @@ class PurePursuit():
                 self.rosPubMsg.linear.x = 0
                 self.rosPubMsg.angular.z = 0
                 self.logData = [0,0]
-
+            
             print(self.rosPubMsg)
         
         
@@ -200,7 +201,8 @@ class PurePursuit():
             self.rosPubMsg.linear.x = 0
             self.rosPubMsg.angular.z = 0
             print("no target Point")
-        
+        self.debugMsg.data = [self.robotCordList[0][0], self.robotCordList[0][1], self.robotCordList[0][2]]
+        self.debugPub.publish(self.debugMsg)
         self.pub.publish(self.rosPubMsg)
 
     def run(self):
