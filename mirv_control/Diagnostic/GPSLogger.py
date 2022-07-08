@@ -40,7 +40,7 @@ calculator = Logger()
 
 
 def run():
-    sub = rospy.Subscriber("fix/gps", NavSatFix, callBack)
+    sub = rospy.Subscriber("/gps/fix", NavSatFix, callBack)
     rospy.spin()
     calculator.logData()
 
