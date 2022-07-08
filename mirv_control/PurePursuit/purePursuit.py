@@ -201,9 +201,10 @@ class PurePursuit():
             self.rosPubMsg.linear.x = 0
             self.rosPubMsg.angular.z = 0
             print("no target Point")
+
+        self.pub.publish(self.rosPubMsg)
         self.debugMsg.data = [self.robotCordList[0][0], self.robotCordList[0][1], self.robotCordList[0][2]]
         self.debugPub.publish(self.debugMsg)
-        self.pub.publish(self.rosPubMsg)
 
     def run(self):
         # try:
