@@ -97,7 +97,7 @@ class RobotController:
                 self.velocityMsg.linear.x = self.piLitDepth/2
                 self.velocityMsg.angular.z = 0
                 self.velocitydrive_pub.publish(self.velocityMsg)
-                if(time.time() - initTime < 2):
+                if(time.time() - initTime > 2):
                     self.driveToPiLit = False
             
             self.velocityMsg.linear.x = 0
