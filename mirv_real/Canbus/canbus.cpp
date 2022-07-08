@@ -13,6 +13,7 @@
 #include <SDL2/SDL.h>
 #include <unistd.h>
 #include <ctime>
+#include <cmath>
 #include <math.h>
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -153,7 +154,7 @@ double getTicksPer100MSFromVelocity(double velocity){
 }
 
 double getVelocityFromTicksPer100MS(double ticksPer100MS){
-	return (((ticksPer100MS * 10.0) / ticksPerRev) / motorToWheelRatio;
+	return ((ticksPer100MS * 10.0) / ticksPerRev) / motorToWheelRatio / wheelCircumference * 2 * M_PI;
 }
 
 //pose object for returning odometry info
@@ -288,9 +289,9 @@ class Publisher {
 		};
 
 		jointState.velocity  = {
-			getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity()),
+			-getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity()),
 			getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity()),
-			getVelocityFromTicksPer100MS(backRightDrive.GetSelectedSensorVelocity()),
+			-getVelocityFromTicksPer100MS(backRightDrive.GetSelectedSensorVelocity()),
 			getVelocityFromTicksPer100MS(backLeftDrive.GetSelectedSensorVelocity()),
 		};
 		
@@ -410,10 +411,11 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
 	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
 
+	//mutiply back for slightly larger radius
 	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
 
 	// frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	// backRightDrive.Set(ControlMode::PercentOutput, 0.0);

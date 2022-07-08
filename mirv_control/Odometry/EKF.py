@@ -21,8 +21,8 @@ class DDEkf:
         self.update_frequency = rospy.get_param('~frequency', 10)
         self.sensor_timeout = 1 / self.update_frequency
         # Define vehicle dimensions - wheel radius
-        self.r = rospy.get_param('~wheel_radius', 0.1845)
-        self.enc_ticks = rospy.get_param('~encoder_ticks_per_rotation', 24576)
+        self.r = rospy.get_param('~wheel_radius', 0.09229)
+        # self.enc_ticks = rospy.get_param('~encoder_ticks_per_rotation', 24576)
         # Distance between axels
         self.L = rospy.get_param('~wheel_base_width', 0.4358)
         self.xf = np.array(rospy.get_param('~inital_state', [0, 0, 0]))
@@ -137,7 +137,7 @@ class DDEkf:
                 else:
                     self.z[0] = self.mag_yaw + 2 * np.pi
         else:
-            print('no sensor data')
+            # print('no sensor data')
             # We have no sensor data
             self.H = self.H_none
             self.z = None
@@ -150,10 +150,11 @@ class DDEkf:
         # State prediction
         fwd_vel = self.LeftWheelVel + self.RightWheelVel
         ang_vel = self.RightWheelVel - self.LeftWheelVel
+        print(f'fwd_vel: {fwd_vel}, ang_vel: {ang_vel}')
         self.xp[0] = self.xf[0] + self.r/2 * dt * fwd_vel * np.cos(self.xf[2])
         self.xp[1] = self.xf[1] + self.r/2 * dt * fwd_vel * np.sin(self.xf[2])
-        self.xp[2] = self.xf[2] + self.r/2 * dt/self.L * ang_vel
-        # print(self.xp)
+        self.xp[2] = self.xf[2] + self.r/2 * (dt/self.L) * ang_vel
+        print(self.xp)
         # print(self.xf)
         # print()
 
@@ -176,6 +177,7 @@ class DDEkf:
             kal = np.dot(pp, np.dot(self.H.T, SI))
             self.xf = self.xp + np.dot(kal, y)
             self.P = pp - np.dot(kal, np.dot(self.H, pp))
+            print(f'R: {self.R}\n, Q: {self.Q}\n, P: {self.P}')
 
         # Wrap the angle between -pi, pi
         while self.xf[2] > np.pi:
@@ -208,8 +210,9 @@ class DDEkf:
     # W is the vehicle's forward velocity in m/s
     def velocity_callback(self, data):
         # Update w from data
-        self.RightWheelVel = data.velocity[0] / self.enc_ticks
-        self.LeftWheelVel = data.velocity[1] / self.enc_ticks
+        self.RightWheelVel = data.velocity[0]
+        self.LeftWheelVel = data.velocity[1]
+        # print(f'right wheel est: {self.RightWheelVel}, left wheel est: {self.LeftWheelVel}')
 
     def imu_cb(self, msg):
         self.last_imu_time = rospy.Time.now().to_sec()

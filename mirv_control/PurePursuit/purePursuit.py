@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import math
 import numpy as np
 from numpy import array
@@ -7,14 +7,16 @@ import rospy
 import sys
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
+import helpful_functions_lib as conversion_lib
 
 class PurePursuit():
     wheelBaseWidth = 0.483
     nextPointDistanceDec = 0
     logData = [0,0]
 
-    maxDriveSpeed = 1.5
-    currentMaxDriveSpeed = 1
+    maxDriveSpeed = .5
+    currentMaxDriveSpeed = .5
     startingTheta = 3.14159/2
     lookAheadDist = 1
     allowedError = 0.5
@@ -50,7 +52,7 @@ class PurePursuit():
         return self.currentTruckCord
 
     def getPath(self):
-        pathList = [[5,0]]
+        pathList = [[20,0]]
         for point in pathList:
             print("uploading point: {}".format(point))
             self.cordList.append([point[0],point[1],0])
@@ -167,7 +169,9 @@ class PurePursuit():
         return farPoint
 
     def callBackOdom(self, data):
-        self.currentTruckCord = data.data
+        self.currentTruckCord[0] = data.pose.pose.position.x
+        self.currentTruckCord[1] = data.pose.pose.position.y
+        self.currentTruckCord[2] = conversion_lib.quat_from_pose2eul(data.pose.pose.orientation)[0]
         print("got Data!")
         if (self.cordList):
             self.UpdateTargetPoints()
@@ -189,26 +193,29 @@ class PurePursuit():
         
         else:
             ## ros.drive.setvel(0,0)
-            self.rosPubMsg.data = [0,0]
+            self.rosPubMsg.linear.x = 0
+            self.rosPubMsg.angular.z = 0
             print("no target Point")
         
         self.pub.publish(self.rosPubMsg)
 
     def run(self):
-        try:
-            self.getPath()
-            sub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.callBackOdom)
-            rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
-            rospy.spin()
-        except KeyboardInterrupt:
-            self.rosPubMsg.data = [0,0]
-            self.pub.publish(self.rosPubMsg)
-        except:
-            print("an error occurred in purePursuit.py")
+        # try:
+        self.getPath()
+        sub = rospy.Subscriber("/EKF/Odometry", Odometry, self.callBackOdom)
+        rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
+        rospy.spin()
+        # except KeyboardInterrupt:
+        # self.rosPubMsg.linear.x = 0
+        # self.rosPubMsg.angular.z = 0
+        # self.pub.publish(self.rosPubMsg)
+        # except:
+        print("an error occurred in purePursuit.py")
 
     def __del__(self):
         print("exiting Program")
-        self.rosPubMsg.data = [0,0]
+        self.rosPubMsg.linear.x = 0
+        self.rosPubMsg.angular.z = 0
         self.pub.publish(self.rosPubMsg)
         time.sleep(3)
         print("exited")

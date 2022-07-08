@@ -12,14 +12,18 @@ from geometry_msgs.msg import Twist
 msg = Twist()
 pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
 rospy.init_node('simpleTwist', anonymous=True)
-maxASpeed = 0.2
-maxLSpeed = .5
+maxASpeed = 0.5
+maxLSpeed = 0.25
 
 def makeTwist(forwardDisp, angularDisp):
     Atime = abs(angularDisp/maxASpeed)
     Ltime = abs(forwardDisp/maxLSpeed)
     ASpeed = maxASpeed
     LSpeed = maxLSpeed
+    if (forwardDisp < 0):
+        LSpeed = -maxLSpeed
+    if (angularDisp < 0):
+        ASpeed = -maxASpeed
     runTime = 0
     if (Atime <= Ltime ):
         ASpeed = angularDisp/Ltime
