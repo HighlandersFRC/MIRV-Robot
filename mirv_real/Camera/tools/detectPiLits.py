@@ -106,48 +106,52 @@ def piLitDetect(img, frame, depthFrame):
     print("DETECTING...")
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.75):
-            print("GOT A PI LIT")    
-            x0,y0,x1,y1 = bbox
-            centerX = int((x0 + x1)/2)
-            centerY = int((y0 + y1)/2)
-            bboxList.append(bbox)
-            frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+        # if(score > 0.75):
+        print("GOT A PI LIT")    
+        x0,y0,x1,y1 = bbox
+        centerX = int((x0 + x1)/2)
+        centerY = int((y0 + y1)/2)
+        bboxList.append(bbox)
+        frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
 
-            angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
+        angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
 
-            depth = (depthFrame[centerY][centerX])/1000
+        depth = (depthFrame[centerY][centerX])/1000
 
-            if(intakeSide == "RIGHT"):
-                if(angleToPiLit > 0):
-                    intakeOffset = -0.0889
-                else:
-                    intakeOffset = 0.0889
-            else:
-                if(angleToPiLit > 0):
-                    intakeOffset = 0.0889
-                else:
-                    intakeOffset = -0.0889
+            # if(intakeSide == "RIGHT"):
+            #     if(angleToPiLit > 0):
+            #         intakeOffset = -0.0889
+            #     else:
+            #         intakeOffset = 0.0889
+            # else:
+            #     if(angleToPiLit > 0):
+            #         intakeOffset = 0.0889
+            #     else:
+            #         intakeOffset = -0.0889
 
-            complementaryAngle = math.pi/2 - angleToPiLit
+            # complementaryAngle = math.pi/2 - angleToPiLit
 
-            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
+            # horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
 
-            verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
+            # verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
-            if(depth != 0):
-                angleToPiLitFromIntake = math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit)
-            else:
-                angleToPiLitFromIntake = angleToPiLit
+            # if(depth != 0):
+            #     angleToPiLitFromIntake = math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit)
+            # else:
+            #     angleToPiLitFromIntake = angleToPiLit
 
-            print("DEPTH: ", depth, "ANGLE: ", math.degrees(angleToPiLitFromIntake), " SCORE: ", score)
+        # if(depth < 3):
 
-            piLitLocation = [depth, angleToPiLitFromIntake]
+        angleToPiLitFromIntake = angleToPiLit
 
-            locations = Float64MultiArray()
-            locations.data = piLitLocation
+        print("DEPTH: ", depth, "ANGLE: ", math.degrees(angleToPiLitFromIntake), " SCORE: ", score)
 
-            piLitLocationPub.publish(locations)
+        piLitLocation = [depth, angleToPiLitFromIntake]
+
+        locations = Float64MultiArray()
+        locations.data = piLitLocation
+
+        piLitLocationPub.publish(locations)
     # return frame
 
 parser = argparse.ArgumentParser()

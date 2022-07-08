@@ -23,10 +23,11 @@ class RobotController:
 
         self.imu = 0
 
-        self.kP = 0.1
+        self.kP = 0.2
         self.kI = 0
         self.kD = 0
         self.setPoint = 0
+        self.driveToPiLit = True
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
         self.piLitPID.setMaxMinOutput(0.5)
@@ -57,10 +58,10 @@ class RobotController:
 
             if(result > 0):
                 print("GREATER THAN ZERO")
-                result = result + 0.15
+                result = result + 0.2
             elif(result < 0):
                 print("LESS THAN ZERO")
-                result = result - 0.15
+                result = result - 0.2
             else:
                 print("ZERO")
                 result = 0
@@ -75,23 +76,40 @@ class RobotController:
             # self.power_drive(-result, result)
 
             if(abs(self.imu - self.setPoint) < 0.05):
+                print("GOT TO TARGET!!!!")
+                self.driveToPiLit = True
+                break
+
+            if(abs(result) < 0.22):
+                self.driveToPiLit = True
                 break
 
             if(self.piLitAngle == 0):
+                self.driveToPiLit = False
                 break
-
-            rospy.sleep(0.5)
+        
+        print("FINISHED")
+            # rospy.sleep(0.5)
         initTime = time.time()
 
-        while(time.time() - initTime < 3):
-            self.set_intake_state("intake")
+        # while((time.time() - initTime < 2) and self.driveToPiLit):
+        #     self.velocityMsg.linear.x = self.piLitDepth/2
+        #     self.velocityMsg.angular.z = 0
+        #     self.velocitydrive_pub.publish(self.velocityMsg)
         
-        initTime = time.time()
+        self.velocityMsg.linear.x = 0
+        self.velocityMsg.angular.z = 0
+        self.velocitydrive_pub.publish(self.velocityMsg)
+
+        # while(time.time() - initTime < 3):
+        #     self.set_intake_state("intake")
         
-        while(time.time() - initTime < 5):
-            self.set_intake_state("store")
+        # initTime = time.time()
         
-        self.set_intake_state("disable")
+        # while(time.time() - initTime < 5):
+        #     self.set_intake_state("store")
+        
+        # self.set_intake_state("disable")
             
             # self.velocityMsg.linear.x = 0
             # self.velocityMsg.angular.z = 0.5
