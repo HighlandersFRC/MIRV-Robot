@@ -142,9 +142,9 @@ def piLitDetect(img, frame, depthFrame):
 
         # if(depth < 3):
 
-        angleToPiLitFromIntake = angleToPiLit
+        angleToPiLitFromIntake = math.degrees(angleToPiLit)
 
-        print("DEPTH: ", depth, "ANGLE: ", math.degrees(angleToPiLitFromIntake), " SCORE: ", score)
+        print("DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
 
         piLitLocation = [depth, angleToPiLitFromIntake]
 

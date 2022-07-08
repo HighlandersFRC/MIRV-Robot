@@ -1,6 +1,8 @@
 #!usr/bin/env python3
 import math
 import time
+
+from numpy import True_
 import rospy
 from std_msgs.msg import Float64MultiArray, String, Float64
 from PID import PID
@@ -23,7 +25,7 @@ class RobotController:
 
         self.imu = 0
 
-        self.kP = 0.2
+        self.kP = 0.03
         self.kI = 0
         self.kD = 0
         self.setPoint = 0
@@ -45,26 +47,29 @@ class RobotController:
         self.piLitDepth = piLitLocation[0]
         self.piLitAngle = piLitLocation[1]
         self.setPoint = self.imu + self.piLitAngle
-        self.piLitPID.setSetPoint(self.setPoint)
+        if(self.updatedLocation == False):
+            self.piLitPID.setSetPoint(self.setPoint)
+            self.updatedLocation = True
 
     def updateIMU(self, data):
         self.imu = data.data
 
     def turnToPiLit(self):
+        self.updatedLocation = False
         while True:
             # print("ASDJFKLAJSDKLFJASLKDFJ")
             result = self.piLitPID.updatePID(self.imu)
             result = -result
 
-            if(result > 0):
-                print("GREATER THAN ZERO")
-                result = result + 0.2
-            elif(result < 0):
-                print("LESS THAN ZERO")
-                result = result - 0.2
-            else:
-                print("ZERO")
-                result = 0
+            # if(result > 0):
+            #     print("GREATER THAN ZERO")
+            #     result = result + 0.2
+            # elif(result < 0):
+            #     print("LESS THAN ZERO")
+            #     result = result - 0.2
+            # else:
+            #     print("ZERO")
+            #     result = 0
 
             print("RESULT: ", result)
 
@@ -75,18 +80,18 @@ class RobotController:
 
             # self.power_drive(-result, result)
 
-            if(abs(self.imu - self.setPoint) < 0.05):
+            if(abs(self.imu - self.setPoint) < 3):
                 print("GOT TO TARGET!!!!")
                 self.driveToPiLit = True
                 break
 
-            if(abs(result) < 0.22):
+            if(abs(result) < 0.1):
                 self.driveToPiLit = True
                 break
 
-            if(self.piLitAngle == 0):
-                self.driveToPiLit = False
-                break
+            # if(self.piLitAngle == 0):
+            #     self.driveToPiLit = False
+            #     break
         
         print("FINISHED")
             # rospy.sleep(0.5)
