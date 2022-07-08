@@ -29,7 +29,7 @@ class RobotController:
         self.setPoint = 0
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
-        self.piLitPID.setMaxMinOutput(0.2)
+        self.piLitPID.setMaxMinOutput(0.5)
 
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
@@ -51,10 +51,21 @@ class RobotController:
 
     def turnToPiLit(self):
         while True:
-            print("ASDJFKLAJSDKLFJASLKDFJ")
+            # print("ASDJFKLAJSDKLFJASLKDFJ")
             result = self.piLitPID.updatePID(self.imu)
+            result = -result
 
-            print(result)
+            if(result > 0):
+                print("GREATER THAN ZERO")
+                result = result + 0.15
+            elif(result < 0):
+                print("LESS THAN ZERO")
+                result = result - 0.15
+            else:
+                print("ZERO")
+                result = 0
+
+            print("RESULT: ", result)
 
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = result
@@ -81,6 +92,10 @@ class RobotController:
             self.set_intake_state("store")
         
         self.set_intake_state("disable")
+            
+            # self.velocityMsg.linear.x = 0
+            # self.velocityMsg.angular.z = 0.5
 
+            # self.velocitydrive_pub.publish(self.velocityMsg)
 
 
