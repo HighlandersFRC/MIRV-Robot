@@ -24,6 +24,8 @@ class RobotController:
         self.updatedLocation = False
         self.running = False
 
+        self.prevTriggerVal = 1
+
         self.imu = 0
 
         self.kP = 0.03
@@ -57,10 +59,11 @@ class RobotController:
     def updateIMU(self, data):
         self.imu = data.data
 
-    def turnToPiLit(self):
+    def turnToPiLit(self, currentTriggerVal):
         # self.updatedLocation = False
-        if(self.running == False):
+        if(self.running == False and self.prevTriggerVal > 0):
             self.running = True
+            self.prevTriggerVal = currentTriggerVal
             while(self.driveToPiLit == False):
                 # print("ASDJFKLAJSDKLFJASLKDFJ")
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
