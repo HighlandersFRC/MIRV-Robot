@@ -13,7 +13,7 @@ msg = Twist()
 pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
 rospy.init_node('simpleTwist', anonymous=True)
 maxASpeed = 0.5
-maxLSpeed = 0.25
+maxLSpeed = 0.5
 
 def makeTwist(forwardDisp, angularDisp):
     Atime = abs(angularDisp/maxASpeed)

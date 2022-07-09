@@ -33,10 +33,10 @@ class imuFilter:
 
     def imu_dumb_cb(self, data):
         if self.t == 0:
-            self.yaw_zero = data.data * np.pi/180
+            self.yaw_zero = -data.data * np.pi/180
             self.t = 1
         msg = Imu()
-        orientation = np.array([data.data * np.pi/180, 0, 0])
+        orientation = np.array([-data.data * np.pi/180, 0, 0])
         orientation[0] -= self.yaw_zero
         msg.orientation = conversion_lib.euler2quat_from_pose(msg.orientation, orientation[:, None])
         self.imu_pub.publish(msg)

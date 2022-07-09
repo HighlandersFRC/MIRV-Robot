@@ -77,7 +77,7 @@ class GlobalToTruck():
         print("output: {}".format(output))
 
     def setStartingPoint(self, data):
-        self.startingHeading = self.degToRad(42)
+        self.startingHeading = self.degToRad(315)
         self.startingCord = data
         self.startCordSet = True
 
