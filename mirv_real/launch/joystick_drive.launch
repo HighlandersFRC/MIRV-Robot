@@ -1,4 +1,0 @@
-<launch>
-  <node name="joystick_input" pkg="joy" type="joy_node"/>
-  <node name="canbus" pkg="mirv_real" type="canbus"/>
-</launch>

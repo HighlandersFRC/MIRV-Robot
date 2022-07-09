@@ -26,6 +26,7 @@
 #include "diagnostic_msgs/DiagnosticStatus.h"
 #include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Float64.h"
+#include <time.h>
 
 
 #include <ctime>
@@ -40,13 +41,16 @@ double getTicksPer100MSFromVelocity(double velocity);
 /* make some talons for drive train */
 std::string interface = "can0";
 
-TalonFX frontRightDrive(1, interface); 
-TalonFX frontLeftDrive(2, interface); 
-TalonFX backLeftDrive(3, interface); 
+TalonFX frontRightDrive(1, interface);
+TalonFX frontLeftDrive(2, interface);
+TalonFX backLeftDrive(3, interface);
 TalonFX backRightDrive(4, interface);
 
-// ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(9);
-// ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(10);
+ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(11);
+ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(9);
+ctre::phoenix::motorcontrol::can::TalonSRX leftConvMotor(10);
+ctre::phoenix::motorcontrol::can::TalonSRX rightConvMotor(12);
+
 
 double pdpVoltage = 0.0;
 int pdpCurrentsFilled = 0;
@@ -119,6 +123,12 @@ void initializeDriveMotors(){
 	// backLeftDrive.setNeutralMode(NeutralMode.Caost);
 }
 
+void initializeIntakeMotors(){
+	intakeArmMotor.SetInverted(false);
+	intakeArmMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+	intakeArmMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+}
+
 //maximum rpm of drive motors
 double maxVelocity = 6380.0;
 
@@ -187,7 +197,7 @@ class Odometry {
 		//calculate how many ticks the motor moved by
 		double leftDisplacement = getDistanceFromTicks(leftTicks - prevLeftTicks);
 		double rightDisplacement = getDistanceFromTicks(rightTicks - prevRightTicks);
-		
+
 		if (leftDisplacement == rightDisplacement){
 			//radius calculation edge case
 			double displacement = rightDisplacement;
@@ -197,7 +207,7 @@ class Odometry {
 		} else {
 			//calculate radius and change in theta
 			r = abs((wheelSpacing * (rightDisplacement + leftDisplacement)) / (2 * (rightDisplacement - leftDisplacement)));
-			
+
 			deltaTheta = abs(rightDisplacement - leftDisplacement) / wheelSpacing;
 			if (leftDisplacement > rightDisplacement){
 				angle -= deltaTheta;
@@ -279,7 +289,7 @@ class Publisher {
 			"back_right_drive",
 			"back_left_drive"
 		};
-		
+
 		jointState.position = {
 			frontRightDrive.GetSelectedSensorPosition(),
 			frontLeftDrive.GetSelectedSensorPosition(),
@@ -294,7 +304,7 @@ class Publisher {
 			-getVelocityFromTicksPer100MS(backRightDrive.GetSelectedSensorVelocity()),
 			getVelocityFromTicksPer100MS(backLeftDrive.GetSelectedSensorVelocity()),
 		};
-		
+
 		encoderVelocityPub.publish(jointState);
 	}
 };
@@ -302,56 +312,110 @@ class Publisher {
 Publisher publisher;
 
 class Intake {
-	
+
 	public:
 	std::string mode = "disable";
-	std::string modes[4] = {"disable", "reset", "intake", "store"};
+	time_t startTime;
+	double side = 1;
+	//char* modes[4] = {"disable", "reset", "intake", "store"};
 
-	// void update(){
-	// 	//not moving at all
-	// 	if (mode == "disable"){
-	// 		intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 	}
-		
-	// 	//move to upright and zero
-	// 	if (mode == "reset"){
-	// 		if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 		} else {
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.2);
-	// 		}
-	// 	}
+	//disable: all motors off
+	//reset: move to upright position
+	//intake: run wheels and move to downwards position
+	//store: move to upwards position then reverse wheels
 
-	// 	if (mode == "intake"){
-	// 		intakeWheelMotor.Set(ControlMode::PercentOutput, 0.2);
-	// 		if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 		} else {
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, -0.2);
-	// 		}
-	// 	}
+	//limit switches: fwd - up, rev - down
 
-	// 	if (mode == "store"){
-	// 		if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-	// 			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.2);
-	// 		} else {
-	// 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.2);
-	// 		}
-	// 	}
-	// }
+	void update(){
+		//not moving at all
+		if (mode == "disable"){
+			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+		}
+
+		//move to upright and zero
+		if (mode == "reset"){
+			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+			} else {
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
+			}
+		}
+
+		if (mode == "intake"){
+			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+			} else {
+				intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+			}
+		}
+
+		if (mode == "store"){
+			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
+				if (side > 0){
+					rightConvMotor.Set(ControlMode::PercentOutput, -0.4);
+				} else {
+					leftConvMotor.Set(ControlMode::PercentOutput, 0.4);
+				}
+				if (time(NULL) - startTime > 1){
+					mode = "reset";
+				}
+			} else {
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				startTime = time(NULL);
+			}
+		}
+
+		if (mode == "deposit"){
+			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
+			} else {
+				if (time(NULL) - startTime < 3){
+					if (side > 0){
+						rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
+					} else {
+						leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
+					}
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+					intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				} else {
+					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+					intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+					leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				}
+			}
+		}
+	}
 
 	void setMode(std::string cmd){
 
 		//check if command is valid before setting
-		bool isValid = false;
-		for (int i = 0; i < sizeof(modes); i ++){
-			if (modes[i] == cmd){
-				isValid = true;
+		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch_left" || cmd == "switch_right"){
+			if (cmd == "deposit"){
+				startTime = time(NULL);
 			}
-		}
-		if (isValid){
-			mode = cmd;
+			if (cmd == "switch_left"){
+				side = -1;
+			} else if (cmd == "switch_right"){
+				side = 1;
+			} else {
+				mode = cmd;
+			}
 		}
 	}
 };
@@ -426,6 +490,17 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 
 }
 
+void powerDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& powers){
+	double left = powers->data[0];
+	double right = powers->data[1];
+
+	frontRightDrive.Set(ControlMode::PercentOutput, right);
+	backRightDrive.Set(ControlMode::PercentOutput, right);
+
+	frontLeftDrive.Set(ControlMode::PercentOutput, left);
+	backLeftDrive.Set(ControlMode::PercentOutput, left);
+}
+
 void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
 	intake.setMode(cmd->data);
 }
@@ -438,10 +513,12 @@ int main(int argc, char **argv) {
 
 	n.param("wheel_base_width", wheelBaseWidth, 0.483);
 	n.param("wheel_radius", wheelRadius, 0.1905);
-	
+
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
 	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
+	ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
+
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
@@ -449,21 +526,22 @@ int main(int argc, char **argv) {
 	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
 
 	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
-	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
+	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
 
 
 	// /wheel_encoders
 
 	initializeDriveMotors();
+	initializeIntakeMotors();
 
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
 
 		odometry.update();
-		//intake.update();
+		intake.update();
 
 		ros::spinOnce();
 	}
-  	
+
 	return 0;
 }

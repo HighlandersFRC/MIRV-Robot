@@ -21,7 +21,6 @@ class PurePursuit():
     lookAheadDist = 1
     allowedError = 1.0
     allowedErrorDist = 0.1
-    lookAheadDist = 4
     robotCordList = []
     cordList = []
     currentTruckCord = [0,0,0]
@@ -60,7 +59,7 @@ class PurePursuit():
             self.robotCordList.append([point[0],point[1],0])
         print("uploaded path")
         # self.UpdateTargetPoints()
-       
+
 
 
 
@@ -89,12 +88,12 @@ class PurePursuit():
             # circumference = 8*pi (4*2*pi)
             # time to travel the circle = circumference/maxSpeed
             # so it takes the same time to travel 2*pi radians
-            # by definition of velocity (displacement/time) 
+            # by definition of velocity (displacement/time)
             # we get 2*pi/8*pi = 1/4
             ################################
             angularVel = maxSpeed/cRad
-            if(y>=0):  
-                RobotTwist = [maxSpeed, angularVel]                
+            if(y>=0):
+                RobotTwist = [maxSpeed, angularVel]
             else:
                 RobotTwist = [maxSpeed, -angularVel]
         else:
@@ -127,10 +126,10 @@ class PurePursuit():
             if (snapshotLa < self.allowedError):
                 self.currentMaxDriveSpeed = self.maxDriveSpeed
                 return ("atDest")
-                
+
         elif closePoint:
             targetPoint = self.vectorIntercept(closePoint, la)
-        
+
         else:
             print("cannot determine target point")
         RobotTwist = self.calculateSpeedSide(maxSpeed, targetPoint[0], targetPoint[1], snapshotLa)
@@ -192,10 +191,10 @@ class PurePursuit():
                 self.rosPubMsg.linear.x = 0
                 self.rosPubMsg.angular.z = 0
                 self.logData = [0,0]
-            
+
             print(self.rosPubMsg)
-        
-        
+
+
         else:
             ## ros.drive.setvel(0,0)
             self.rosPubMsg.linear.x = 0
@@ -228,8 +227,11 @@ class PurePursuit():
         print("exited")
 
 
+    rospy.spin()
+
+def callBack(data):
+    controller.callbackOdom(data)
 
 if __name__ == '__main__':
     controller = PurePursuit()
     controller.run()
-   

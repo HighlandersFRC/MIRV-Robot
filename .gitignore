@@ -19,7 +19,15 @@ recording*.csv
 *.pth
 
 #Debug launch files with env vars
-mirv_real/launch/joystick_drive.launch
+#mirv_real/launch/joystick_drive_mirv.launch
+#mirv_real/launch/joystick_drive_remote.launch
+
+mirv_real/Camera/runs
+
+#Environment variables
+setenv.sh
+
+mirv_real/Camera/runs
 
 #Environment variables
 setenv.sh
@@ -54,6 +62,8 @@ qtcreator-*
 
 # Emacs
 .#*
+
+mirv_real/Camera/weights
 
 # Catkin custom files
 CATKIN_IGNORE

@@ -31,7 +31,7 @@ class GlobalToTruck():
         theta = self.startingHeading
         cord1 = self.newCord
         cord2 = self.startingCord
-        # cord1Cart = self.getCordDelta(self.startingCord) 
+        # cord1Cart = self.getCordDelta(self.startingCord)
         # cord2Cart = self.getCordDelta(self.newCord)
         # delta = [cord2Cart[0]-cord1Cart[0], cord2Cart[1]-cord1Cart[1]]
         # print(delta)
@@ -56,7 +56,7 @@ class GlobalToTruck():
 
     def calcPos(self, data):
         self.newCord = [data.latitude, data.longitude, data.altitude]
-        
+
         if not self.startCordSet:
             self.setStartingPoint([data.latitude, data.longitude, data.altitude])
         output = self.convertToTruck()
@@ -78,6 +78,7 @@ class GlobalToTruck():
 
     def setStartingPoint(self, data):
         self.startingHeading = self.degToRad(315)
+
         self.startingCord = data
         self.startCordSet = True
 

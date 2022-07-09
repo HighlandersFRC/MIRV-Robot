@@ -8,62 +8,15 @@ import os, sys
 import shutil
 import time
 from pathlib import Path
-# from faster_RCNN import get_faster_rcnn_resnet
-
-# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# sys.path.append(BASE_DIR)
-
-# import torch
-# import torch.backends.cudnn as cudnn
-# from numpy import random
-# import numpy as np
-
-# from typing import Optional, List, Tuple
-# from dataclasses import field
-
-# from lib.config import cfg
-# from lib.config import update_config
-# from lib.utils.utils import create_logger, select_device, time_synchronized
-# from lib.models import get_net
-# from lib.dataset import LoadImages, LoadStreams
-# from lib.core.general import bbox_iou, non_max_suppression, scale_coords
-# from lib.utils import plot_one_box,show_seg_result
-# from lib.core.function import AverageMeter
-# from lib.core.postprocess import morphological_process, connect_lane
-# from tqdm import tqdm
 import depthai
-
-# from faster_RCNN import get_faster_rcnn_resnet
-# from transformations import ComposeDouble
-# from transformations import ComposeSingle
-# from transformations import FunctionWrapperDouble
-# from transformations import FunctionWrapperSingle
-# from transformations import apply_nms, apply_score_threshold
-# from transformations import normalize_01
-
-# from backbone_resnet import ResNetBackbones
-# from PIL import Image
-
 from numpy import asarray
-
-# import fiftyone as fo
-
-# import matplotlib as plt
-# import torchvision.transforms as transforms
-
-# from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-
-# import torchvision
-
-# import torch.multiprocessing as mp
 import rospy
 from rospy.numpy_msg import numpy_msg
 from rospy_tutorials.msg import Floats
-# from rospy_tutorials.msg import Float64MultiArray
 from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
-# from custom_msg_python.msg import depth_and_color_msg as depthAndColorMsg
+from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
 
 def quat_2_radians(x, y, z, w):
@@ -75,85 +28,13 @@ def quat_2_radians(x, y, z, w):
 cameraX = 640
 cameraY = 480
 
-def gotPiLitLocations(data):
-    locations = data.data
-    print("GOT A LOCATION")
-    print(data)
-    # for location in location:
-    #     topLeftX = (location[0])/(cameraX)
-    #     topLeftY = (location[1])/(cameraY)
-    #     bottomRightX = (location[2])/(cameraX)
-    #     bottomRightY = (location[3])/(cameraY)
-    #     print(location)
-
-
-
-# def publishCameraInformation(fjadksljf):
-    # initTime = time.time()
-    # in_rgb = q_rgb.tryGet()
-
-    # imuData = imuQueue.get()  # blocking call, will wait until a new data has arrived
-    # inDepth = depthQueue.get()
-
-    # imuPackets = imuData.packets
-    # for imuPacket in imuPackets:
-    #     rVvalues = imuPacket.rotationVector
-
-    #     rotationI = rVvalues.i
-    #     rotationJ = rVvalues.j
-    #     rotationK = rVvalues.k
-    #     rotationReal = rVvalues.real
-        
-    #     pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
-
-    #     pitch = pitch * 180/math.pi
-    #     yaw = yaw * 180/math.pi
-    #     roll = roll * 180/math.pi
-
-
-    #     if(pitch < 0):
-    #         pitch = abs(pitch)
-    #     elif(pitch > 0):
-    #         pitch = 360 - pitch
-
-    #     if(pitch > 90):
-    #         pitch = pitch - 90
-    #     else:
-    #         pitch = pitch + 270
-
-    #     # print("PITCH: ", pitch)
-
-    #     imuPub.publish(pitch)
-    #     # rate.sleep()
-
-    # if in_rgb is not None:
-    #     print("IN RGB IS NOT NONE")
-    #     frame = in_rgb.getCvFrame()
-    #     print("got rgb frame")
-    #     depthFrame = inDepth.getFrame() # depthFrame values are in millimeters
-
-    #     depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
-    #     depthFrameColor = cv2.equalizeHist(depthFrameColor)
-    #     depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_COOL)
-    #     print("ajdlkfjalsdkjf")
-    #     cv2.imshow("depth", depthFrameColor)
-    #     cv2.waitKey(1)
-    #     # frameArray = Float64MultiArray()
-    #     # frameArray.data = asarray(frame)
-
-    #     # frameArray = asarray(frame)
-    #     imgPub.publish(br.cv2_to_imgmsg(frame))
-    #     endTime = time.time()
-    #     print("TIME DIFF: ", endTime - initTime)
-
 br = CvBridge()
 
 # imgPub = rospy.Publisher('CameraFrames', numpy_msg(Floats),queue_size=10)
-imgPub = rospy.Publisher('CameraFrames', Image, queue_size=1)
-rospy.init_node('talker', anonymous=True)
+imgPub = rospy.Publisher('CameraFrames', depthAndColorFrame, queue_size=1)
+rospy.init_node('cameraPublisher', anonymous=True)
 
 imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
-rospy.init_node('talker', anonymous=True)
 
 # rospy.init_node('piLitLocationSubscriber', anonymous=True)
 # rospy.Subscriber("piLitLocations", Float64MultiArray, gotPiLitLocations)
@@ -226,8 +107,8 @@ stereo.setSubpixel(subpixel)
 monoLeft.out.link(stereo.left)
 monoRight.out.link(stereo.right)
 
-spatialLocationCalculator.passthroughDepth.link(xoutDepth.input)
-stereo.depth.link(spatialLocationCalculator.inputDepth)
+# spatialLocationCalculator.passthroughDepth.link(xoutDepth.input)
+stereo.depth.link(xoutDepth.input)
 
 topLeft = depthai.Point2f(0.4, 0.4)
 bottomRight = depthai.Point2f(0.6, 0.6)
@@ -261,9 +142,10 @@ disparityMultiplier = 255 / stereo.getMaxDisparity()
 controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
 ctrl.setManualExposure(expTime, sensIso)
+# ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 # ctrl.setAutoFocusMode(depthai.RawCameraControl.AutoFocusMode.ON)
-ctrl.setManualFocus(0)
+# ctrl.setManualFocus(0)
 controlQueue.send(ctrl)
 
 firstLoop = True
@@ -321,13 +203,17 @@ while True:
     if in_rgb is not None and inDepth is not None:
         # print("IN RGB IS NOT NONE")
         frame = in_rgb.getCvFrame()
-        print("got rgb frame")
-        imgPub.publish(br.cv2_to_imgmsg(frame))
+        framesMessage = depthAndColorFrame()
+        framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
+        framesMessage.color_frame = br.cv2_to_imgmsg(frame)
+        # print(framesMessage)
+        imgPub.publish(framesMessage)
         endTime = time.time()
+        print(depthFrame.shape)
         # print("TIME DIFF: ", endTime - initTime)
     
-        # cv2.imshow("frame", frame)
-        # cv2.imshow("depth", depthFrameColor)
+        cv2.imshow("frame", frame)
+        cv2.imshow("depth", depthFrame)
     
     if cv2.waitKey(1) == ord('q'):
             break
