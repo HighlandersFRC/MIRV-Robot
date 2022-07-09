@@ -21,5 +21,6 @@
     <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
     <!-- <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/> -->
     <node name="camera" pkg="mirv_real" type="cameraPublisher.py"/>
-    <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/>
+    <!-- <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/> -->
+    <node name="EKF" pkg="mirv_control" type="EKF.py"/>
 </launch>
