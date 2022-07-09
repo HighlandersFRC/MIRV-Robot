@@ -106,7 +106,7 @@ def piLitDetect(img, frame, depthFrame):
     print("DETECTING...")
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.25):
+        if(score > 0.5):
             print("GOT A PI LIT")    
             x0,y0,x1,y1 = bbox
             centerX = int((x0 + x1)/2)
