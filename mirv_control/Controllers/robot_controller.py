@@ -28,7 +28,7 @@ class RobotController:
 
         self.imu = 0
 
-        self.kP = 0.022
+        self.kP = 0.025
         self.kI = 0
         self.kD = 0.03
         self.setPoint = 0
