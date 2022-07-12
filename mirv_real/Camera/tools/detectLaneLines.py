@@ -86,7 +86,7 @@ horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
-
+# callback function when receiving a frame
 def gotFrame(data):
     print("GOT A FRAME")
     initTime = time.time()
@@ -102,7 +102,9 @@ def gotFrame(data):
     print("TIMEDIFF: ", time.time() - initTime)
     # cv2.destroyAllWindows()
 
+# detect lane lines and determine which lane MIRV is in
 def laneLineDetect(img, frame, depthFrame):
+    # model evaluates on the image
     det_out, da_seg_out,ll_seg_out= model(img)
 
     _, _, height, width = img.shape
@@ -127,21 +129,16 @@ def laneLineDetect(img, frame, depthFrame):
     # print("DA: ", da_seg_mask.shape)
     # print("FOUND LANE LINE MASK")
 
-      
     img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
-
-    # print("RESIZED IMAGE")
 
     img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
     ll_seg_mask_resized = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
 
+    # use hough lines to help determine how many lines exist
     lines = cv2.HoughLinesP(ll_seg_mask_resized,3,np.pi/180, 50, 35, 100)
 
-    # print(ll_seg_mask.shape)
     img = cv2.resize(frame, (640,480), interpolation=cv2.INTER_LINEAR)
-
-    # print("RESIZED IMAGE")
 
     numLines = 0
     piLitLocations = None
@@ -168,12 +165,6 @@ def laneLineDetect(img, frame, depthFrame):
                 laneType = "LEFT"
         
         print(laneType)
-
-        # for line in lines:
-        #     numLines += 1
-        #     if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
-        #         x1,y1,x2,y2 = line[0]
-        #         cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
     except:
         print("COULD NOT FIND LANE LINES, TRYING AGAIN")
 
@@ -184,6 +175,7 @@ def laneLineDetect(img, frame, depthFrame):
         locations.data = piLitLocations
         placementPublisher.publish(locations)
 
+# based on which lane, and width of lane, determine locations pi lits should be placed
 def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
     i = 0
     laneLineDepthLeft = 0
@@ -286,13 +278,8 @@ mp.set_start_method('spawn', force=True)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
-logger, _, _ = create_logger(
-    cfg, cfg.LOG_DIR, 'demo')
 
-device = select_device(logger,opt.device)
-if os.path.exists(opt.save_dir):  # output dir
-    shutil.rmtree(opt.save_dir)  # delete dir
-os.makedirs(opt.save_dir)  # make new dir
+device = torch.device('cuda:0')
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
 # Load model

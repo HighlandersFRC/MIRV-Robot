@@ -26,9 +26,10 @@ def joy_callback(msg):
     turn = msg.axes[3]
     left = drive - turn
     right = -drive - turn
-    mirv.power_drive(left, right)
+    # mirv.power_drive(left, right)
 
     buttons = msg.buttons
+    axes = msg.axes
     if buttons[0]:
         mirv.set_intake_state("disable")
     if buttons[1]:
@@ -41,6 +42,8 @@ def joy_callback(msg):
         mirv.set_intake_state("deposit")
     if buttons[5]:
         mirv.set_intake_state("switch")
+    if axes[5] < 0:
+        mirv.turnToPiLit(axes[5])
 
 def run():
     rospy.init_node("RemoteDrive")
@@ -51,4 +54,5 @@ def run():
         pass
 
 if __name__ == "__main__":
+    print("RUNNING!")
     run()

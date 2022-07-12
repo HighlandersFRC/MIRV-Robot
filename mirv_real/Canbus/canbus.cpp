@@ -59,9 +59,9 @@ double* pdpCurrents = {};
 double * voltagePtr = &pdpVoltage;
 int * currentsFilledPtr = &pdpCurrentsFilled;
 
+
 double wheelBaseWidth = 0.0;
 double wheelRadius = 0.0;
-
 
 void initializeDriveMotors(){
 	//PID config
@@ -333,6 +333,7 @@ class Intake {
 			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+			cout << "Disable\n";
 		}
 
 		//move to upright and zero
@@ -356,6 +357,7 @@ class Intake {
 			} else {
 				intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
 			}
+			
 		}
 
 		if (mode == "store"){
@@ -510,9 +512,9 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
 
-
 	n.param("wheel_base_width", wheelBaseWidth, 0.483);
 	n.param("wheel_radius", wheelRadius, 0.1905);
+
 
 	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
 	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
