@@ -44,7 +44,6 @@ def joy_callback(msg):
         mirv.set_intake_state("switch")
     if axes[5] < 0:
         mirv.turnToPiLit(axes[5])
-    # mirv.turnToPiLit()
 
 def run():
     rospy.init_node("RemoteDrive")

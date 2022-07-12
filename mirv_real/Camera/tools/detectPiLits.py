@@ -57,31 +57,6 @@ horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
-latestOdometryX = 0
-latestOdometryY = 1
-latestOdometryTheta = 0
-
-def gotOdometry(data):
-    x = data[0]
-    y = data[1]
-    odometry = data[2]
-    updateLatestOdometry([x, y, odometry])
-
-def updateLatestOdometry(odometry):
-    latestOdometryX = odometry[0]
-    latestOdometryY = odometry[1]
-    latestOdometryTheta = odometry[2]
-
-def convertPiLitLocations(relativeLocation):
-    relativeX = relativeLocation[0]
-    relativeY = relativeLocation[1]
-
-
-    # truckRelativeX = relativeX*math.cos(latestOdometryTheta) + relativeY*-math.sin(latestOdometryTheta) + latestOdometryX
-    # yTBody = relativeX*math.sin(latestOdometryTheta) + relativeY*math.cos(latestOdometryTheta) - yBRef*math.cos(latestOdometryTheta) + xBRef*math.sin(latestOdometryTheta)
-
-    return [latestOdometryX, latestOdometryY]
-
 def gotFrame(data):
     print("GOT A FRAME")
     initTime = time.time()
@@ -95,14 +70,7 @@ def gotFrame(data):
 
 def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
-    # print(piLitPrediction)
-    # print(piLitPrediction["scores"])
     bboxList = []
-    # print(depthFrame)
-    # print(depthFrame[0][0])
-
-    intakeSide = "RIGHT"
-
     print("DETECTING...")
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):

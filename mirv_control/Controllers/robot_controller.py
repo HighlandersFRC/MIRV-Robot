@@ -58,9 +58,6 @@ class RobotController:
         if(self.runPID == False):
             self.piLitDepth = piLitLocation[0]
             self.piLitAngle = piLitLocation[1]
-            # if(abs(self.piLitAngle - self.prevPiLitAngle) > 3):
-            #     self.piLitPID.setSetPoint(self.setPoint)
-            #     # self.updatedLocation = True
             self.setPoint = self.imu + self.piLitAngle
             self.piLitPID.setSetPoint(self.setPoint)
             self.updatedLocation = True
@@ -112,7 +109,6 @@ class RobotController:
             self.set_intake_state("store")
 
     def turnToPiLit(self, currentTriggerVal):
-        # self.updatedLocation = False
         if(self.running == False and self.prevTriggerVal > 0):
             self.running = True
             self.prevTriggerVal = currentTriggerVal
