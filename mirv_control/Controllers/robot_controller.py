@@ -162,17 +162,22 @@ class RobotController:
 
         self.imu = 0
 
-        self.kP = 0.025
+        self.kP = 0.022
         self.kI = 0
         self.kD = 0.03
         self.setPoint = 0
         self.driveToPiLit = False
         self.prevPiLitAngle = 0
+
+        self.runPID = False
+
+        self.moveToPiLitRunning = False
+        self.movementInitTime = 0
         
         self.imuList = []
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
-        self.piLitPID.setMaxMinOutput(0.5)
+        self.piLitPID.setMaxMinOutput(0.4)
 
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
@@ -184,20 +189,61 @@ class RobotController:
 
     def updatePiLitLocation(self, location):
         piLitLocation = location.data
-        if(self.updatedLocation == False):
+        if(self.runPID == False):
             self.piLitDepth = piLitLocation[0]
             self.piLitAngle = piLitLocation[1]
             # if(abs(self.piLitAngle - self.prevPiLitAngle) > 3):
             #     self.piLitPID.setSetPoint(self.setPoint)
             #     # self.updatedLocation = True
-            self.setPoint = self.imuList[-1] + self.piLitAngle
+            self.setPoint = self.imu + self.piLitAngle
             self.piLitPID.setSetPoint(self.setPoint)
             self.updatedLocation = True
             self.prevPiLitAngle = self.piLitAngle
 
     def updateIMU(self, data):
-        self.imuList.append(data.data)
-        print("UPDATED IMU TO: ", data.data, time.time())
+        self.imu = data.data
+        if(self.runPID):
+            result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+            result = -result
+            print("-----------------------------------------")
+
+            print("WANTED ANGLE: ", self.setPoint)
+            print("CURRENT ANGLE: ", self.imu)
+            print("ADJUSTMENT: ", self.piLitAngle)
+
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = result
+
+            self.velocitydrive_pub.publish(self.velocityMsg)
+
+            if(abs(self.imu - self.setPoint) < 1.5):
+                print("GOT TO TARGET!!!!")
+                self.driveToPiLit = True
+                self.runPID = False
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = 0
+                self.velocitydrive_pub.publish(self.velocityMsg)
+        if(self.driveToPiLit):
+            if(self.moveToPiLitRunning == False):
+                self.movementInitTime = time.time()
+                self.moveToPiLitRunning = True
+            self.moveToPiLit()
+
+        print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
+
+    def moveToPiLit(self):
+        self.velocityMsg.linear.x = 0.5
+        self.velocityMsg.angular.z = 0
+        self.velocitydrive_pub.publish(self.velocityMsg)
+        if(time.time() - self.movementInitTime > self.piLitDepth/0.5):
+            print("WANTED ANGLE: ", self.setPoint)
+            print("CURRENT ANGLE: ", self.imu)
+            self.driveToPiLit = False
+            self.moveToPiLitRunning = False
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+            self.set_intake_state("store")
 
     def turnToPiLit(self, currentTriggerVal):
         # self.updatedLocation = False
@@ -208,82 +254,4 @@ class RobotController:
             while(time.time() - intakeInitTime < 3):
                 print(time.time() - intakeInitTime)
                 self.set_intake_state("intake")
-            while(self.driveToPiLit == False):
-                self.set_intake_state("intake")
-                # print("ASDJFKLAJSDKLFJASLKDFJ")
-                imuVal = self.imuList[-1]
-
-                result = self.piLitPID.updatePID(imuVal) # this returns in radians/sec
-                result = -result
-
-                self.imuList.clear()
-                self.imuList.append(imuVal)
-
-                print("-----------------------------------------")
-
-                print("WANTED ANGLE: ", self.setPoint)
-                print("CURRENT ANGLE: ", imuVal)
-                print("ADJUSTMENT: ", self.piLitAngle)
-
-                self.velocityMsg.linear.x = 0
-                self.velocityMsg.angular.z = result
-
-                self.velocitydrive_pub.publish(self.velocityMsg)
-
-                # self.power_drive(-result, result)
-
-                if(abs(self.imu - self.setPoint) < 1.5):
-                    print("GOT TO TARGET!!!!")
-                    self.driveToPiLit = True
-                    self.velocityMsg.linear.x = 0
-                    self.velocityMsg.angular.z = 0
-                    self.velocitydrive_pub.publish(self.velocityMsg)
-                    break
-
-                if(abs(result) < 0.05):
-                    self.driveToPiLit = True
-                    break
-
-                # if(self.piLitAngle == 0):
-                #     self.driveToPiLit = False
-                #     break
-            
-            print("FINISHED")
-                # rospy.sleep(0.5)
-            initTime = time.time()
-
-            while(self.driveToPiLit):
-                # print((time.time() - initTime))
-                self.velocityMsg.linear.x = 0.5
-                self.velocityMsg.angular.z = 0
-                self.velocitydrive_pub.publish(self.velocityMsg)
-                if(time.time() - initTime > self.piLitDepth/0.5):
-                    print("WANTED ANGLE: ", self.setPoint)
-                    print("CURRENT ANGLE: ", self.imu)
-                    self.driveToPiLit = False
-            
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = 0
-            self.velocitydrive_pub.publish(self.velocityMsg)
-
-            self.set_intake_state("store")
-
-            self.running = False
-        
-
-        # while(time.time() - initTime < 3):
-        #     self.set_intake_state("intake")
-        
-        # initTime = time.time()
-        
-        # while(time.time() - initTime < 5):
-        #     self.set_intake_state("store")
-        
-        # self.set_intake_state("disable")
-            
-            # self.velocityMsg.linear.x = 0
-            # self.velocityMsg.angular.z = 0.5
-
-            # self.velocitydrive_pub.publish(self.velocityMsg)
-
-
+            self.runPID = True
