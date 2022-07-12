@@ -10,12 +10,10 @@ from rospy.numpy_msg import numpy_msg
 from rospy_tutorials.msg import Floats
 from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, Imu
+from geometry_msgs.msg import Quaternion
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
-
-from PIL import Image 
-import PIL 
 
 def quat_2_radians(x, y, z, w):
     pitch = math.atan2(2*x*w - 2*y*z, 1-2*x*x - 2* z*z)
@@ -25,8 +23,6 @@ def quat_2_radians(x, y, z, w):
 
 cameraX = 640
 cameraY = 480
-
-firstLoop = True
 
 br = CvBridge()
 

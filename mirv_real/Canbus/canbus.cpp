@@ -12,11 +12,14 @@
 #include <thread>
 #include <SDL2/SDL.h>
 #include <unistd.h>
+#include <ctime>
+#include <cmath>
 #include <math.h>
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Float32MultiArray.h"
 #include "sensor_msgs/Joy.h"
+#include "sensor_msgs/JointState.h"
 #include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Vector3.h"
 #include "diagnostic_msgs/DiagnosticArray.h"
@@ -24,6 +27,7 @@
 #include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Float64.h"
 #include <time.h>
+
 
 #include <ctime>
 
@@ -37,9 +41,9 @@ double getTicksPer100MSFromVelocity(double velocity);
 /* make some talons for drive train */
 std::string interface = "can0";
 
-TalonFX frontRightDrive(1, interface); 
-TalonFX frontLeftDrive(2, interface); 
-TalonFX backLeftDrive(3, interface); 
+TalonFX frontRightDrive(1, interface);
+TalonFX frontLeftDrive(2, interface);
+TalonFX backLeftDrive(3, interface);
 TalonFX backRightDrive(4, interface);
 
 ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(11);
@@ -62,9 +66,13 @@ double wheelRadius = 0.0;
 void initializeDriveMotors(){
 	//PID config
 	float kF = 0.05;
-	float kP = 0.18;
+	float kP = 0.22;
+	// float kI = 0.000;
+	// float kD = 0.5;
+	// float kF = 0.0;
+	// float kP = 0.0;
 	float kI = 0.000;
-	float kD = 0.5;
+	float kD = 0.0;
 	float maxAllowedError = getTicksPer100MSFromVelocity(0.05);
 
 	frontRightDrive.ConfigAllowableClosedloopError(0, maxAllowedError);
@@ -108,7 +116,11 @@ void initializeDriveMotors(){
 	frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-	backRightDrive.Set(ControlMode::Velocity, 0.0);
+	backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	// frontRightDrive.setNeutralMode(NeutralMode.Coast);
+	// frontLeftDrive.setNeutralMode(NeutralMode.Coast);
+	// backRightDrive.setNeutralMode(NeutralMode.Coast);
+	// backLeftDrive.setNeutralMode(NeutralMode.Caost);
 }
 
 void initializeIntakeMotors(){
@@ -122,13 +134,19 @@ double maxVelocity = 6380.0;
 
 //distance between right and left wheels (meters)
 //16 and 11/16 inches
-double wheelSpacing = 0.4238625;
+// From calibration driving, updated to 0.4358
+double wheelSpacing = 0.4358;
 
 //wheel circumference (meters)
-double wheelCircumference = 0.608447957;
+// used to be 0.608447957
+// From calibration driving, updated to 0.5796
+double wheelCircumference = 0.5796;
 
 //gear ratio of the drive motors
 double motorToWheelRatio = 12.0;
+
+//encoder ticks per motor rotation
+double ticksPerRev = 2048.0;
 
 //cancoder resolutions
 double cancoderTicksPerRevolution = 4096.0;
@@ -138,15 +156,15 @@ bool haveJoystick = true;
 
 //convert motor ticks to meters
 double getDistanceFromTicks(double ticks){
-	return (ticks / 2048.0) * wheelCircumference / motorToWheelRatio;
+	return (ticks / ticksPerRev) / motorToWheelRatio * wheelCircumference;
 }
 
 double getTicksPer100MSFromVelocity(double velocity){
-	return (((velocity / wheelCircumference) * 2048.0) / 10.0) * 12.0;
+	return ((velocity * ticksPerRev) / 10.0) * motorToWheelRatio;
 }
 
 double getVelocityFromTicksPer100MS(double ticksPer100MS){
-	return (((ticksPer100MS * 10.0) / 2048.0) * wheelCircumference) / 12.0;
+	return ((ticksPer100MS * 10.0) / ticksPerRev) / motorToWheelRatio / wheelCircumference * 2 * M_PI;
 }
 
 //pose object for returning odometry info
@@ -179,7 +197,7 @@ class Odometry {
 		//calculate how many ticks the motor moved by
 		double leftDisplacement = getDistanceFromTicks(leftTicks - prevLeftTicks);
 		double rightDisplacement = getDistanceFromTicks(rightTicks - prevRightTicks);
-		
+
 		if (leftDisplacement == rightDisplacement){
 			//radius calculation edge case
 			double displacement = rightDisplacement;
@@ -189,7 +207,7 @@ class Odometry {
 		} else {
 			//calculate radius and change in theta
 			r = abs((wheelSpacing * (rightDisplacement + leftDisplacement)) / (2 * (rightDisplacement - leftDisplacement)));
-			
+
 			deltaTheta = abs(rightDisplacement - leftDisplacement) / wheelSpacing;
 			if (leftDisplacement > rightDisplacement){
 				angle -= deltaTheta;
@@ -250,19 +268,51 @@ class Publisher {
 	}
 
 	void publishEncoderVelocity(){
+		/*
 		double left = getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity());
 		double right = getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity());
+		double time = (double)std::time(0);
 		std_msgs::Float64MultiArray velocity;
 		velocity.data.push_back(left);
 		velocity.data.push_back(right);
+		velocity.data.push_back(time);
 		encoderVelocityPub.publish(velocity);
+		*/
+
+
+
+		sensor_msgs::JointState jointState;
+
+		jointState.name = {
+			"front_right_drive",
+			"front_left_drive",
+			"back_right_drive",
+			"back_left_drive"
+		};
+
+		jointState.position = {
+			frontRightDrive.GetSelectedSensorPosition(),
+			frontLeftDrive.GetSelectedSensorPosition(),
+			backRightDrive.GetSelectedSensorPosition(),
+			backLeftDrive.GetSelectedSensorPosition(),
+
+		};
+
+		jointState.velocity  = {
+			-getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity()),
+			getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity()),
+			-getVelocityFromTicksPer100MS(backRightDrive.GetSelectedSensorVelocity()),
+			getVelocityFromTicksPer100MS(backLeftDrive.GetSelectedSensorVelocity()),
+		};
+
+		encoderVelocityPub.publish(jointState);
 	}
 };
 
 Publisher publisher;
 
 class Intake {
-	
+
 	public:
 	std::string mode = "disable";
 	time_t startTime;
@@ -285,7 +335,7 @@ class Intake {
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			cout << "Disable\n";
 		}
-		
+
 		//move to upright and zero
 		if (mode == "reset"){
 			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
@@ -374,6 +424,12 @@ class Intake {
 
 Intake intake;
 
+void justWork(){
+		frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
+		frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+		backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+		backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+}
 void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& statusMsg){
 	/*
 	Check whether joystick is connected
@@ -471,8 +527,11 @@ int main(int argc, char **argv) {
 	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
 	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
 
-	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64MultiArray>("encoder/velocity", 10);
-	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
+	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
+	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
+
+
+	// /wheel_encoders
 
 	initializeDriveMotors();
 	initializeIntakeMotors();
@@ -485,6 +544,6 @@ int main(int argc, char **argv) {
 
 		ros::spinOnce();
 	}
-  	
+
 	return 0;
 }
