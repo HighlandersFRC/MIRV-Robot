@@ -38,9 +38,9 @@ class PID:
         else:
             self.totalError = 0
 
-        self.result = (self.pVal * self.error + self.iVal * self.totalError + self.dVal * (self.error - self.prevError));
-        self.prevError = self.error;
-        self.result = self.clamp(self.result);
+        self.result = (self.pVal * self.error + self.iVal * self.totalError + self.dVal * (self.error - self.prevError))
+        self.prevError = self.error
+        self.result = self.clamp(self.result)
         return self.result
 
     def clamp(self, input):

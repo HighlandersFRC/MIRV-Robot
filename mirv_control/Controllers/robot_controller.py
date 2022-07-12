@@ -168,6 +168,8 @@ class RobotController:
         self.setPoint = 0
         self.driveToPiLit = False
         self.prevPiLitAngle = 0
+        
+        self.imuList = []
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
         self.piLitPID.setMaxMinOutput(0.5)
@@ -182,33 +184,46 @@ class RobotController:
 
     def updatePiLitLocation(self, location):
         piLitLocation = location.data
-        self.piLitDepth = piLitLocation[0]
-        self.piLitAngle = piLitLocation[1]
-        # if(abs(self.piLitAngle - self.prevPiLitAngle) > 3):
-        #     self.piLitPID.setSetPoint(self.setPoint)
-        #     # self.updatedLocation = True
         if(self.updatedLocation == False):
-            self.setPoint = self.imu + self.piLitAngle
+            self.piLitDepth = piLitLocation[0]
+            self.piLitAngle = piLitLocation[1]
+            # if(abs(self.piLitAngle - self.prevPiLitAngle) > 3):
+            #     self.piLitPID.setSetPoint(self.setPoint)
+            #     # self.updatedLocation = True
+            self.setPoint = self.imuList[-1] + self.piLitAngle
             self.piLitPID.setSetPoint(self.setPoint)
             self.updatedLocation = True
-
-        self.prevPiLitAngle = self.piLitAngle
+            self.prevPiLitAngle = self.piLitAngle
 
     def updateIMU(self, data):
-        self.imu = data.data
+        self.imuList.append(data.data)
+        print("UPDATED IMU TO: ", data.data, time.time())
 
     def turnToPiLit(self, currentTriggerVal):
         # self.updatedLocation = False
         if(self.running == False and self.prevTriggerVal > 0):
             self.running = True
             self.prevTriggerVal = currentTriggerVal
+            intakeInitTime = time.time()
+            while(time.time() - intakeInitTime < 3):
+                print(time.time() - intakeInitTime)
+                self.set_intake_state("intake")
             while(self.driveToPiLit == False):
                 self.set_intake_state("intake")
                 # print("ASDJFKLAJSDKLFJASLKDFJ")
-                result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+                imuVal = self.imuList[-1]
+
+                result = self.piLitPID.updatePID(imuVal) # this returns in radians/sec
                 result = -result
 
-                print("RESULT: ", result)
+                self.imuList.clear()
+                self.imuList.append(imuVal)
+
+                print("-----------------------------------------")
+
+                print("WANTED ANGLE: ", self.setPoint)
+                print("CURRENT ANGLE: ", imuVal)
+                print("ADJUSTMENT: ", self.piLitAngle)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
@@ -217,12 +232,15 @@ class RobotController:
 
                 # self.power_drive(-result, result)
 
-                if(abs(self.imu - self.setPoint) < 3):
+                if(abs(self.imu - self.setPoint) < 1.5):
                     print("GOT TO TARGET!!!!")
                     self.driveToPiLit = True
+                    self.velocityMsg.linear.x = 0
+                    self.velocityMsg.angular.z = 0
+                    self.velocitydrive_pub.publish(self.velocityMsg)
                     break
 
-                if(abs(result) < 0.1):
+                if(abs(result) < 0.05):
                     self.driveToPiLit = True
                     break
 
@@ -235,11 +253,13 @@ class RobotController:
             initTime = time.time()
 
             while(self.driveToPiLit):
-                print((time.time() - initTime))
-                self.velocityMsg.linear.x = self.piLitDepth/4
+                # print((time.time() - initTime))
+                self.velocityMsg.linear.x = 0.5
                 self.velocityMsg.angular.z = 0
                 self.velocitydrive_pub.publish(self.velocityMsg)
-                if(time.time() - initTime > 4):
+                if(time.time() - initTime > self.piLitDepth/0.5):
+                    print("WANTED ANGLE: ", self.setPoint)
+                    print("CURRENT ANGLE: ", self.imu)
                     self.driveToPiLit = False
             
             self.velocityMsg.linear.x = 0

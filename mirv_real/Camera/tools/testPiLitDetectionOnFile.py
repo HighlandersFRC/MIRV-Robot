@@ -5,6 +5,7 @@ import shutil
 import time
 from pathlib import Path
 from faster_RCNN import get_faster_rcnn_resnet
+import math
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
@@ -80,6 +81,10 @@ logger, _, _ = create_logger(
 
 device = select_device(logger,opt.device)
 
+hFOV = 63
+horizontalPixels = 640
+verticalPixels = 480
+degreesPerPixel = hFOV/horizontalPixels
 
 piLitModel = torch.load("weights/piLitModel.pth")
 
@@ -95,7 +100,7 @@ piLitModel.to(device)
 #     key = cv2.waitKey(1)
 #     if key == ord('q'):
 #         break
-frame = cv2.imread("PXL_20220705_212912599.jpg")
+frame = cv2.imread("cameraFrame.jpg")
 
 # frame = cv2.resize(frame, (320, 640))
 # frame = cv2.imread("test.jpg")
@@ -117,11 +122,31 @@ for bbox in piLitPrediction["boxes"]:
 
     frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
 
-frame = cv2.resize(frame, (640, 360))
+for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
+        if(score > 0.9):
+            print("GOT A PI LIT")    
+            x0,y0,x1,y1 = bbox
+            centerX = int((x0 + x1)/2)
+            centerY = int((y0 + y1)/2)
+            # bboxList.append(bbox)
+            frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
 
-while True:
-    cv2.imshow("img", frame)
+            angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
 
-    key = cv2.waitKey(1)
-    if key == ord('q'):
-        break
+            print("angle:", angleToPiLit)
+
+frame = cv2.resize(frame, (640, 480))
+
+result=cv2.imwrite(r'detected.jpg', frame)
+if result==True:
+    print("SAVED!")
+    firstLoop = False
+else:
+    print("DIDN'T SAVE")
+
+# while True:
+#     cv2.imshow("img", frame)
+
+#     key = cv2.waitKey(1)
+#     if key == ord('q'):
+#         break

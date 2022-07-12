@@ -52,7 +52,7 @@ transform=transforms.Compose([
 
 detections = 0
 
-hFOV = 52
+hFOV = 63
 horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
@@ -106,7 +106,7 @@ def piLitDetect(img, frame, depthFrame):
     print("DETECTING...")
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.5):
+        if(score > 0.9):
             print("GOT A PI LIT")    
             x0,y0,x1,y1 = bbox
             centerX = int((x0 + x1)/2)
@@ -140,18 +140,17 @@ def piLitDetect(img, frame, depthFrame):
                 # else:
                 #     angleToPiLitFromIntake = angleToPiLit
 
-            # if(depth < 3):
+            if(depth < 3 and depth != 0):
+                angleToPiLitFromIntake = math.degrees(angleToPiLit)
 
-            angleToPiLitFromIntake = math.degrees(angleToPiLit)
+                print("DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
 
-            print("DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+                piLitLocation = [depth, angleToPiLitFromIntake]
 
-            piLitLocation = [depth, angleToPiLitFromIntake]
+                locations = Float64MultiArray()
+                locations.data = piLitLocation
 
-            locations = Float64MultiArray()
-            locations.data = piLitLocation
-
-            piLitLocationPub.publish(locations)
+                piLitLocationPub.publish(locations)
     # return frame
 
 parser = argparse.ArgumentParser()

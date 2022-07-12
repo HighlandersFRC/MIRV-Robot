@@ -42,11 +42,17 @@ imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
 pipeline = depthai.Pipeline()
 
 cam_rgb = pipeline.create(depthai.node.ColorCamera)
-cam_rgb.setPreviewSize(640, 480)
-cam_rgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_1080_P)
-# cam_rgb.setIspScale(2, 3)
-# cam_rgb.setPreviewSize(cameraResolutionWidth, cameraResolutionHeight)
-cam_rgb.setPreviewKeepAspectRatio(True)
+cam_rgb.setResolution(depthai.ColorCameraProperties.SensorResolution.THE_12_MP)
+cam_rgb.setInterleaved(False)
+cam_rgb.setIspScale(1,5) # 4056x3040 -> 812x608
+cam_rgb.setPreviewSize(812, 608)
+cam_rgb.setColorOrder(depthai.ColorCameraProperties.ColorOrder.RGB)
+# Slightly lower FPS to avoid lag, as ISP takes more resources at 12MP
+# cam_rgb.setFps(25)
+
+xoutIsp = pipeline.create(depthai.node.XLinkOut)
+xoutIsp.setStreamName("isp")
+cam_rgb.isp.link(xoutIsp.input)
 
 imu = pipeline.createIMU()
 xlinkOut = pipeline.createXLinkOut()
@@ -134,6 +140,7 @@ q_rgb = depthaiDevice.getOutputQueue("rgb", maxSize=1, blocking=False)
 depthQueue = depthaiDevice.getOutputQueue(name="depth", maxSize=1, blocking=False)
 spatialCalcQueue = depthaiDevice.getOutputQueue(name="spatialData", maxSize=1, blocking=False)
 spatialCalcConfigInQueue = depthaiDevice.getInputQueue("spatialCalcConfig")
+qIsp = depthaiDevice.getOutputQueue("isp", maxSize=1, blocking=False)
 frame = None
 
 imuQueue = depthaiDevice.getOutputQueue(name="imu", maxSize=1, blocking=False)
@@ -164,7 +171,11 @@ while True:
     depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_OCEAN)
 
     imuPackets = imuData.packets
+
+    print("IMU PACKET LENGTH: ", len(imuPackets))
+    i = 0
     for imuPacket in imuPackets:
+        i += 1
         rVvalues = imuPacket.rotationVector
 
         rotationI = rVvalues.i
@@ -201,22 +212,28 @@ while True:
 
         print("PITCH: ", pitch)
 
-        imuPub.publish(pitch)
+        if(i == len(imuPackets) - 1):
+            imuPub.publish(pitch)
+
 
     if in_rgb is not None and inDepth is not None:
         # print("IN RGB IS NOT NONE")
-        frame = in_rgb.getCvFrame()
+        # frame = in_rgb.getCvFrame()
 
-        # if firstLoop:
-        result=cv2.imwrite(r'cameraFrame.jpg', frame)
-        if result==True:
-            print("SAVED!")
-            firstLoop = False
-        else:
-            print("DIDN'T SAVE")
+        frame = qIsp.get().getCvFrame()
+
+        resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
+
+        # # if firstLoop:
+        # result=cv2.imwrite(r'mirv_real/Camera/cameraFrame.jpg', resizedFrame)
+        # if result==True:
+        #     print("SAVED!")
+        #     firstLoop = False
+        # else:
+        #     print("DIDN'T SAVE")
         framesMessage = depthAndColorFrame()
         framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
-        framesMessage.color_frame = br.cv2_to_imgmsg(frame)
+        framesMessage.color_frame = br.cv2_to_imgmsg(resizedFrame)
         # print(framesMessage)
         imgPub.publish(framesMessage)
         endTime = time.time()
