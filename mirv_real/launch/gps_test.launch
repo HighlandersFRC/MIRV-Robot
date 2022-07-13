@@ -1,0 +1,11 @@
+<launch>
+    <arg name="wheel_base_width" default="0.483"/>
+    <arg name="wheel_radius" default="0.1905"/>
+    <arg name="param_file_name" default="nmea"/>
+    <arg name="param_file_dir" default="$(find mirv_real)/GPS/config"/>
+
+    <!-- start control nodes -->
+    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true"/>
+    <remap from="/ublox/fix" to="/gps/fix"/>
+    <include file="$(find ublox_gps)/launch/ublox_device.launch" pass_all_args="true"/>
+</launch>

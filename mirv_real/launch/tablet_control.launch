@@ -1,0 +1,6 @@
+<launch>
+  <node name="CameraPublisher" pkg="mirv_real" type="cameraPublisher.py"/>
+  <node name="CloudConnection" pkg="mirv_control" type="CloudConnection.py"/>
+  <node name="TabletDrive" pkg="mirv_control" type="tablet_controller.py"/>
+  <node name="Canbus" pkg="mirv_real" type="canbus"/>
+</launch>

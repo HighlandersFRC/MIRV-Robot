@@ -4,30 +4,31 @@ import rospy
 from std_msgs.msg import Float64
 import os
 
-HOST = os.getenv("API_HOST")
-PORT = os.getenv("API_PORT")
+HOST = os.getenv("API_URL")
 
 sio = socketio.Client()
 
+
 def sendData(data):
-    try:
-        sio.emit("data", data)
-    except:
-        print("Could not send data")
+    sio.emit("data", data)
+
 
 def battery_voltage_callback(voltage):
     print("sending voltage")
     sendData({"battery-voltage": voltage.data})
 
+
 def run():
     rospy.init_node("roverClient")
     try:
-        sio.connect(f"http://{HOST}:{PORT}/ws", headers={"roverID": "mirv_1"}, auth={"password": None}, socketio_path="/ws/socket.io")
+        sio.connect(f"{HOST}/ws", headers={"roverID": "mirv_1"},
+                    auth={"password": None}, socketio_path="/ws/socket.io")
     except:
         print("Could not connect")
-        print(f"{HOST}, {PORT}")
-    battery_voltage_sub = rospy.Subscriber("battery/voltage", Float64, battery_voltage_callback)
+    battery_voltage_sub = rospy.Subscriber(
+        "battery/voltage", Float64, battery_voltage_callback)
     rospy.spin()
+
 
 if __name__ == "__main__":
     run()

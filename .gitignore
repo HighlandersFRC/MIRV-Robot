@@ -2,7 +2,7 @@ devel/
 logs/
 build/
 bin/
-lib/
+# lib/
 msg_gen/
 srv_gen/
 msg/*Action.msg
@@ -16,9 +16,20 @@ msg/_*.py
 build_isolated/
 devel_isolated/
 recording*.csv
+*.pth
+*.vscode
 
 #Debug launch files with env vars
-mirv_real/launch/joystick_drive.launch
+#mirv_real/launch/joystick_drive_mirv.launch
+#mirv_real/launch/joystick_drive_remote.launch
+
+mirv_real/Camera/runs
+
+#Environment variables
+setenv.sh
+
+mirv_real/Camera/runs
+mirv_real/Camera/weights
 
 #Environment variables
 setenv.sh
@@ -45,6 +56,8 @@ srv/_*.py
 qtcreator-*
 *.user
 
+backup.sh
+
 /planning/cfg
 /planning/docs
 /planning/src
@@ -53,6 +66,8 @@ qtcreator-*
 
 # Emacs
 .#*
+
+mirv_real/Camera/weights
 
 # Catkin custom files
 CATKIN_IGNORE
