@@ -150,7 +150,6 @@ piLitModel = piLitModel.to(device)
 
 rospy.init_node('piLitDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
-rospy.Subscriber("fusedOdometry", Float64MultiArray, gotOdometry)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
 
 try:
