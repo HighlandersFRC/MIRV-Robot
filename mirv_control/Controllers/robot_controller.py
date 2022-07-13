@@ -58,9 +58,6 @@ class RobotController:
         if(self.runPID == False and self.driveToPiLit == False):
             self.piLitDepth = piLitLocation[0]
             self.piLitAngle = piLitLocation[1]
-            # if(abs(self.piLitAngle - self.prevPiLitAngle) > 3):
-            #     self.piLitPID.setSetPoint(self.setPoint)
-            #     # self.updatedLocation = True
             self.setPoint = self.imu + self.piLitAngle
             self.piLitPID.setSetPoint(self.setPoint)
             self.updatedLocation = True
