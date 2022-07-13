@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -58,20 +59,22 @@ find_package(catkin REQUIRED COMPONENTS
 #   FILES
 #   Service1.srv
 #   Service2.srv
-# )
+#)
 
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+# Generate actions in the 'action' folder
+add_action_files(
+  DIRECTORY action
+  FILES Fibbonacci.action
+  DIRECTORY action
+  FILES PurePursuit.action
+)
 
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+# Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  actionlib_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -105,7 +108,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mirv_control
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+  CATKIN_DEPENDS roscpp rospy std_msgs actionlib_msgs
 #  DEPENDS system_lib
 )
 
@@ -231,6 +234,9 @@ catkin_install_python(PROGRAMS MessageConversion/controllerFormatting.py
 catkin_install_python(PROGRAMS Odometry/record.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS Masters/remotedrive_master.py
+catkin_install_python(PROGRAMS RoverMaster/TestServer.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS RoverMaster/RoverInterface.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
