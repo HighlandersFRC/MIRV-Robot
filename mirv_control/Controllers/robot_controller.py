@@ -55,7 +55,7 @@ class RobotController:
 
     def updatePiLitLocation(self, location):
         piLitLocation = location.data
-        if(self.runPID == False):
+        if(self.runPID == False and self.driveToPiLit == False):
             self.piLitDepth = piLitLocation[0]
             self.piLitAngle = piLitLocation[1]
             # if(abs(self.piLitAngle - self.prevPiLitAngle) > 3):
@@ -93,13 +93,15 @@ class RobotController:
             if(self.moveToPiLitRunning == False):
                 self.movementInitTime = time.time()
                 self.moveToPiLitRunning = True
-            self.moveToPiLit()
+            self.moveToPiLit() 
 
         print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
     def moveToPiLit(self):
+        result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+        result = -result
         self.velocityMsg.linear.x = 0.5
-        self.velocityMsg.angular.z = 0
+        self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > self.piLitDepth/0.5):
             print("WANTED ANGLE: ", self.setPoint)
@@ -111,7 +113,7 @@ class RobotController:
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("store")
 
-    def turnToPiLit(self, currentTriggerVal):
+    def turnToPiLit(self, currentTriggerVal, intakeSide):
         # self.updatedLocation = False
         if(self.running == False and self.prevTriggerVal > 0):
             self.running = True
@@ -120,4 +122,8 @@ class RobotController:
             while(time.time() - intakeInitTime < 3):
                 print(time.time() - intakeInitTime)
                 self.set_intake_state("intake")
+                if(intakeSide == "RIGHT"):
+                    self.set_intake_state("switch_right")
+                else:
+                    self.set_intake_state("switch_left")
             self.runPID = True
