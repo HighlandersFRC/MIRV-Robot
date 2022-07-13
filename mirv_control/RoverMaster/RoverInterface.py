@@ -11,23 +11,33 @@ import mirv_control.msg
 def fibonacci_client():
     # Creates the SimpleActionClient, passing the type of the action
     # (FibonacciAction) to the constructor.
-    client = actionlib.SimpleActionClient('fibonacci', mirv_control.msg.FibbonacciAction)
+    client = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
 
     # Waits until the action server has started up and started
     # listening for goals.
     client.wait_for_server()
 
     # Creates a goal to send to the action server.
-    goal = mirv_control.msg.FibbonacciGoal(order=20)
-
+    mirv_control.msg.PurePursuitGoal.TargetPoints = [4,4]
+    mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
+    goal = mirv_control.msg.PurePursuitGoal
     # Sends the goal to the action server.
     client.send_goal(goal)
 
     # Waits for the server to finish performing the action.
     client.wait_for_result()
+    print(client.get_result())
 
+    mirv_control.msg.PurePursuitGoal.TargetPoints = [10,10]
+    mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
+    goal = mirv_control.msg.PurePursuitGoal
+    # Sends the goal to the action server.
+    client.send_goal(goal)
+
+    # Waits for the server to finish performing the action.
+    client.wait_for_result()
     # Prints out the result of executing the action
-    return client.get_result()  # A FibonacciResult
+    print(client.get_result())  # A FibonacciResult
 
 if __name__ == '__main__':
     try:
@@ -35,6 +45,6 @@ if __name__ == '__main__':
         # publish and subscribe over ROS.
         rospy.init_node('fibonacci_client_py')
         result = fibonacci_client()
-        print("Result:", ', '.join([str(n) for n in result.sequence]))
+        print(result)
     except rospy.ROSInterruptException:
         print("program interrupted before completion", file=sys.stderr)

@@ -2,6 +2,7 @@
 import math
 import numpy as np
 from numpy import array
+import actionlib
 import time
 import rospy
 import sys
@@ -9,6 +10,7 @@ from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import helpful_functions_lib as conversion_lib
+import mirv_control.msg as ASmsg
 
 
 class PurePursuit():
@@ -29,10 +31,18 @@ class PurePursuit():
     pub = rospy.Publisher("cmd_vel", Twist, queue_size=5)
     debugPub = rospy.Publisher("PPdebug", Float64MultiArray, queue_size=5)
     debugMsg = Float64MultiArray()
+    feedback = ASmsg.PurePursuitFeedback()
+    result = ASmsg.PurePursuitResult()
 
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)
-    # updates truck coordinate targets to rover cordites as rover moves
+        self._action_name = 'PurePursuitAS'
+
+        self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.PurePursuitAction, auto_start = False)
+        self._as.register_goal_callback(self.ServerCallback)
+        self._as.start()
+        sub = rospy.Subscriber("/EKF/Odometry", Odometry, self.callBackOdom)
+        rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
 
     def UpdateTargetPoints(self):
         newTruckCord = self.getTruckCord()
@@ -58,14 +68,12 @@ class PurePursuit():
     def getTruckCord(self):
         return self.currentTruckCord
 
-    def getPath(self):
-        pathList = [[20, 0], [20, 5], [0, 0]]
+    def setPath(self, pathList):
         for point in pathList:
             print("uploading point: {}".format(point))
             self.cordList.append([point[0], point[1], 0])
             self.robotCordList.append([point[0], point[1], 0])
         print("uploaded path")
-        # self.UpdateTargetPoints()
 
     def removeTargetPoint(self):
         if (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist and len(self.robotCordList) > 1):
@@ -180,62 +188,82 @@ class PurePursuit():
                     return [farPoint[0], farPoint[1]]
         return farPoint
 
+    def ServerCallback(self):
+        goal = self._as.accept_new_goal()
+        numTarget = goal.NumTargetPoints
+        points = list(goal.TargetPoints)
+        print(numTarget, points)
+        pointList = []
+        print("here")
+        if(not(len(points)/2 == numTarget)):
+            print("bad goal message")
+        else:
+            for i in range(numTarget):
+                tempX = points[0]
+                points.pop(0)
+                tempY = points[0]
+                points.pop(0)
+                pointList.append([tempX, tempY])
+                print(pointList)
+            self.setPath(pointList)
+
     def callBackOdom(self, data):
         self.currentTruckCord[0] = data.pose.pose.position.x
         self.currentTruckCord[1] = data.pose.pose.position.y
         self.currentTruckCord[2] = conversion_lib.quat_from_pose2eul(
             data.pose.pose.orientation)[0]
         print("got Data!")
-        if (self.cordList):
-            self.UpdateTargetPoints()
-            output = self.getTargetCordAndDriveSpeed(
-                self.lookAheadDist, self.currentMaxDriveSpeed)
-            isFinished = self.removeTargetPoint()
-            if(output != "atDest" and not isFinished):
-                # print("{}, {}".format(output[0][0],output[0][1]))
-                self.rosPubMsg.linear.x = output[0]
-                self.rosPubMsg.angular.z = output[1]
-                self.logData = output
-                # self.rosPubMsg.data = [2.2, 4]
+        if(self._as.is_active):
+            if (self.cordList):
+                self.UpdateTargetPoints()
+                output = self.getTargetCordAndDriveSpeed(
+                    self.lookAheadDist, self.currentMaxDriveSpeed)
+                isFinished = self.removeTargetPoint()
+                if(output != "atDest" and not isFinished):
+                    # print("{}, {}".format(output[0][0],output[0][1]))
+                    self.rosPubMsg.linear.x = output[0]
+                    self.rosPubMsg.angular.z = output[1]
+                    self.logData = output
+                    # publish the feedback
+                    self.feedback.currentTarget = self.cordList[0]
+                    self.feedback.distanceToNext = self.robotCordList[0][2]
+                    self._as.publish_feedback(self.feedback)
+                    # self.rosPubMsg.data = [2.2, 4]
+                else:
+                    self.rosPubMsg.linear.x = 0
+                    self.rosPubMsg.angular.z = 0
+                    self.result.AtTargetPoint = True
+                    self.result.errorToPoint = 0.5
+                    self.result.finalTargetPoint = [0,0]
+                    self._as.set_succeeded(self.result)
+                print(self.rosPubMsg)
+
             else:
+                # ros.drive.setvel(0,0)
+                self.result.AtTargetPoint = False
+                self.result.errorToPoint = 0.5
+                self.result.finalTargetPoint = [0,0]
+                self._as.set_succeeded(self.result)
                 self.rosPubMsg.linear.x = 0
                 self.rosPubMsg.angular.z = 0
-                self.logData = [0, 0]
+                print("no target Point")
 
-            print(self.rosPubMsg)
-
-        else:
-            # ros.drive.setvel(0,0)
+            self.pub.publish(self.rosPubMsg)
+    def run(self):
+        try:
+            rospy.spin()
+        except KeyboardInterrupt:
             self.rosPubMsg.linear.x = 0
             self.rosPubMsg.angular.z = 0
-            print("no target Point")
-
-        self.pub.publish(self.rosPubMsg)
-        self.debugMsg.data = [self.robotCordList[0][0],
-                              self.robotCordList[0][1], self.robotCordList[0][2]]
-        self.debugPub.publish(self.debugMsg)
-
-    def run(self):
-        # try:
-        self.getPath()
-        sub = rospy.Subscriber("/EKF/Odometry", Odometry, self.callBackOdom)
-        rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(
-            self.logData[0], self.logData[1]))
-        rospy.spin()
-        # except KeyboardInterrupt:
-        # self.rosPubMsg.linear.x = 0
-        # self.rosPubMsg.angular.z = 0
-        # self.pub.publish(self.rosPubMsg)
-        # except:
-        print("an error occurred in purePursuit.py")
+            self.pub.publish(self.rosPubMsg)
+        except:
+            print("an error occurred in purePursuit.py")
 
     def __del__(self):
         print("exiting Program")
         self.rosPubMsg.linear.x = 0
         self.rosPubMsg.angular.z = 0
         self.pub.publish(self.rosPubMsg)
-
-    rospy.spin()
 
 
 def callBack(data):
