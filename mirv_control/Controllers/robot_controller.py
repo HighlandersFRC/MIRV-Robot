@@ -1,4 +1,4 @@
-#!usr/bin/env python3
+#!/usr/bin/env python3
 import math
 import time
 
@@ -7,9 +7,21 @@ import rospy
 from std_msgs.msg import Float64MultiArray, String, Float64
 from PID import PID
 from geometry_msgs.msg import Twist
+import actionlib
+import mirv_control.msg as msg
+import asyncio
+
+rospy.init_node("RobotController")
 
 class RobotController:
     def __init__(self):
+        self._feedback = msg.MovementToPiLitFeedback()
+        self._result = msg.MovementToPiLitResult()
+
+        self._action_name = "RobotController"
+        self._as = actionlib.SimpleActionServer(self._action_name, msg.MovementToPiLitAction, execute_cb=self.turnToPiLit, auto_start = False)
+        self._as.start()
+
         self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
         self.pilit_location_sub = rospy.Subscriber("piLitLocation", Float64MultiArray, self.updatePiLitLocation)
@@ -28,10 +40,41 @@ class RobotController:
 
         self.imu = 0
 
-        self.kP = 0.025
+        self.kP = 0.03
         self.kI = 0
         self.kD = 0.03
         self.setPoint = 0
+
+        self.driveToPiLit = False
+
+        self.runPID = False
+
+        self.moveToPiLitRunning = False
+        self.movementInitTime = 0
+        
+        self.finished = False
+
+        self.setAllZeros()
+
+        self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
+        self.piLitPID.setMaxMinOutput(0.4)
+
+    def set_intake_state(self, state: str):
+        # self.intake_command_pub.publish(state)
+        print(state)
+
+    def setAllZeros(self):
+        self.piLitDepth = 0
+        self.piLitAngle = 0
+
+        self.updatedLocation = False
+        self.running = False
+
+        self.prevTriggerVal = 1
+
+        self.imu = 0
+
+
         self.driveToPiLit = False
         self.prevPiLitAngle = 0
 
@@ -40,13 +83,7 @@ class RobotController:
         self.moveToPiLitRunning = False
         self.movementInitTime = 0
         
-        self.imuList = []
-
-        self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
-        self.piLitPID.setMaxMinOutput(0.4)
-
-    def set_intake_state(self, state: str):
-        self.intake_command_pub.publish(state)
+        self.finished = False
 
     def power_drive(self, left, right):
         powers = Float64MultiArray()
@@ -65,39 +102,13 @@ class RobotController:
 
     def updateIMU(self, data):
         self.imu = data.data
-        if(self.runPID):
-            result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
-            result = -result
-            print("-----------------------------------------")
-
-            print("WANTED ANGLE: ", self.setPoint)
-            print("CURRENT ANGLE: ", self.imu)
-            print("ADJUSTMENT: ", self.piLitAngle)
-
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = result
-
-            self.velocitydrive_pub.publish(self.velocityMsg)
-
-            if(abs(self.imu - self.setPoint) < 1.5):
-                print("GOT TO TARGET!!!!")
-                self.driveToPiLit = True
-                self.runPID = False
-                self.velocityMsg.linear.x = 0
-                self.velocityMsg.angular.z = 0
-                self.velocitydrive_pub.publish(self.velocityMsg)
-        if(self.driveToPiLit):
-            if(self.moveToPiLitRunning == False):
-                self.movementInitTime = time.time()
-                self.moveToPiLitRunning = True
-            self.moveToPiLit() 
-
         print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
+         
 
     def moveToPiLit(self):
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
         result = -result
-        self.velocityMsg.linear.x = 0.5
+        self.velocityMsg.linear.x = 0.5 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > self.piLitDepth/0.5):
@@ -109,18 +120,81 @@ class RobotController:
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("store")
+            self._result.finished = True
+            # self._as.set_succeeded(self._result)
+            self.movementInitTime = 0
+            self.finished = True
 
-    def turnToPiLit(self, currentTriggerVal, intakeSide):
-        # self.updatedLocation = False
-        if(self.running == False and self.prevTriggerVal > 0):
-            self.running = True
-            self.prevTriggerVal = currentTriggerVal
-            intakeInitTime = time.time()
+    async def waitForResult(self):
+        while(self.finished == False):
+            # print("NOT FINISHED")
+            asyncio.sleep(0.01)
+        return True
+
+    def turnToPiLit(self, goal):
+        intakeInitTime = time.time()
+        running = goal.runPID
+        intakeSide = goal.intakeSide
+        self._result.finished = False
+        if self._as.is_preempt_requested():
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+            self.set_intake_state("reset")
+            rospy.loginfo('%s: Preempted' % self._action_name)
+            self._as.set_preempted()
+        elif(running == False):
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+            self.set_intake_state("reset")
+        else:
             while(time.time() - intakeInitTime < 3):
                 print(time.time() - intakeInitTime)
                 self.set_intake_state("intake")
-                if(intakeSide == "RIGHT"):
-                    self.set_intake_state("switch_right")
-                else:
-                    self.set_intake_state("switch_left")
+                self.set_intake_state(intakeSide)
             self.runPID = True
+
+        while(self.finished == False):
+            print("RUNNING CALLBACK")
+            print("RUN PID:, ", self.runPID)
+            if(self.runPID):
+                result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+                result = -result
+                print("-----------------------------------------")
+
+                # print("WANTED ANGLE: ", self.setPoint)
+                # print("CURRENT ANGLE: ", self.imu)
+                # print("ADJUSTMENT: ", self.piLitAngle)
+
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = result
+
+                self.velocitydrive_pub.publish(self.velocityMsg)
+
+                self._feedback.result = result
+                self._as.publish_feedback(self._feedback)
+
+                if(abs(self.imu - self.setPoint) < 5):
+                    print("GOT TO TARGET!!!!")
+                    self.driveToPiLit = True
+                    self.runPID = False
+                    self.velocityMsg.linear.x = 0
+                    self.velocityMsg.angular.z = 0
+                    self.velocitydrive_pub.publish(self.velocityMsg)
+            if(self.driveToPiLit):
+                if(self.moveToPiLitRunning == False):
+                    self.movementInitTime = time.time()
+                    self.moveToPiLitRunning = True
+                self.moveToPiLit()
+            else:
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = 0
+                self.velocitydrive_pub.publish(self.velocityMsg)
+        self.setAllZeros()
+        self._as.set_succeeded(self._result)
+
+if __name__ == '__main__':
+    print("RUNNING")
+    mirv = RobotController()
+    rospy.spin()
