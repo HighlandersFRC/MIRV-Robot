@@ -146,6 +146,8 @@ sudo touch mirv_permissions.rules
 sudo vim mirv_permissions.rules
 # add the following
 KERNEL=="ttyACM0", MODE="0666"
+# Run the fallowing
+sudo adduser $USER dialout
 
 
 ### Installing Flutter

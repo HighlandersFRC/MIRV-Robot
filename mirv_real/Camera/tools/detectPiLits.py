@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-import queue
-import threading
+import math
 import cv2
 import argparse
 import os, sys
-import shutil
 import time
-from pathlib import Path
 from faster_RCNN import get_faster_rcnn_resnet
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,33 +14,7 @@ import torch.backends.cudnn as cudnn
 from numpy import random
 import numpy as np
 
-from typing import Optional, List, Tuple
-from dataclasses import field
-
-from lib.config import cfg
-from lib.config import update_config
-from lib.utils.utils import create_logger, select_device, time_synchronized
-from lib.models import get_net
-from lib.dataset import LoadImages, LoadStreams
-from lib.core.general import bbox_iou, non_max_suppression, scale_coords
-from lib.utils import plot_one_box,show_seg_result
-from lib.core.function import AverageMeter
-from lib.core.postprocess import morphological_process, connect_lane
-from tqdm import tqdm
-import depthai
-
 from faster_RCNN import get_faster_rcnn_resnet
-from transformations import ComposeDouble
-from transformations import ComposeSingle
-from transformations import FunctionWrapperDouble
-from transformations import FunctionWrapperSingle
-from transformations import apply_nms, apply_score_threshold
-from transformations import normalize_01
-
-from backbone_resnet import ResNetBackbones
-from PIL import Image
-from std_msgs.msg import Float64
-
 
 from numpy import asarray
 
@@ -66,6 +37,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
+from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
 br = CvBridge()
 
@@ -80,45 +52,74 @@ transform=transforms.Compose([
 
 detections = 0
 
-def gotFrame(img):
+hFOV = 63
+horizontalPixels = 640
+verticalPixels = 480
+degreesPerPixel = hFOV/horizontalPixels
+
+def gotFrame(data):
     print("GOT A FRAME")
     initTime = time.time()
-    frame = ros_numpy.numpify(img)
-    print(frame.shape)
+    frame = ros_numpy.numpify(data.color_frame)
+    depthFrame = ros_numpy.numpify(data.depth_frame)
+    # print(frame.shape)
     tensorImg = transform(frame).to(device)
     if tensorImg.ndimension() == 3:
         tensorImg = tensorImg.unsqueeze(0)
-    detections = piLitDetect(tensorImg, frame)
-    # cv2.imshow("detections", detections)
-    # cv2.waitKey(1)
-    print("TIMEDIFF: ", time.time() - initTime)
-    # cv2.destroyAllWindows()
+    piLitDetect(tensorImg, frame, depthFrame)
 
-def piLitDetect(img, frame):
+def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
-    print(piLitPrediction)
-    # print(piLitPrediction["scores"])
     bboxList = []
+    print("DETECTING...")
+    
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        x0,y0,x1,y1 = bbox
-        bboxList.append(bbox)
-        frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+        if(score > 0.9):
+            print("GOT A PI LIT")    
+            x0,y0,x1,y1 = bbox
+            centerX = int((x0 + x1)/2)
+            centerY = int((y0 + y1)/2)
+            bboxList.append(bbox)
+            frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
 
-        # print("Looking in predictions")
+            angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
 
-        # if(score > 0.75):
-        #     frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
-        #     # print("GOT ONE")
-        # elif(score > 0.5):
-        #     frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 0, 255), 3)
-        #     # print("MAYBE?")
-    bboxMsg = Float64MultiArray()
-    bboxMsg.data = bboxList
-    piLitLocationPub.publish(bboxMsg)
-    print("PUBLISHED LOCATIONS")
-    return frame
+            depth = (depthFrame[centerY][centerX])/1000
 
-    # cv2.imshow("frame", frame)
+                # if(intakeSide == "RIGHT"):
+                #     if(angleToPiLit > 0):
+                #         intakeOffset = -0.0889
+                #     else:
+                #         intakeOffset = 0.0889
+                # else:
+                #     if(angleToPiLit > 0):
+                #         intakeOffset = 0.0889
+                #     else:
+                #         intakeOffset = -0.0889
+
+                # complementaryAngle = math.pi/2 - angleToPiLit
+
+                # horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
+
+                # verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
+
+                # if(depth != 0):
+                #     angleToPiLitFromIntake = math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit)
+                # else:
+                #     angleToPiLitFromIntake = angleToPiLit
+
+            if(depth < 3 and depth != 0):
+                angleToPiLitFromIntake = math.degrees(angleToPiLit)
+
+                print("DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+
+                piLitLocation = [depth, angleToPiLitFromIntake]
+
+                locations = Float64MultiArray()
+                locations.data = piLitLocation
+
+                piLitLocationPub.publish(locations)
+    # return frame
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
@@ -139,22 +140,18 @@ mp.set_start_method('spawn', force=True)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
-logger, _, _ = create_logger(
-    cfg, cfg.LOG_DIR, 'demo')
 
-device = select_device(logger,opt.device)
-if os.path.exists(opt.save_dir):  # output dir
-    shutil.rmtree(opt.save_dir)  # delete dir
-os.makedirs(opt.save_dir)  # make new dir
+device = torch.device('cuda:0')  # make new dir
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
-piLitModel = torch.load("weights/piLitModel.pth")
+piLitModel = torch.load("mirv_real/Camera/weights/piLitModel.pth")
 piLitModel.eval()
 piLitModel = piLitModel.to(device)
 
 rospy.init_node('piLitDetector')
-rospy.Subscriber("CameraFrames", Image, gotFrame)
-piLitLocationPub = rospy.Publisher('piLitLocations', Float64MultiArray, queue_size=1)
+rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
+rospy.Subscriber("fusedOdometry", Float64MultiArray, gotOdometry)
+piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
 
 try:
     rospy.spin()
