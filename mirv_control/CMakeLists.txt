@@ -240,16 +240,13 @@ catkin_install_python(PROGRAMS Controllers/remotedrive_master.py
 catkin_install_python(PROGRAMS Odometry/EKF.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-<<<<<<< HEAD
 catkin_install_python(PROGRAMS RoverMaster/TestServer.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS RoverMaster/RoverInterface.py
-=======
 catkin_install_python(PROGRAMS Diagnostic/SimpleTwist.py
 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS Controllers/tablet_controller.py
->>>>>>> 186fa6715259b125d8a9af1f9106f07b3bcb1e41
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
