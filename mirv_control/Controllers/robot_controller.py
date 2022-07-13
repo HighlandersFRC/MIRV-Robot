@@ -7,9 +7,17 @@ import rospy
 from std_msgs.msg import Float64MultiArray, String, Float64
 from PID import PID
 from geometry_msgs.msg import Twist
+import actionlib
+import mirv_control.msg as msg
 
 class RobotController:
     def __init__(self):
+        _feedback = msg.FibbonacciFeedback()
+        _result = msg.FibbonacciResult()
+
+        self._action_name = "PiLitPIDAS"
+        self._as = actionlib.SimpleActionServer(self._action_name, msg.MovementToPiLit, execute_cb=self.turnToPiLit, auto_start = False)
+        self._as.start()
         self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
         self.pilit_location_sub = rospy.Subscriber("piLitLocation", Float64MultiArray, self.updatePiLitLocation)
@@ -79,6 +87,9 @@ class RobotController:
 
             self.velocitydrive_pub.publish(self.velocityMsg)
 
+            self._feedback.result = result
+            self._as.publish_feedback(self._feedback)
+
             if(abs(self.imu - self.setPoint) < 1.5):
                 print("GOT TO TARGET!!!!")
                 self.driveToPiLit = True
@@ -109,18 +120,28 @@ class RobotController:
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("store")
+            self._result.finished = True
+            self._as.set_succeeded(self._result)
 
-    def turnToPiLit(self, currentTriggerVal, intakeSide):
-        # self.updatedLocation = False
-        if(self.running == False and self.prevTriggerVal > 0):
-            self.running = True
-            self.prevTriggerVal = currentTriggerVal
-            intakeInitTime = time.time()
+    def turnToPiLit(self, goal):
+        intakeInitTime = time.time()
+        running = goal.runPID
+        intakeSide = goal.intakeSide
+        if self._as.is_preempt_requested():
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+            self.set_intake_state("reset")
+            rospy.loginfo('%s: Preempted' % self._action_name)
+            self._as.set_preempted()
+        elif(running == False):
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+            self.set_intake_state("reset")
+        else:
             while(time.time() - intakeInitTime < 3):
                 print(time.time() - intakeInitTime)
                 self.set_intake_state("intake")
-                if(intakeSide == "RIGHT"):
-                    self.set_intake_state("switch_right")
-                else:
-                    self.set_intake_state("switch_left")
+                self.set_intake_state(intakeSide)
             self.runPID = True

@@ -67,6 +67,8 @@ add_action_files(
   FILES Fibbonacci.action
   DIRECTORY action
   FILES PurePursuit.action
+  DIRECTORY action
+  FILES MovementToPiLit.action
 )
 
 # Generate added messages and services with any dependencies listed here
@@ -244,9 +246,12 @@ catkin_install_python(PROGRAMS RoverMaster/TestServer.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS RoverMaster/RoverInterface.py
+DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 catkin_install_python(PROGRAMS Diagnostic/SimpleTwist.py
 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS Controllers/tablet_controller.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
