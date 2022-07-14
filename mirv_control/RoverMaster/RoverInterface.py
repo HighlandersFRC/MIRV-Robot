@@ -7,6 +7,10 @@ import actionlib
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
 import mirv_control.msg
+def convertToOneD(TwoDArray):
+    for point in TwoDArray:
+        
+
 
 def fibonacci_client():
     # Creates the SimpleActionClient, passing the type of the action
@@ -18,7 +22,7 @@ def fibonacci_client():
     client.wait_for_server()
 
     # Creates a goal to send to the action server.
-    mirv_control.msg.PurePursuitGoal.TargetPoints = [4,4]
+    mirv_control.msg.PurePursuitGoal.TargetPoints = [0,4]
     mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
     goal = mirv_control.msg.PurePursuitGoal
     # Sends the goal to the action server.
