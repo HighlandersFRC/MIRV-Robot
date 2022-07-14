@@ -242,14 +242,6 @@ class Publisher {
 		batteryVoltagePub.publish(voltage);
 	}
 
-	void publishOdometry(){
-		std_msgs::Float64MultiArray pose;
-		pose.data.push_back(odometry.getX());
-		pose.data.push_back(odometry.getY());
-		pose.data.push_back(odometry.getAngle());
-		encoderOdometryPub.publish(pose);
-	}
-
 	void publishEncoderVelocity(){
 		sensor_msgs::JointState jointState;
 
@@ -482,16 +474,13 @@ int main(int argc, char **argv) {
 	n.param("wheel_radius", wheelRadius, 0.1905);
 
 
-	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
+	//ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
 	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
-	ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
+	//ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
 
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
-
-	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
-	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
 
 	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
@@ -500,9 +489,8 @@ int main(int argc, char **argv) {
 	initializeIntakeMotors();
 
 	while(ros::ok()){
-		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
+		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(500);
 
-		odometry.update();
 		intake.update();
 
 		ros::spinOnce();

@@ -21,7 +21,7 @@ class PurePursuit():
     maxDriveSpeed = 0.75
     currentMaxDriveSpeed = 0.75
     startingTheta = 3.14159/2
-    lookAheadDist = 1
+    lookAheadDist = 4
     allowedError = 1.0
     allowedErrorDist = 0.1
     robotCordList = []
@@ -77,7 +77,7 @@ class PurePursuit():
         print("uploaded path")
 
     def removeTargetPoint(self):
-        if (abs(self.robotCordList[0][2]) < (1.5)*self.lookAheadDist and len(self.robotCordList) > 1):
+        if (abs(self.robotCordList[0][2]) < 1.5 and len(self.robotCordList) > 1):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
             print("removing target point")
@@ -214,7 +214,7 @@ class PurePursuit():
         self.currentTruckCord[2] = conversion_lib.quat_from_pose2eul(
             data.pose.pose.orientation)[0]
         print("got Data!")
-        if(self._as.is_active):
+        if(True):
             if (self.cordList):
                 self.UpdateTargetPoints()
                 output = self.getTargetCordAndDriveSpeed(
@@ -224,6 +224,8 @@ class PurePursuit():
                     # print("{}, {}".format(output[0][0],output[0][1]))
                     self.rosPubMsg.linear.x = output[0]
                     self.rosPubMsg.angular.z = output[1]
+                    # self.rosPubMsg.linear.x = 0.5
+                    # self.rosPubMsg.angular.z = 0
                     self.logData = output
                     # publish the feedback
                     self.feedback.currentTarget = self.cordList[0]
@@ -235,7 +237,7 @@ class PurePursuit():
                     self.rosPubMsg.angular.z = 0
                     self.result.AtTargetPoint = True
                     self.result.errorToPoint = 0.5
-                    self.result.finalTargetPoint = [0,0]
+                    self.result.finalTargetPoint = self.currentTruckCord
                     self._as.set_succeeded(self.result)
                 print(self.rosPubMsg)
 

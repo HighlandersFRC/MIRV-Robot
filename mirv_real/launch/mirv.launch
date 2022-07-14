@@ -16,8 +16,8 @@
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_broadcaster"  args="0 0 0 0 0 0 /map /odom 1"/>
 
     <!-- start real-world nodes -->
-    <node name="control" pkg="mirv_real" type="control"/>
-    <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
+    <!-- <node name="control" pkg="mirv_real" type="control"/> -->
+    <!-- <node name="Cloud" pkg="mirv_control" type="roverClient.py"/> -->
     <node name="Canbus" pkg="mirv_real" type="canbus"/>
     <node name="IMUFilter" pkg="mirv_real" type="imuFilter.py"/>
     <!-- <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/> -->

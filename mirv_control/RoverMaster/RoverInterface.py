@@ -3,6 +3,7 @@ from __future__ import print_function
 import rospy
 # Brings in the SimpleActionClient
 import actionlib
+import time
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -23,7 +24,7 @@ def fibonacci_client():
     client.wait_for_server()
 
     # Creates a goal to send to the action server.
-    mirv_control.msg.PurePursuitGoal.TargetPoints = [3,0]
+    mirv_control.msg.PurePursuitGoal.TargetPoints = [5,0]
     mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
     goal = mirv_control.msg.PurePursuitGoal
     # Sends the goal to the action server.
@@ -32,15 +33,15 @@ def fibonacci_client():
     # Waits for the server to finish performing the action.
     client.wait_for_result()
     print(client.get_result())
+    time.sleep(10)
+    mirv_control.msg.PurePursuitGoal.TargetPoints = [3,-2]
+    mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
+    goal = mirv_control.msg.PurePursuitGoal
+    # Sends the goal to the action server.
+    client.send_goal(goal)
 
-    # mirv_control.msg.PurePursuitGoal.TargetPoints = [4,2]
-    # mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
-    # goal = mirv_control.msg.PurePursuitGoal
-    # # Sends the goal to the action server.
-    # client.send_goal(goal)
-
-    # # Waits for the server to finish performing the action.
-    # client.wait_for_result()
+    # Waits for the server to finish performing the action.
+    client.wait_for_result()
     # Prints out the result of executing the action
     print(client.get_result())  # A FibonacciResult
 
