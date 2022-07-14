@@ -9,7 +9,7 @@ import actionlib
 import mirv_control.msg
 def convertToOneD(TwoDArray):
     for point in TwoDArray:
-        
+
 
 
 def fibonacci_client():
@@ -22,7 +22,7 @@ def fibonacci_client():
     client.wait_for_server()
 
     # Creates a goal to send to the action server.
-    mirv_control.msg.PurePursuitGoal.TargetPoints = [0,4]
+    mirv_control.msg.PurePursuitGoal.TargetPoints = [3,0]
     mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
     goal = mirv_control.msg.PurePursuitGoal
     # Sends the goal to the action server.
@@ -32,7 +32,7 @@ def fibonacci_client():
     client.wait_for_result()
     print(client.get_result())
 
-    mirv_control.msg.PurePursuitGoal.TargetPoints = [10,10]
+    mirv_control.msg.PurePursuitGoal.TargetPoints = [4,2]
     mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
     goal = mirv_control.msg.PurePursuitGoal
     # Sends the goal to the action server.
