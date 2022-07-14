@@ -28,6 +28,9 @@ def camera_imu_callback(angle):
     rover_state.rover_state["telemetry"]["heading"] = angle.data
     rover_state.timers["camera-imu"].reset()
 
+def state_callback(state):
+    rover_state.rover_state["state"] = state.data
+
 
 def publish_status(timer_event):
     status_pub.publish(json.dumps(rover_state.rover_state))
@@ -40,6 +43,7 @@ gps_sub = rospy.Subscriber("GPSCoordinates", Float64MultiArray, gps_callback)
 encoder_sub = rospy.Subscriber("encoder/velocity", Float64MultiArray, encoder_callback)
 camera_frames_sub = rospy.Subscriber("CameraFrames", Frames, camera_frames_callback)
 camera_imu_sub = rospy.Subscriber("CameraIMU", Float64, camera_imu_callback)
+#state_sub = rospy.Subscriber("", String, state_callback)
 
 #Status publisher and timer
 status_pub = rospy.Publisher("RoverStatus", String, queue_size = 10)
