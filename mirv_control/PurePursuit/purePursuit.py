@@ -33,6 +33,7 @@ class PurePursuit():
     debugMsg = Float64MultiArray()
     feedback = ASmsg.PurePursuitFeedback()
     result = ASmsg.PurePursuitResult()
+    lastlooptime = 0
 
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)
@@ -247,8 +248,10 @@ class PurePursuit():
                 self.rosPubMsg.linear.x = 0
                 self.rosPubMsg.angular.z = 0
                 print("no target Point")
-
+            looptime = time.time()-self.lastlooptime
+            self.lastlooptime = time.time()
             self.pub.publish(self.rosPubMsg)
+            print("looptime: {}".format(looptime))
     def run(self):
         try:
             rospy.spin()

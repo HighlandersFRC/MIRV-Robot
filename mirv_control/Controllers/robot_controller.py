@@ -11,8 +11,6 @@ import actionlib
 import mirv_control.msg as msg
 import asyncio
 
-rospy.init_node("RobotController")
-
 class RobotController:
     def __init__(self):
         self._feedback = msg.MovementToPiLitFeedback()
@@ -60,7 +58,7 @@ class RobotController:
         self.piLitPID.setMaxMinOutput(0.4)
 
     def set_intake_state(self, state: str):
-        # self.intake_command_pub.publish(state)
+        self.intake_command_pub.publish(state)
         print(state)
 
     def setAllZeros(self):
@@ -141,7 +139,6 @@ class RobotController:
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("reset")
-            rospy.loginfo('%s: Preempted' % self._action_name)
             self._as.set_preempted()
         elif(running == False):
             self.velocityMsg.linear.x = 0
@@ -193,8 +190,3 @@ class RobotController:
                 self.velocitydrive_pub.publish(self.velocityMsg)
         self.setAllZeros()
         self._as.set_succeeded(self._result)
-
-if __name__ == '__main__':
-    print("RUNNING")
-    mirv = RobotController()
-    rospy.spin()

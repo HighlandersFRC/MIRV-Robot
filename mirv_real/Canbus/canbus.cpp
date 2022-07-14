@@ -21,6 +21,7 @@
 #include "geometry_msgs/Vector3.h"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include "diagnostic_msgs/DiagnosticStatus.h"
+#include "sensor_msgs/JointState.h"
 #include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Float64.h"
 #include <time.h>
@@ -250,12 +251,31 @@ class Publisher {
 	}
 
 	void publishEncoderVelocity(){
-		double left = getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity());
-		double right = getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity());
-		std_msgs::Float64MultiArray velocity;
-		velocity.data.push_back(left);
-		velocity.data.push_back(right);
-		encoderVelocityPub.publish(velocity);
+		sensor_msgs::JointState jointState;
+
+		jointState.name = {
+			"front_right_drive",
+			"front_left_drive",
+			"back_right_drive",
+			"back_left_drive"
+		};
+
+		jointState.position = {
+			frontRightDrive.GetSelectedSensorPosition(),
+			frontLeftDrive.GetSelectedSensorPosition(),
+			backRightDrive.GetSelectedSensorPosition(),
+			backLeftDrive.GetSelectedSensorPosition(),
+
+		};
+
+		jointState.velocity  = {
+			-getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity()),
+			getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity()),
+			-getVelocityFromTicksPer100MS(backRightDrive.GetSelectedSensorVelocity()),
+			getVelocityFromTicksPer100MS(backLeftDrive.GetSelectedSensorVelocity()),
+		};
+
+		encoderVelocityPub.publish(jointState);
 	}
 };
 
@@ -473,7 +493,7 @@ int main(int argc, char **argv) {
 	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
 	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
 
-	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64MultiArray>("encoder/velocity", 10);
+	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
 
 	initializeDriveMotors();
