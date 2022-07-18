@@ -16,6 +16,7 @@ class RoverInterface():
     def __init__(self):
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
+        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
         print("connected to Pure Pursuit Server")
 
     def PP_client(self, targetPoint):
@@ -23,23 +24,32 @@ class RoverInterface():
         mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
         goal = mirv_control.msg.PurePursuitGoal
         # Sends the goal to the action server.
-        client.send_goal(goal)
+        self.PPclient.send_goal(goal)
 
         # Waits for the server to finish performing the action.
-        client.wait_for_result()
-        print(client.get_result())
+        self.PPclient.wait_for_result()
+        print(self.PPclient.get_result())
         time.sleep(10)
         mirv_control.msg.PurePursuitGoal.TargetPoints = [3,-2]
         mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
         goal = mirv_control.msg.PurePursuitGoal
         # Sends the goal to the action server.
-        client.send_goal(goal)
+        self.PPclient.send_goal(goal)
 
         # Waits for the server to finish performing the action.
-        client.wait_for_result()
+        self.PPclient.wait_for_result()
         # Prints out the result of executing the action
-        print(client.get_result())  # A FibonacciResult
+        print(self.PPclient.get_result())  # A FibonacciResult
 
+    def moveToPiLit_client(self, intakeSide):
+        mirv_control.msg.MovementToPiLitGoal.runPID = True
+        mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
+
+        goal = mirv_control.msg.MovementToPiLitGoal
+        self.pickupClient.send_goal(goal)
+
+        self.pickupClient.wait_for_result()
+        
 if __name__ == '__main__':
     try:
         # Initializes a rospy node so that the SimpleActionClient can
