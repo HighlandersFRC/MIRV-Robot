@@ -214,7 +214,7 @@ class PurePursuit():
         self.currentTruckCord[2] = conversion_lib.quat_from_pose2eul(
             data.pose.pose.orientation)[0]
         print("got Data!")
-        if(True):
+        if(self._as.is_active()):
             if (self.cordList):
                 self.UpdateTargetPoints()
                 output = self.getTargetCordAndDriveSpeed(
