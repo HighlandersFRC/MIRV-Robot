@@ -25,5 +25,7 @@
     <!-- <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/> -->
     <node name="EKF" pkg="mirv_control" type="EKF.py"/>
     <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
+    <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"/>
+    <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py"/>
     <!-- <node name="OdometyDataUnfiltered" pkg="mirv_control" type="controllerFormatting.py"/> -->
 </launch>
