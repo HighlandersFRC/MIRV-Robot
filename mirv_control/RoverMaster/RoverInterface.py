@@ -18,26 +18,24 @@ class RoverInterface():
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
 
-    def PP_client(self, targetPoint):
+    def convertToOneD(TwoDArray):
+        temp
+        for point in TwoDArray:
+            temp.append(point[0])
+            temp.append(point[1])
+        if len(temp)/2 == len(TwoDArray):
+            return temp
+        else:
+            raise Exeption 
+
+
+    def PP_client(self, targetPoints2D):
+        targetPoints1D = self.convertToOneD(targetPoints2D)
         mirv_control.msg.PurePursuitGoal.TargetPoints = [5,0]
         mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
         goal = mirv_control.msg.PurePursuitGoal
-        # Sends the goal to the action server.
-        client.send_goal(goal)
-
-        # Waits for the server to finish performing the action.
-        client.wait_for_result()
-        print(client.get_result())
-        time.sleep(10)
-        mirv_control.msg.PurePursuitGoal.TargetPoints = [3,-2]
-        mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
-        goal = mirv_control.msg.PurePursuitGoal
-        # Sends the goal to the action server.
-        client.send_goal(goal)
-
-        # Waits for the server to finish performing the action.
-        client.wait_for_result()
-        # Prints out the result of executing the action
+        self.PPclient.send_goal(goal)
+        self.PPclient.wait_for_result()
         print(client.get_result())  # A FibonacciResult
 
 if __name__ == '__main__':
