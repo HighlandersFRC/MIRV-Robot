@@ -16,6 +16,7 @@ class RoverInterface():
     def __init__(self):
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
+        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
         print("connected to Pure Pursuit Server")
 
     def convertToOneD(TwoDArray):
@@ -38,6 +39,15 @@ class RoverInterface():
         self.PPclient.wait_for_result()
         print(client.get_result())  # A FibonacciResult
 
+    def moveToPiLit_client(self, intakeSide):
+        mirv_control.msg.MovementToPiLitGoal.runPID = True
+        mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
+
+        goal = mirv_control.msg.MovementToPiLitGoal
+        self.pickupClient.send_goal(goal)
+
+        self.pickupClient.wait_for_result()
+        
 if __name__ == '__main__':
     try:
         # Initializes a rospy node so that the SimpleActionClient can
