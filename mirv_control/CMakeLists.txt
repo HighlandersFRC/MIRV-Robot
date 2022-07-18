@@ -69,6 +69,8 @@ add_action_files(
   FILES PurePursuit.action
   DIRECTORY action
   FILES MovementToPiLit.action
+  DIRECTORY action
+  FILES Controller.action
 )
 
 # Generate added messages and services with any dependencies listed here
