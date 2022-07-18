@@ -35,7 +35,7 @@ class RoverController():
     def scaleJoyInput(self, x, y):
         x = 1 + (-4 * math.tanh(abs(y)))/math.pi
         angVel = x * self.maxAngularVel
-        linVel = y * self.maxStrafeVel
+        linVel = self.maxStrafeVel * abs(y) * y
         self.rosPubMsg.linear.x = linVel
         self.rosPubMsg.angular.z = angVel
         
@@ -45,11 +45,13 @@ class RoverController():
         msg = json.loads(message)
         joystickX = msg.get("commandParameters").get("x")
         joystickY = msg.get("commandParameters").get("y")
-
+        
+        
         if(joystickX != 0 or joystickY != 0):
             joystick = True
             scaleJoyInput(joystickX, joystickY)
-            self.pub.publish(self.rosPubMsg)
+            print(self.rosPubMsg)
+        #    self.pub.publish(self.rosPubMsg)
         else:
             joystick = False
         purePursuit = msg.get("purePursuit")
