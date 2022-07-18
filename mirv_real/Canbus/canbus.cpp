@@ -109,6 +109,9 @@ void initializeIntakeMotors(){
 	intakeArmMotor.SetInverted(false);
 	intakeArmMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 	intakeArmMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+
+	intakeWheelMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 }
 
 //maximum rpm of drive motors
@@ -261,6 +264,9 @@ class Intake {
 	std::string mode = "disable";
 	time_t startTime;
 	double side = 1;
+	//1: right
+	//-1: left
+
 	//char* modes[4] = {"disable", "reset", "intake", "store"};
 
 	//disable: all motors off
@@ -294,7 +300,19 @@ class Intake {
 		if (mode == "intake"){
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
-			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+			if (side == 1){
+				if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				} else {
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+				}
+			} else {
+				if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				} else {
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+				}
+			}
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			} else {
