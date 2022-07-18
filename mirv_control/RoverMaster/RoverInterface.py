@@ -45,6 +45,12 @@ class RoverInterface():
         except:
             print("failed to run Pure pursuit action")
 
+    def cloudController_client(self):
+        goal = mirv_control.msg.ControllerGoal
+        self.cloudController_client.send_goal(goal, feedback_callback = self.feedback_callback)
+        self.cloudController_client.wait_for_result()
+        print(self.cloudController_client.get_result())
+
     def moveToPiLit_client(self, intakeSide):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
         mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
@@ -55,7 +61,10 @@ class RoverInterface():
         self.pickupClient.wait_for_result()
 
         print(self.pickupClient.get_result())
-        
+
+    def feedback_callback(self, msg):
+        print(msg)
+
 if __name__ == '__main__':
     try:
         # Initializes a rospy node so that the SimpleActionClient can
