@@ -53,8 +53,9 @@ class RoverController():
         ppTarget = msg.get("ppTarget")
         if(ppTarget == None):
             ppTarget = False
-        pickup = msg.get("pickup")
-        if(pickup == None):
+        if(msg.get("command") == "retrieve_pi_lits"):
+            pickup = True
+        else:
             pickup = False
         self._feedback.joystick = joystick
         self._feedback.purePursuit = purePursuit
