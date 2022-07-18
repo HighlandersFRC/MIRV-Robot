@@ -14,7 +14,7 @@ import asyncio
 
 rospy.init_node("piLitPickup")
 
-class moveToPiLit:
+class piLitPickup:
     def __init__(self):
         self._feedback = msg.MovementToPiLitFeedback()
         self._result = msg.MovementToPiLitResult()
@@ -179,7 +179,17 @@ class moveToPiLit:
         self.setAllZeros()
         self._as.set_succeeded(self._result)
 
+    def run(self):
+        try:
+            rospy.spin()
+        except KeyboardInterrupt:
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+        except:
+            print("an error occurred in purePursuit.py")
+
 if __name__ == '__main__':
     print("RUNNING")
-    mirv = moveToPiLit()
-    rospy.spin()
+    pickup = piLitPickup()
+    pickup.run()
