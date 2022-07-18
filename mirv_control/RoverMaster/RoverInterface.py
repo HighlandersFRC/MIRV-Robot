@@ -16,10 +16,12 @@ class RoverInterface():
     def __init__(self):
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
+        print("connected to Pure Pursuit Server")
         self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
         self.pickupClient.wait_for_server()
-        self.controllerClient = actionlib.SimpleActionClient("Controller", mirv_control.msg.ControllerAction)
-        self.controllerClient.wait_for_server()
+        print("connected to PiLit pickup Server")
+        self.cloudControllerClient = actionlib.SimpleActionClient("CloudController", mirv_control.msg.ControllerAction)
+        self.cloudControllerClient.wait_for_server()
         print("connected to Pure Pursuit Server")
 
     def convertToOneD(TwoDArray):
@@ -32,7 +34,7 @@ class RoverInterface():
                 raise Exception("Invalid points entered")
         return temp
 
-
+    
     def PP_client(self, targetPoints2D):
         try:
             targetPoints1D = self.convertToOneD(targetPoints2D)
