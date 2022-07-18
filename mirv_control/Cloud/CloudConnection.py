@@ -27,6 +27,9 @@ from threading import Thread
 CLOUD_HOST = os.getenv('API_HOST')
 CLOUD_PORT = os.getenv('API_PORT')
 ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
+USERNAME = os.getenv('API_USERNAME')
+PASSWORD = os.getenv('API_PASSWORD')
+
 
 if CLOUD_HOST is None:
     print("Please set the API_HOST Environment Variable to the IP of the cloud server")
@@ -65,7 +68,7 @@ DEFAULT_STATUS_MESSAGE = {
 }
 
 
-
+token = ""
 
 # Setup webtrc connection components
 pcs = set()
@@ -86,13 +89,12 @@ def get_webrtc_state():
 def connect_to_api():
     print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
     try:
-        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": "rover_6"},
-                auth={"password": None}, socketio_path="/ws/socket.io")
+        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": ROVER_COMMON_NAME},
+                auth={"token": token}, socketio_path="/ws/socket.io")
         print("Connection Succeeded")
-    except socketio.exceptions.ConnectionError:
+    except socketio.exceptions.ConnectionError as e:
         print(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
-
-
+        print(e)
 # Sends a Message to the API
 def send_to_api(message, type="data"):
     try:
@@ -208,7 +210,7 @@ async def offer(request):
         def on_message(message):
             command_pub.publish(message)
             channel.send("")
-            
+            print(message) 
             #send_rtc("I Really Like Turtles!")
 
 
@@ -239,18 +241,29 @@ async def offer(request):
         ),
     )
 
+def get_token():
+    login_data = {'username': USERNAME, 'password': PASSWORD}
+    response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=5)
+    contents = json.loads(response.content.decode('utf-8'))
+    token = contents.get('access_token')
+    return token
+
+
+    
 
 # Periodically tries to connect to the cloud if the system is not connected
 async def update_connection():
-
+    print("Test")
     while True:
-        if not api_connected:
-            connect_to_api()
+        print("Test2")
+        #if not api_connected:
+            #pass
+            #connect_to_api()
         await asyncio.sleep(5)
 
-async def update_status():
-    
+async def update_status(): 
     while True:        
+        print("Test Status")
         if len(status_messages) > 0:
             status = status_messages[-1]
         else:
@@ -311,36 +324,13 @@ async def on_shutdown(app):
     stop()
 
 
-loop = asyncio.get_event_loop()
+#loop = asyncio.get_event_loop()
 
-status_task = loop.create_task(update_status())
-connection_task = loop.create_task(update_connection())
+#status_task = loop.create_task(update_status())
+#connection_task = loop.create_task(update_connection())
 
-'''
-send("data", {
-    "roverId": f"{ROVER_COMMON_NAME}",
-    "state": "docked",
-    "status": "available",
-    "battery-percent": 12,
-    "battery-voltage": 18,
-    "health": {
-        "electronics": "healthy",
-        "drivetrain": "healthy",
-        "intake": "healthy",
-        "sensors": "healthy",
-        "garage": "healthy",
-        "power": "healthy",
-        "general": "healthy"
-    },
-    "telemetry": {
-        "lat": 39,
-        "long": -105,
-        "heading": 90,
-        "speed": 0
-    }
-})
-'''
-
+token = get_token()
+connect_to_api()
 
 app = web.Application()
 app.on_shutdown.append(on_shutdown)
