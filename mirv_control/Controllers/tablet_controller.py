@@ -38,7 +38,7 @@ def cloud_callback(json_string):
             drive = parameters.get('y', 0) * DRIVING_SCALE
             left = -drive + turn
             right = drive + turn
-            logging.debug(f"Sending drivetrain command to rover: left: {}")
+            logging.debug(f"Sending drivetrain command to rover: left: {left}, right: {right}")
             mirv.power_drive(left, right)
         elif command == "tank":
             left = parameters.get('x', 0) * DRIVING_SCALE
