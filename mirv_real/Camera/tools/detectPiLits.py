@@ -144,7 +144,7 @@ img_det_shape = (720, 1280, 3)
 device = torch.device('cuda:0')  # make new dir
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
-piLitModel = torch.load("mirv_real/Camera/weights/piLitModel.pth")
+piLitModel = torch.load("/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/piLitModel.pth")
 piLitModel.eval()
 piLitModel = piLitModel.to(device)
 
