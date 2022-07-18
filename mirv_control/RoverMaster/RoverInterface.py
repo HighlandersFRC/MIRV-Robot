@@ -14,30 +14,33 @@ def convertToOneD(TwoDArray):
 
 class RoverInterface():
     def __init__(self):
-        self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
-        self.PPclient.wait_for_server()
-        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
+        # self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+        # self.PPclient.wait_for_server()
+        # self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
         print("connected to Pure Pursuit Server")
 
     def convertToOneD(TwoDArray):
-        temp
-        for point in TwoDArray:
-            temp.append(point[0])
-            temp.append(point[1])
-        if len(temp)/2 == len(TwoDArray):
-            return temp
-        else:
-            raise Exeption 
+        temp = []
+        for i in range(len(TwoDArray)):
+            try:
+                temp.append(TwoDArray[i][0])
+                temp.append(TwoDArray[i][1])
+            except:
+                raise Exception("Invalid points entered")
+        return temp
 
 
     def PP_client(self, targetPoints2D):
-        targetPoints1D = self.convertToOneD(targetPoints2D)
-        mirv_control.msg.PurePursuitGoal.TargetPoints = [5,0]
-        mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
-        goal = mirv_control.msg.PurePursuitGoal
-        self.PPclient.send_goal(goal)
-        self.PPclient.wait_for_result()
-        print(client.get_result())  # A FibonacciResult
+        try:
+            targetPoints1D = self.convertToOneD(targetPoints2D)
+            mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
+            mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
+            goal = mirv_control.msg.PurePursuitGoal
+            self.PPclient.send_goal(goal)
+            self.PPclient.wait_for_result()
+            print(client.get_result())
+        except:
+            print("failed to run Pure pursuit action")
 
     def moveToPiLit_client(self, intakeSide):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
@@ -53,6 +56,8 @@ if __name__ == '__main__':
         # Initializes a rospy node so that the SimpleActionClient can
         # publish and subscribe over ROS.
         rospy.init_node('Master_client_py')
-        RoverInterface().PP_client
+        interface = RoverInterface
+        # print(interface.convertToOneD([[1,2],[3,4],[5,6]]))
+        interface.PP_client()
     except rospy.ROSInterruptException:
         print("program interrupted before completion", file=sys.stderr)
