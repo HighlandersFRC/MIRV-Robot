@@ -47,6 +47,8 @@ class RoverInterface():
         self.pickupClient.send_goal(goal)
 
         self.pickupClient.wait_for_result()
+
+        print(self.pickupClient.get_result())
         
 if __name__ == '__main__':
     try:
