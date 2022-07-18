@@ -300,7 +300,7 @@ class Intake {
 		if (mode == "intake"){
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
-			if (side == 1){
+			if (side > 0){
 				if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
@@ -346,20 +346,43 @@ class Intake {
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
 			} else {
-				if (time(NULL) - startTime < 3){
-					if (side > 0){
-						rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
-					} else {
-						leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
-					}
-					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
-					intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-				} else {
-					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
-					intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
-					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				if (side > 0){
 					leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+					if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+						rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+						intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+					} else {
+						intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+						rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
+						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+					}
+				} else {
+					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+					if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+						intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+					} else {
+						intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+						leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
+						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+					}
 				}
+				// if (){
+				// 	if (side > 0){
+				// 		rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
+				// 	} else {
+				// 		leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
+				// 	}
+				// 	intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+				// 	intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				// } else {
+				// 	intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				// 	intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+				// 	rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				// 	leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				// }
 			}
 		}
 	}
