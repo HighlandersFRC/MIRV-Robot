@@ -12,45 +12,68 @@ def convertToOneD(TwoDArray):
     for point in TwoDArray:
         pass
 
+class RoverInterface():
+    def __init__(self):
+        self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+        self.PPclient.wait_for_server()
+        print("connected to Pure Pursuit Server")
+        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
+        self.pickupClient.wait_for_server()
+        print("connected to PiLit pickup Server")
+        self.cloudControllerClient = actionlib.SimpleActionClient("CloudController", mirv_control.msg.ControllerAction)
+        self.cloudControllerClient.wait_for_server()
+        print("connected to Pure Pursuit Server")
 
+    def convertToOneD(TwoDArray):
+        temp = []
+        for i in range(len(TwoDArray)):
+            try:
+                temp.append(TwoDArray[i][0])
+                temp.append(TwoDArray[i][1])
+            except:
+                raise Exception("Invalid points entered")
+        return temp
 
-def fibonacci_client():
-    # Creates the SimpleActionClient, passing the type of the action
-    # (FibonacciAction) to the constructor.
-    client = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+    
+    def PP_client(self, targetPoints2D):
+        try:
+            targetPoints1D = self.convertToOneD(targetPoints2D)
+            mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
+            mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
+            goal = mirv_control.msg.PurePursuitGoal
+            self.PPclient.send_goal(goal)
+            self.PPclient.wait_for_result()
+            print(client.get_result())
+        except:
+            print("failed to run Pure pursuit action")
 
-    # Waits until the action server has started up and started
-    # listening for goals.
-    client.wait_for_server()
+    def cloudController_client(self):
+        goal = mirv_control.msg.ControllerGoal
+        self.cloudController_client.send_goal(goal, feedback_callback = self.feedback_callback)
+        self.cloudController_client.wait_for_result()
+        print(self.cloudController_client.get_result())
 
-    # Creates a goal to send to the action server.
-    mirv_control.msg.PurePursuitGoal.TargetPoints = [5,0]
-    mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
-    goal = mirv_control.msg.PurePursuitGoal
-    # Sends the goal to the action server.
-    client.send_goal(goal)
+    def moveToPiLit_client(self, intakeSide):
+        mirv_control.msg.MovementToPiLitGoal.runPID = True
+        mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
 
-    # Waits for the server to finish performing the action.
-    client.wait_for_result()
-    print(client.get_result())
-    time.sleep(10)
-    mirv_control.msg.PurePursuitGoal.TargetPoints = [3,-2]
-    mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
-    goal = mirv_control.msg.PurePursuitGoal
-    # Sends the goal to the action server.
-    client.send_goal(goal)
+        goal = mirv_control.msg.MovementToPiLitGoal
+        self.pickupClient.send_goal(goal)
 
-    # Waits for the server to finish performing the action.
-    client.wait_for_result()
-    # Prints out the result of executing the action
-    print(client.get_result())  # A FibonacciResult
+        self.pickupClient.wait_for_result()
+
+        print(self.pickupClient.get_result())
+
+    def feedback_callback(self, msg):
+        print(msg)
 
 if __name__ == '__main__':
     try:
         # Initializes a rospy node so that the SimpleActionClient can
         # publish and subscribe over ROS.
-        rospy.init_node('fibonacci_client_py')
-        result = fibonacci_client()
-        print(result)
+        rospy.init_node('Master_client_py')
+        interface = RoverInterface
+        # print(interface.convertToOneD([[1,2],[3,4],[5,6]]))
+        interface.PP_client()
     except rospy.ROSInterruptException:
         print("program interrupted before completion", file=sys.stderr)
