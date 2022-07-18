@@ -9,6 +9,7 @@ import math
 from std_msgs import String
 import RoverInterface
 import mirv_control.msg
+from geometry_msgs.msg import Twist
 import rospy
 import actionlib
 import json
@@ -17,8 +18,9 @@ class RoverController():
     # create messages that are used to publish feedback/result
     _feedback = mirv_control.msg.ControllerFeedback()
     _result = mirv_control.msg.ControllerResult()
-  
-    maxAngularVel = 1
+    pub = rospy.Publisher("cmd_vel", Twist, queue_size=5)
+    rosPubMsg = Twist()
+    maxAngularVel = 2
     maxStrafeVel = 3
 
     def __init__(self):
@@ -34,7 +36,9 @@ class RoverController():
         x = 1 + (-4 * math.tanh(abs(y)))/math.pi
         angVel = x * self.maxAngularVel
         linVel = y * self.maxStrafeVel
-        return x,y
+        self.rosPubMsg.linear.x = linVel
+        self.rosPubMsg.angular.z = angVel
+        
 
 
     def cloud_cb(self, message):
@@ -44,7 +48,8 @@ class RoverController():
 
         if(joystickX != 0 or joystickY != 0):
             joystick = True
-            # joystickX = 
+            scaleJoyInput(joystickX, joystickY)
+            self.pub.publish(self.rosPubMsg)
         else:
             joystick = False
         purePursuit = msg.get("purePursuit")
