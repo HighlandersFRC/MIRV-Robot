@@ -18,5 +18,5 @@ class RoverController():
         cloud_sub = rospy.Subscriber("joy", String, cloud_cb)
 
     def cloud_cb(msg):
-
+        print(msg)
 
