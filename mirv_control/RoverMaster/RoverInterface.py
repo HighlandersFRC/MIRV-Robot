@@ -17,6 +17,7 @@ class RoverInterface():
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
+        self.PPclient.set_feedback_callback()
         # self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
         # self.pickupClient.wait_for_server()
         # print("connected to PiLit pickup Server")
