@@ -20,7 +20,8 @@ class piLitPickup:
         self._result = msg.MovementToPiLitResult()
 
         self._action_name = "RobotController"
-        self._as = actionlib.SimpleActionServer(self._action_name, msg.MovementToPiLitAction, execute_cb=self.turnToPiLit, auto_start = False)
+        self._as = actionlib.SimpleActionServer(self._action_name, msg.MovementToPiLitAction, auto_start = False)
+        self._as.register_goal_callback(self.turnToPiLit)
         self._as.start()
 
         self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
@@ -120,25 +121,34 @@ class piLitPickup:
             self.movementInitTime = 0
             self.finished = True
 
-    def turnToPiLit(self, goal):
+    def turnToPiLit(self):
+        goal = self._as.accept_new_goal()
         intakeInitTime = time.time()
         running = goal.runPID
         intakeSide = goal.intakeSide
         self._result.finished = False
+
         if self._as.is_preempt_requested():
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
             rospy.loginfo('%s: Preempted' % self._action_name)
             self._as.set_preempted()
-        elif(running == False):
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = 0
-            self.velocitydrive_pub.publish(self.velocityMsg)
         else:
             while(time.time() - intakeInitTime < 3):
                 print(time.time() - intakeInitTime)
-            self.runPID = True
+            while(time.time() - intakeInitTime < 10 and self.piLitAngle == 0):
+                print("HAVEN'T FOUND A PI LIT YET")
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = 0
+                self.velocitydrive_pub.publish(self.velocityMsg)
+                self.runPID = False
+            if(self.piLitAngle != 0):
+                self.runPID = True
+            else:
+                print("TIMED OUT")
+                self._as.set_succeeded(self._result)
+                self.finished = True
 
         while(self.finished == False):
             print("RUNNING CALLBACK")
@@ -147,10 +157,6 @@ class piLitPickup:
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result
                 print("-----------------------------------------")
-
-                # print("WANTED ANGLE: ", self.setPoint)
-                # print("CURRENT ANGLE: ", self.imu)
-                # print("ADJUSTMENT: ", self.piLitAngle)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
