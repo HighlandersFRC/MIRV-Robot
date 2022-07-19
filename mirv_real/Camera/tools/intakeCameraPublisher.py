@@ -147,7 +147,7 @@ while True:
     in_rgb = q_rgb.tryGet()
     imuData = imuQueue.get()
     inDepth = depthQueue.get()
-    print("PAST QUEUE GET")
+    #print("PAST QUEUE GET")
     depthFrame = inDepth.getFrame()
     depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
     depthFrameColor = cv2.equalizeHist(depthFrameColor)
@@ -155,7 +155,7 @@ while True:
 
     # get imu values and publish them
     imuPackets = imuData.packets
-    print("IMU PACKET LENGTH: ", len(imuPackets))
+    #print("IMU PACKET LENGTH: ", len(imuPackets))
     i = 0
     for imuPacket in imuPackets:
         i += 1
@@ -180,7 +180,7 @@ while True:
         pitch = pitch + 180
         pitch = pitch%360
 
-        print("PITCH: ", pitch)
+        #print("PITCH: ", pitch)
 
         if(i == len(imuPackets) - 1):
             imuPub.publish(pitch)

@@ -289,6 +289,12 @@ class Intake {
 	//limit switches: fwd - up, rev - down
 
 	void update(){
+
+		// cout << " Fwd: ";
+		// cout << intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
+		// cout << " Rev: ";
+		// cout << intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed();
+
 		//not moving at all
 		if (mode == "disable"){
 			intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
@@ -328,7 +334,7 @@ class Intake {
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			} else {
-				intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+				intakeArmMotor.Set(ControlMode::PercentOutput, -0.5);
 			}
 		}
 
@@ -342,6 +348,7 @@ class Intake {
 					leftConvMotor.Set(ControlMode::PercentOutput, 0.4);
 				}
 				if (time(NULL) - startTime > 1){
+					cout << "reset ";
 					mode = "reset";
 				}
 			} else {

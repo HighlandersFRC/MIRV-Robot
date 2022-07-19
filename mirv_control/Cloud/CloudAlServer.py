@@ -44,23 +44,27 @@ class CloudAlServer():
 
     def cloud_cb(self, message):
         msg = json.loads(message.data)
-        joystickX = msg.get("commandParameters").get("x")
-        joystickY = msg.get("commandParameters").get("y")
+        joystickX = msg.get("commandParameters", {}).get("x",0)
+        joystickY = msg.get("commandParameters", {}).get("y",0)
         print("looping")
         
-        if(joystickX != 0 and joystickY != 0):
+        if(joystickX != 0 or joystickY != 0):
             joystick = True
-            self.lastJoy == True
+            self.lastJoy = True
             self.scaleJoyInput(joystickX, joystickY)
             print(self.rosPubMsg)
-            # self.pub.publish(self.rosPubMsg)
+            self.pub.publish(self.rosPubMsg)
+            
         else:
             joystick = False
+        print("{}, {}".format(joystick, self.lastJoy))
         if(joystick == False and self.lastJoy == True):
+            print("setting to zero")
             self.rosPubMsg.linear.x = 0
             self.rosPubMsg.angular.z = 0
-            # self.pub.publish(self.rosPubMsg)
-            self.lastJoy == False
+            self.pub.publish(self.rosPubMsg)
+            self.lastJoy = False
+
         purePursuit = msg.get("purePursuit")
         if(purePursuit == None):
             purePursuit = False

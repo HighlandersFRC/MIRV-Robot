@@ -39,6 +39,7 @@ from cv_bridge import CvBridge
 import ros_numpy
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 
+rospy.init_node('piLitDetector')
 br = CvBridge()
 
 normalize = transforms.Normalize(
@@ -121,22 +122,22 @@ def piLitDetect(img, frame, depthFrame):
                 piLitLocationPub.publish(locations)
     # return frame
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
-parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
-parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
-parser.add_argument('--iou-thres', type=float, default=0.75, help='IOU threshold for NMS')
-parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
-parser.add_argument('--augment', action='store_true', help='augmented inference')
-parser.add_argument('--update', action='store_true', help='update all models')
+# parser = argparse.ArgumentParser()
+# parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
+# # parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
+# # parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
+# # parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
+# # parser.add_argument('--iou-thres', type=float, default=0.75, help='IOU threshold for NMS')
+# parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+# parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
+# parser.add_argument('--augment', action='store_true', help='augmented inference')
+# parser.add_argument('--update', action='store_true', help='update all models')
 
-api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
+# api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
 
-opt = parser.parse_args()
+# opt = parser.parse_args()
 
-mp.set_start_method('spawn', force=True)
+# mp.set_start_method('spawn', force=True)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
@@ -144,11 +145,10 @@ img_det_shape = (720, 1280, 3)
 device = torch.device('cuda:0')  # make new dir
 half = device.type != 'cpu'  # half precision only supported on CUDA
 
-piLitModel = torch.load("/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/piLitModel.pth")
+piLitModel = torch.load(os.path.expanduser("~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/piLitModel.pth"))
 piLitModel.eval()
 piLitModel = piLitModel.to(device)
 
-rospy.init_node('piLitDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
 

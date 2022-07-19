@@ -17,12 +17,12 @@ class RoverInterface():
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
-        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
-        self.pickupClient.wait_for_server()
-        print("connected to PiLit pickup Server")
-        self.cloudControllerClient = actionlib.SimpleActionClient("CloudController", mirv_control.msg.ControllerAction)
-        self.cloudControllerClient.wait_for_server()
-        print("connected to Pure Pursuit Server")
+        # self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
+        # self.pickupClient.wait_for_server()
+        # print("connected to PiLit pickup Server")
+        # self.cloudControllerClient = actionlib.SimpleActionClient("CloudController", mirv_control.msg.ControllerAction)
+        # self.cloudControllerClient.wait_for_server()
+        # print("connected to Pure Pursuit Server")
 
     def convertToOneD(TwoDArray):
         temp = []
@@ -66,14 +66,16 @@ class RoverInterface():
 
     def feedback_callback(self, msg):
         print(msg)
+    def run(self):
+        self.PP_client([[10,0]])
 
 if __name__ == '__main__':
     try:
         # Initializes a rospy node so that the SimpleActionClient can
         # publish and subscribe over ROS.
         rospy.init_node('Master_client_py')
-        interface = RoverInterface
+        interface = RoverInterface()
         # print(interface.convertToOneD([[1,2],[3,4],[5,6]]))
-        interface.PP_client()
+        interface.run()
     except rospy.ROSInterruptException:
         print("program interrupted before completion", file=sys.stderr)

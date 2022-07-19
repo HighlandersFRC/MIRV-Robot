@@ -207,7 +207,7 @@ class RobotVideoStreamTrack(VideoStreamTrack):
 
 # Website posts an offer to python server
 async def offer(request):
-
+    '''
     if not get_webrtc_state() == 'closed':
         print("Testing")
         return web.Response(
@@ -216,7 +216,7 @@ async def offer(request):
                 {"error": "Robot not available."}
             ),
         )
-
+    '''
     params = await request.json()
     print("Received Params")
     print(params)
@@ -349,10 +349,10 @@ async def on_shutdown(app):
     stop()
 
 
-#loop = asyncio.get_event_loop()
+loop = asyncio.get_event_loop()
 
-#status_task = loop.create_task(update_status())
-#connection_task = loop.create_task(update_connection())
+status_task = loop.create_task(update_status())
+connection_task = loop.create_task(update_connection())
 
 token = get_token()
 connect_to_api()
@@ -365,5 +365,5 @@ web.run_app(
     app, access_log=None, host="0.0.0.0", port=8080
 )
 #send("disconnect","disconnect")
-rospy.spin()
+#rospy.spin()
 
