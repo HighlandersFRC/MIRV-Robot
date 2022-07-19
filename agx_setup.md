@@ -72,13 +72,12 @@ The AGX units we are using are installed with a Sierra 7455 LTE module. Please f
 The NRU 110S has 4 independent ethernet ports that can each behave as their own network. This allows for incredible networking flexibility when setting up a network on the AGX. By default each of these ports will use dhcp to be assigned an IP and connect to the internet. For MIRV, each of these ports will receive a different network configuration to allow for many devices to connect to the AGX quickly and effeciently. See below
 
 Port 1 (eth0): This port is left in the default DHCP configuration, it can be used to plug in an ethernet cable to provide the device internet access.
-Port 2 (eth1): This port will eventually be used for connecting to an external wifi router to provide the rover wireless functionallity, and the ability to project a local wifi network. It is currently left at its default DHCp configuration.
-Port 3 (eth2): Port 3 is bridged with port 4 to form a bridge network (br0). It should be used to connect static IP cameras.
-Port 4 (eth3): Port 4 is bridged with port 3 to form a bridge network (br0). It should be used to connect static IP cameras.
+Port 2 (eth1): This port is used for connecting to an external wifi router to provide the rover wireless functionallity, and the ability to project a local wifi network.
+Port 3 (eth2): Port 3 establishes a network for connecting with the front IP camera. 
+Port 4 (eth3): Port 4 establishes a network for connecting with the rear IP camera.
 
-Bridge Network (br0): br0 is a bridge network between eth2 and eth3. It is assigned a static IP of 10.0.10.1. 
 
-Verizon LTE (ppp0): This is the verizon backend connection. 
+Verizon LTE (ppp0): This is the verizon backend connection. When deploying to production, this should be the main route, and should be set to a low metric number to ensure it behaves as the priority network.
 
 To configure the AGX network connections edit the `/etc/network/interfaces` file and insert the following network configuration data.
 
@@ -88,13 +87,18 @@ sudo vim /etc/network/interfaces
 
 Copy in the following configuration
 ```
-auto br0
-iface br0 inet static
-        bridge_ports eth3 eth4
-        bridge_stp on
+auto eth3
+iface eth3 inet static
         address 10.0.10.1
         netmask 255.255.255.0
         gateway 0.0.0.0
+    
+auto eth4 inet static
+        address 10.0.20.1
+        netmask 255.255.255.0
+        gateway 0.0.0.0
+        
+up route add -net 0.0.0.0 gw 0.255.80.0 dev ppp0 metric 1
 ```
 
 
