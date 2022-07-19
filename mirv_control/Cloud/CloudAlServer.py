@@ -51,7 +51,7 @@ class CloudAlServer():
             joystick = True
             self.scaleJoyInput(joystickX, joystickY)
             print(self.rosPubMsg)
-           self.pub.publish(self.rosPubMsg)
+            self.pub.publish(self.rosPubMsg)
         else:
             joystick = False
         purePursuit = msg.get("purePursuit")
