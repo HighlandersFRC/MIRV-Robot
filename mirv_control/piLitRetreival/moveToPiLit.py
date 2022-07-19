@@ -100,20 +100,28 @@ class piLitPickup:
         self.imu = data.data
         print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
-    def preemptedPickup(self):
+    def cancelCallback(self):
         self.velocityMsg.linear.x = 0
         self.velocityMsg.angular.z = 0
         self.velocitydrive_pub.publish(self.velocityMsg)
         rospy.loginfo('%s: Preempted' % self._action_name)
         self._as.set_aborted()
+
+    def preemptedPickup(self):
+        if(self._as.is_new_goal_available()):
+            print("pickup preempt received")
+            self._as.set_preempted()
+        else:
+            print("aborting pickup")
+            self.cancelCallback()
          
     def moveToPiLit(self):
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
         result = -result
-        self.velocityMsg.linear.x = 0.5 # m/s
+        self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > self.piLitDepth/0.5):
+        if(time.time() - self.movementInitTime > self.piLitDepth/0.25):
             print("WANTED ANGLE: ", self.setPoint)
             print("CURRENT ANGLE: ", self.imu)
             self.driveToPiLit = False
