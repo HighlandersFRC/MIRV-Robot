@@ -42,8 +42,19 @@ class RoverInterface():
         mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
         goal = mirv_control.msg.PurePursuitGoal
         self.PPclient.send_goal(goal)
+        time.sleep(5)
+        print("pre-empting goal")
+        mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
+        mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
+        goal = mirv_control.msg.PurePursuitGoal
+        self.PPclient.send_goal(goal)
+        time.sleep(5)
+        print("ending its life")
+        self.PPclient.cancel_all_goals()
+        print(self.PPclient.get_goal_status_text())
+
         self.PPclient.wait_for_result()
-        print(client.get_result())
+        print(PPclient.get_result())
         # except:
             # print("failed to run Pure pursuit action")
 

@@ -41,7 +41,8 @@ class PurePursuit():
 
         self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.PurePursuitAction, auto_start = False)
         self._as.register_goal_callback(self.ServerCallback)
-        # self._as.register_preempt_callback(self.preemptCallback)
+        self._as.register_preempt_callback(self.preemptCallback)
+    
         self._as.start()
         sub = rospy.Subscriber("/EKF/Odometry", Odometry, self.callBackOdom)
         rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
@@ -76,6 +77,7 @@ class PurePursuit():
             self.cordList.append([point[0], point[1], 0])
             self.robotCordList.append([point[0], point[1], 0])
         print("uploaded path")
+        print(self.robotCordList)
 
     def removeTargetPoint(self):
         if (abs(self.robotCordList[0][2]) < 1.5 and len(self.robotCordList) > 1):
@@ -189,11 +191,27 @@ class PurePursuit():
                 if(farPoint):
                     return [farPoint[0], farPoint[1]]
         return farPoint
-
+    def cancelCallback(self):
+        print(self._as.is_active())
+        self._as.set_aborted()
+        print(self._as.is_active())
+        self.robotCordList.clear()
+        self.robotCordList.clear()
+        print(self.robotCordList)
+        
     def preemptCallback(self):
-        self._as.set_preempted()
-        print("abort request recived")
-        self._al.set_aborted()
+        # self._as.set_preempted()
+        print("__________________________________________________")
+        if(self._as.is_new_goal_available()):
+            print("preempt request recived")
+            print(self._as.is_active())
+            self._as.set_preempted()
+            print(self._as.is_active())
+            print(self.robotCordList)
+        else:
+            print("aborting goal")
+            self.cancelCallback()
+
     def ServerCallback(self):
         print("got callback")
         goal = self._as.accept_new_goal()
