@@ -41,6 +41,7 @@ class PurePursuit():
 
         self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.PurePursuitAction, auto_start = False)
         self._as.register_goal_callback(self.ServerCallback)
+        self._as.register_preempt_callback(self.preemptCallback)
         self._as.start()
         sub = rospy.Subscriber("/EKF/Odometry", Odometry, self.callBackOdom)
         rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
@@ -189,6 +190,10 @@ class PurePursuit():
                     return [farPoint[0], farPoint[1]]
         return farPoint
 
+    def preemptCallback(self):
+        self._as.set_preempted()
+        print("abort request recived")
+        self._al.set_aborted()
     def ServerCallback(self):
         goal = self._as.accept_new_goal()
         numTarget = goal.NumTargetPoints
