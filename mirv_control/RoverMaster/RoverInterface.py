@@ -77,8 +77,12 @@ class RoverInterface():
 
     def feedback_callback(self, msg):
         print(msg)
+        print(self.cloudController_client.get_state())
     def run(self):
         self.PP_client([[10,0], [10,5]])
+        while not rospy.is_shutdown():
+            self.cloudController_client()
+            time.sleep(1)
 
 if __name__ == '__main__':
     try:
