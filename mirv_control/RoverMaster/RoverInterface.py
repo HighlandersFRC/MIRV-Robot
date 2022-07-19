@@ -24,7 +24,7 @@ class RoverInterface():
         # self.cloudControllerClient.wait_for_server()
         # print("connected to Pure Pursuit Server")
 
-    def convertToOneD(TwoDArray):
+    def convertToOneD(self,TwoDArray):
         temp = []
         for i in range(len(TwoDArray)):
             try:
@@ -36,16 +36,27 @@ class RoverInterface():
 
     
     def PP_client(self, targetPoints2D):
-        try:
-            targetPoints1D = self.convertToOneD(targetPoints2D)
-            mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
-            mirv_control.msg.PurePursuitGoal.NumTargetPoints = 1
-            goal = mirv_control.msg.PurePursuitGoal
-            self.PPclient.send_goal(goal)
-            self.PPclient.wait_for_result()
-            print(client.get_result())
-        except:
-            print("failed to run Pure pursuit action")
+        # try:
+        targetPoints1D = self.convertToOneD(targetPoints2D)
+        mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
+        mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
+        goal = mirv_control.msg.PurePursuitGoal
+        self.PPclient.send_goal(goal)
+        time.sleep(5)
+        print("pre-empting goal")
+        mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
+        mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
+        goal = mirv_control.msg.PurePursuitGoal
+        self.PPclient.send_goal(goal)
+        time.sleep(5)
+        print("ending its life")
+        self.PPclient.cancel_all_goals()
+        print(self.PPclient.get_goal_status_text())
+
+        self.PPclient.wait_for_result()
+        print(PPclient.get_result())
+        # except:
+            # print("failed to run Pure pursuit action")
 
     def cloudController_client(self):
         goal = mirv_control.msg.ControllerGoal
@@ -67,7 +78,7 @@ class RoverInterface():
     def feedback_callback(self, msg):
         print(msg)
     def run(self):
-        self.PP_client([[10,0]])
+        self.PP_client([[10,0], [10,5]])
 
 if __name__ == '__main__':
     try:
