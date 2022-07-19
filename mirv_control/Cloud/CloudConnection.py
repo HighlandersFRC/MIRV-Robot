@@ -11,7 +11,7 @@ import os
 import sys
 import rospy
 import ros_numpy
-import numpy
+import numpy as np
 import math
 import json
 from std_msgs.msg import String
@@ -24,9 +24,31 @@ from threading import Thread
 
 
 
-CLOUD_HOST = os.getenv('API_HOST')
-CLOUD_PORT = os.getenv('API_PORT')
-ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
+#CLOUD_HOST = os.getenv('API_HOST')
+#CLOUD_PORT = os.getenv('API_PORT')
+#ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
+#USERNAME = os.getenv('API_USERNAME')
+#PASSWORD = os.getenv('API_PASSWORD')
+
+rospy.init_node("CloudConnection")
+
+
+#if rospy.has_param('api_host'):
+CLOUD_HOST = rospy.get_param('api_host')
+print(CLOUD_HOST)
+
+#if rospy.has_param('api_port'):
+CLOUD_PORT = rospy.get_param('api_port')
+
+#if rospy.has_param('mirv_common_name'):
+ROVER_COMMON_NAME = rospy.get_param('mirv_common_name')
+
+#if rospy.has_param('api_username'):
+USERNAME = rospy.get_param('api_username')
+
+#if rospy.has_param('api_password'):
+PASSWORD = rospy.get_param('api_password')
+
 
 if CLOUD_HOST is None:
     print("Please set the API_HOST Environment Variable to the IP of the cloud server")
@@ -65,7 +87,7 @@ DEFAULT_STATUS_MESSAGE = {
 }
 
 
-
+token = ""
 
 # Setup webtrc connection components
 pcs = set()
@@ -86,13 +108,12 @@ def get_webrtc_state():
 def connect_to_api():
     print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
     try:
-        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": "rover_6"},
-                auth={"password": None}, socketio_path="/ws/socket.io")
+        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": ROVER_COMMON_NAME},
+                auth={"token": token}, socketio_path="/ws/socket.io")
         print("Connection Succeeded")
-    except socketio.exceptions.ConnectionError:
+    except socketio.exceptions.ConnectionError as e:
         print(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
-
-
+        print(e)
 # Sends a Message to the API
 def send_to_api(message, type="data"):
     try:
@@ -117,6 +138,7 @@ def send_to_webrtc(message):
     
 # Receives ROS frames and adds them to internal buffer to be sent to the cloud
 def frameSubscriber(data):
+    #print("Got a new frame")
     frame = ros_numpy.numpify(data.color_frame)
     frames.append(frame)
     if len(frames) >5:
@@ -151,8 +173,7 @@ api_connected = False
 
 
 # Activate ROS Nodes
-rospy.init_node("CloudConnection")
-rospy.Subscriber("CameraFrames", depthAndColorFrame, frameSubscriber)
+rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
 rospy.Subscriber("RobotStatus", String, statusSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 
@@ -165,11 +186,18 @@ class RobotVideoStreamTrack(VideoStreamTrack):
         self.counter = 0
         
     async def recv(self):
+        
         pts, time_base = await self.next_timestamp()
+        #print("test") 
         if len(frames) > 0:
-            frame = VideoFrame.from_ndarray(frames[0])
-            frames.remove(frames[0])
+            #print("sending real frame")
+            cv_frame = frames[0]
+            corrected_frame = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
+            frame = VideoFrame.from_ndarray(corrected_frame)
+            if len(frames) > 1:
+                frames.remove(frames[0])
         else:
+            #print("sending blank frame")
             blank_image = np.zeros((480,640,3), np.uint8)
             frame = VideoFrame.from_ndarray(blank_image)
         
@@ -208,7 +236,6 @@ async def offer(request):
         def on_message(message):
             command_pub.publish(message)
             channel.send("")
-            
             #send_rtc("I Really Like Turtles!")
 
 
@@ -239,18 +266,29 @@ async def offer(request):
         ),
     )
 
+def get_token():
+    login_data = {'username': USERNAME, 'password': PASSWORD}
+    response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=5)
+    contents = json.loads(response.content.decode('utf-8'))
+    token = contents.get('access_token')
+    return token
+
+
+    
 
 # Periodically tries to connect to the cloud if the system is not connected
 async def update_connection():
-
+    print("Test")
     while True:
-        if not api_connected:
-            connect_to_api()
+        print("Test2")
+        #if not api_connected:
+            #pass
+            #connect_to_api()
         await asyncio.sleep(5)
 
-async def update_status():
-    
+async def update_status(): 
     while True:        
+        print("Test Status")
         if len(status_messages) > 0:
             status = status_messages[-1]
         else:
@@ -311,36 +349,13 @@ async def on_shutdown(app):
     stop()
 
 
-loop = asyncio.get_event_loop()
+#loop = asyncio.get_event_loop()
 
-status_task = loop.create_task(update_status())
-connection_task = loop.create_task(update_connection())
+#status_task = loop.create_task(update_status())
+#connection_task = loop.create_task(update_connection())
 
-'''
-send("data", {
-    "roverId": f"{ROVER_COMMON_NAME}",
-    "state": "docked",
-    "status": "available",
-    "battery-percent": 12,
-    "battery-voltage": 18,
-    "health": {
-        "electronics": "healthy",
-        "drivetrain": "healthy",
-        "intake": "healthy",
-        "sensors": "healthy",
-        "garage": "healthy",
-        "power": "healthy",
-        "general": "healthy"
-    },
-    "telemetry": {
-        "lat": 39,
-        "long": -105,
-        "heading": 90,
-        "speed": 0
-    }
-})
-'''
-
+token = get_token()
+connect_to_api()
 
 app = web.Application()
 app.on_shutdown.append(on_shutdown)
@@ -350,5 +365,5 @@ web.run_app(
     app, access_log=None, host="0.0.0.0", port=8080
 )
 #send("disconnect","disconnect")
-
+rospy.spin()
 

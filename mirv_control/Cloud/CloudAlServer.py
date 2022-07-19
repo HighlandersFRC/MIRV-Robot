@@ -6,15 +6,14 @@
 # calling macros or subsystem calls
 
 import math
-from std_msgs import String
-import RoverInterface
+from std_msgs.msg import String
 import mirv_control.msg
 from geometry_msgs.msg import Twist
 import rospy
 import actionlib
 import json
 
-class RoverController():
+class CloudAlServer():
     # create messages that are used to publish feedback/result
     _feedback = mirv_control.msg.ControllerFeedback()
     _result = mirv_control.msg.ControllerResult()
@@ -35,23 +34,24 @@ class RoverController():
     def scaleJoyInput(self, x, y):
         x = 1 + (-4 * math.tanh(abs(y)))/math.pi
         angVel = x * self.maxAngularVel
-        linVel = self.maxStrafeVel * abs(y) * y
+        linVel = self.maxStrafeVel * abs(y) * -y
         self.rosPubMsg.linear.x = linVel
         self.rosPubMsg.angular.z = angVel
-        
 
+    def execute_cb(self):
+        goal = self._as.accept_new_goal()
 
     def cloud_cb(self, message):
-        msg = json.loads(message)
+        msg = json.loads(message.data)
         joystickX = msg.get("commandParameters").get("x")
         joystickY = msg.get("commandParameters").get("y")
-        
+        print("looping")
         
         if(joystickX != 0 or joystickY != 0):
             joystick = True
-            scaleJoyInput(joystickX, joystickY)
+            self.scaleJoyInput(joystickX, joystickY)
             print(self.rosPubMsg)
-        #    self.pub.publish(self.rosPubMsg)
+           self.pub.publish(self.rosPubMsg)
         else:
             joystick = False
         purePursuit = msg.get("purePursuit")
@@ -64,12 +64,18 @@ class RoverController():
             pickup = True
         else:
             pickup = False
-        self._feedback.joystick = joystick
-        self._feedback.purePursuit = purePursuit
-        self._feedback.ppTarget = ppTarget
-        self._feedback.pickup = pickup
+        if(self._as.is_active()):
+            self._feedback.joystick = joystick
+            self._feedback.purePursuit = purePursuit
+            self._feedback.ppTarget = ppTarget
+            self._feedback.pickup = pickup
+            self._as.publish_feedback(self._feedback)
+    def run(self):
+        print("starting Cloud actionLibserver")
+        rospy.spin()
 
-        self._as.publish_feedback(self._feedback)
-
+if __name__ == '__main__':
+    server = CloudAlServer()
+    server.run()
     
             
