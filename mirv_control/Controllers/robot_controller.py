@@ -97,10 +97,10 @@ class RobotController:
     def moveToPiLit(self):
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
         result = -result
-        self.velocityMsg.linear.x = 0.5
+        self.velocityMsg.linear.x = 0.25
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > self.piLitDepth/0.5):
+        if(time.time() - self.movementInitTime > self.piLitDepth/0.25):
             print("WANTED ANGLE: ", self.setPoint)
             print("CURRENT ANGLE: ", self.imu)
             self.driveToPiLit = False
@@ -119,7 +119,8 @@ class RobotController:
             while(time.time() - intakeInitTime < 3):
                 print(time.time() - intakeInitTime)
                 self.set_intake_state("intake")
-                if(intakeSide == "RIGHT"):
+                # if(intakeSide == "RIGHT"):
+                if(self.piLitAngle > 0):
                     self.set_intake_state("switch_right")
                 else:
                     self.set_intake_state("switch_left")

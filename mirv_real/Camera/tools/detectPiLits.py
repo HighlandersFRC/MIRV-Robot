@@ -75,7 +75,7 @@ def piLitDetect(img, frame, depthFrame):
     print("DETECTING...")
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.9):
+        if(score > 0.7):
             print("GOT A PI LIT")    
             x0,y0,x1,y1 = bbox
             centerX = int((x0 + x1)/2)
@@ -108,11 +108,13 @@ def piLitDetect(img, frame, depthFrame):
                 #     angleToPiLitFromIntake = math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit)
                 # else:
                 #     angleToPiLitFromIntake = angleToPiLit
+            print("DEPTH: ", depth, "ANGLE: ", (math.degrees(angleToPiLit)), " SCORE: ", score)
+
 
             if(depth < 3 and depth != 0):
                 angleToPiLitFromIntake = math.degrees(angleToPiLit)
 
-                print("DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+                print("VALID: ", " DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
 
                 piLitLocation = [depth, angleToPiLitFromIntake]
 
