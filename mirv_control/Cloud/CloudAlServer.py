@@ -20,7 +20,8 @@ class CloudAlServer():
     pub = rospy.Publisher("cmd_vel", Twist, queue_size=5)
     rosPubMsg = Twist()
     maxAngularVel = 2
-    maxStrafeVel = 3
+    maxStrafeVel = 1
+    lastJoy = True
 
     def __init__(self):
         rospy.init_node("CloudAlServer")
@@ -32,11 +33,11 @@ class CloudAlServer():
         self._as.start()
 
     def scaleJoyInput(self, x, y):
-        x = 1 + (-4 * math.tanh(abs(y)))/math.pi
+        # x = 1 + (-4 * math.tanh(abs(y)))/math.pi
         angVel = x * self.maxAngularVel
         linVel = self.maxStrafeVel * abs(y) * -y
-        self.rosPubMsg.linear.x = linVel
-        self.rosPubMsg.angular.z = angVel
+        self.rosPubMsg.linear.x = -y
+        self.rosPubMsg.angular.z = -x
 
     def execute_cb(self):
         goal = self._as.accept_new_goal()
@@ -47,13 +48,19 @@ class CloudAlServer():
         joystickY = msg.get("commandParameters").get("y")
         print("looping")
         
-        if(joystickX != 0 or joystickY != 0):
+        if(joystickX != 0 and joystickY != 0):
             joystick = True
+            self.lastJoy == True
             self.scaleJoyInput(joystickX, joystickY)
             print(self.rosPubMsg)
             self.pub.publish(self.rosPubMsg)
         else:
             joystick = False
+        if(joystick == False and self.lastJoy == True):
+            self.rosPubMsg.linear.x = 0
+            self.rosPubMsg.angular.z = 0
+            self.pub.publish(self.rosPubMsg)
+            self.lastJoy == False
         purePursuit = msg.get("purePursuit")
         if(purePursuit == None):
             purePursuit = False
