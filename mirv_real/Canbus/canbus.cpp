@@ -17,11 +17,8 @@
 #include "std_msgs/String.h"
 #include "std_msgs/Float32MultiArray.h"
 #include "sensor_msgs/Joy.h"
-#include "geometry_msgs/Twist.h"
-#include "geometry_msgs/Vector3.h"
 #include "diagnostic_msgs/DiagnosticArray.h"
 #include "diagnostic_msgs/DiagnosticStatus.h"
-#include "sensor_msgs/JointState.h"
 #include "std_msgs/Float64MultiArray.h"
 #include "std_msgs/Float64.h"
 #include <time.h>
@@ -55,10 +52,6 @@ double* pdpCurrents = {};
 
 double * voltagePtr = &pdpVoltage;
 int * currentsFilledPtr = &pdpCurrentsFilled;
-
-
-double wheelBaseWidth = 0.0;
-double wheelRadius = 0.0;
 
 void initializeDriveMotors(){
 	//PID config
@@ -116,6 +109,9 @@ void initializeIntakeMotors(){
 	intakeArmMotor.SetInverted(false);
 	intakeArmMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 	intakeArmMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+
+	intakeWheelMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
+	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
 }
 
 //maximum rpm of drive motors
@@ -242,32 +238,21 @@ class Publisher {
 		batteryVoltagePub.publish(voltage);
 	}
 
+	void publishOdometry(){
+		std_msgs::Float64MultiArray pose;
+		pose.data.push_back(odometry.getX());
+		pose.data.push_back(odometry.getY());
+		pose.data.push_back(odometry.getAngle());
+		encoderOdometryPub.publish(pose);
+	}
+
 	void publishEncoderVelocity(){
-		sensor_msgs::JointState jointState;
-
-		jointState.name = {
-			"front_right_drive",
-			"front_left_drive",
-			"back_right_drive",
-			"back_left_drive"
-		};
-
-		jointState.position = {
-			frontRightDrive.GetSelectedSensorPosition(),
-			frontLeftDrive.GetSelectedSensorPosition(),
-			backRightDrive.GetSelectedSensorPosition(),
-			backLeftDrive.GetSelectedSensorPosition(),
-
-		};
-
-		jointState.velocity  = {
-			-getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity()),
-			getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity()),
-			-getVelocityFromTicksPer100MS(backRightDrive.GetSelectedSensorVelocity()),
-			getVelocityFromTicksPer100MS(backLeftDrive.GetSelectedSensorVelocity()),
-		};
-
-		encoderVelocityPub.publish(jointState);
+		double left = getVelocityFromTicksPer100MS(frontLeftDrive.GetSelectedSensorVelocity());
+		double right = getVelocityFromTicksPer100MS(frontRightDrive.GetSelectedSensorVelocity());
+		std_msgs::Float64MultiArray velocity;
+		velocity.data.push_back(left);
+		velocity.data.push_back(right);
+		encoderVelocityPub.publish(velocity);
 	}
 };
 
@@ -279,6 +264,9 @@ class Intake {
 	std::string mode = "disable";
 	time_t startTime;
 	double side = 1;
+	//1: right
+	//-1: left
+
 	//char* modes[4] = {"disable", "reset", "intake", "store"};
 
 	//disable: all motors off
@@ -295,7 +283,6 @@ class Intake {
 			intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
-			cout << "Disable\n";
 		}
 		
 		//move to upright and zero
@@ -313,14 +300,24 @@ class Intake {
 		if (mode == "intake"){
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
-			intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+			if (side > 0){
+				if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
+					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				} else {
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+				}
+			} else {
+				if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
+					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				} else {
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+				}
+			}
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
-				cout << "INTAKE\n";
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			} else {
 				intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
 			}
-			
 		}
 
 		if (mode == "store"){
@@ -336,7 +333,6 @@ class Intake {
 					mode = "reset";
 				}
 			} else {
-				cout << "STORE\n";
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
@@ -350,20 +346,43 @@ class Intake {
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
 			} else {
-				if (time(NULL) - startTime < 3){
-					if (side > 0){
-						rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
-					} else {
-						leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
-					}
-					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
-					intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
-				} else {
-					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
-					intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
-					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				if (side > 0){
 					leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+					if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
+						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+						rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+						intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+					} else {
+						intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+						rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
+						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+					}
+				} else {
+					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+					if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
+						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+						intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+					} else {
+						intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+						leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
+						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+					}
 				}
+				// if (){
+				// 	if (side > 0){
+				// 		rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
+				// 	} else {
+				// 		leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
+				// 	}
+				// 	intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+				// 	intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
+				// } else {
+				// 	intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
+				// 	intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
+				// 	rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				// 	leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
+				// }
 			}
 		}
 	}
@@ -406,48 +425,19 @@ void diagnosticCallback(const diagnostic_msgs::DiagnosticArray::ConstPtr& status
 	}
 }
 
-void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
+void velocityDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& msg){
 
-	geometry_msgs::Vector3 linear = msg->linear;
-	geometry_msgs::Vector3 angular = msg->linear;
-
-	double V = msg->linear.x;
-	double w = msg->angular.z;
-
-
-    // 4800 ticks/sec -> 0.2 rot/sec -> 0.12 m/sec
-	// return (((velocity / wheelCircumference) * 2048.0) / 10.0) * 12.0;
-    // 0.1 m/sec -> 0.16666 rot/sec = 1 rad/sec
-    // 0.167 * 2048 / 10 * 12 =
-    // ticks per 100ms = 480
-
-    // Angular velocity in rot/sec
-	double leftVelocity = (V - w * (wheelBaseWidth / 2.0)) / wheelCircumference;
-	double rightVelocity = -(V + w * (wheelBaseWidth / 2.0)) / wheelCircumference;
-
-
-	cout << "Setting Wheel Velocity: " << leftVelocity << ", " << rightVelocity<<"\n";
-
-	//double leftVelocity = msg->data[0];
-	//double rightVelocity = msg->data[1];
+	double leftVelocity = msg->data[0];
+	double rightVelocity = msg->data[1];
 
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
-	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
+	double rightTicksPer100MS = -getTicksPer100MSFromVelocity(rightVelocity);
 
 	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
+	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 
-	//mutiply back for slightly larger radius
 	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
-
-	// frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
-	// backRightDrive.Set(ControlMode::PercentOutput, 0.0);
-
-	// frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-	// backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-
-
+	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 }
 
 void powerDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& powers){
@@ -469,28 +459,28 @@ int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "canbus");
 	ros::NodeHandle n;
-
-	n.param("wheel_base_width", wheelBaseWidth, 0.483);
-	n.param("wheel_radius", wheelRadius, 0.1905);
-
-
-	//ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
-	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
+	
+	ros::Subscriber diagnosticSub = n.subscribe("diagnostics", 10, diagnosticCallback);
+	ros::Subscriber velocityDriveSub = n.subscribe("VelocityDrive", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
-	//ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
+	ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
 
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
-	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
+	publisher.encoderOdometryPub = n.advertise<std_msgs::Float64MultiArray>("odometry/encoder", 10);
+	ros::Timer encoderOdometryTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishOdometry, publisher));
+
+	publisher.encoderVelocityPub = n.advertise<std_msgs::Float64MultiArray>("encoder/velocity", 10);
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
 
 	initializeDriveMotors();
 	initializeIntakeMotors();
 
 	while(ros::ok()){
-		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(500);
+		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(100);
 
+		odometry.update();
 		intake.update();
 
 		ros::spinOnce();
