@@ -110,8 +110,8 @@ void initializeIntakeMotors(){
 	intakeArmMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 	intakeArmMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 
-	intakeWheelMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
-	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+	intakeWheelMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
+	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
 }
 
 //maximum rpm of drive motors
@@ -301,13 +301,13 @@ class Intake {
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			if (side > 0){
-				if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+				if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
 					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
 				}
 			} else {
-				if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+				if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
 					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
@@ -348,7 +348,7 @@ class Intake {
 			} else {
 				if (side > 0){
 					leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
-					if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+					if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
 						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 						rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
@@ -359,7 +359,7 @@ class Intake {
 					}
 				} else {
 					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
-					if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
+					if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
 						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, -0.7);
