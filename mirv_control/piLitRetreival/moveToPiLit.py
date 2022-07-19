@@ -22,6 +22,7 @@ class piLitPickup:
         self._action_name = "RobotController"
         self._as = actionlib.SimpleActionServer(self._action_name, msg.MovementToPiLitAction, auto_start = False)
         self._as.register_goal_callback(self.turnToPiLit)
+        self._as.register_preempt_callback(self.preemptedPickup)
         self._as.start()
 
         self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
@@ -101,6 +102,13 @@ class piLitPickup:
     def updateIMU(self, data):
         self.imu = data.data
         print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
+
+    def preemptedPickup(self):
+        self.velocityMsg.linear.x = 0
+        self.velocityMsg.angular.z = 0
+        self.velocitydrive_pub.publish(self.velocityMsg)
+        rospy.loginfo('%s: Preempted' % self._action_name)
+        self._as.set_aborted()
          
     def moveToPiLit(self):
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
@@ -128,27 +136,20 @@ class piLitPickup:
         intakeSide = goal.intakeSide
         self._result.finished = False
 
-        if self._as.is_preempt_requested():
+        while(time.time() - intakeInitTime < 3):
+            print(time.time() - intakeInitTime)
+        while(time.time() - intakeInitTime < 10 and self.piLitAngle == 0):
+            print("HAVEN'T FOUND A PI LIT YET")
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
-            rospy.loginfo('%s: Preempted' % self._action_name)
-            self._as.set_preempted()
+            self.runPID = False
+        if(self.piLitAngle != 0):
+            self.runPID = True
         else:
-            while(time.time() - intakeInitTime < 3):
-                print(time.time() - intakeInitTime)
-            while(time.time() - intakeInitTime < 10 and self.piLitAngle == 0):
-                print("HAVEN'T FOUND A PI LIT YET")
-                self.velocityMsg.linear.x = 0
-                self.velocityMsg.angular.z = 0
-                self.velocitydrive_pub.publish(self.velocityMsg)
-                self.runPID = False
-            if(self.piLitAngle != 0):
-                self.runPID = True
-            else:
-                print("TIMED OUT")
-                self._as.set_succeeded(self._result)
-                self.finished = True
+            print("TIMED OUT")
+            self._as.set_succeeded(self._result)
+            self.finished = True
 
         while(self.finished == False):
             print("RUNNING CALLBACK")
