@@ -84,10 +84,8 @@ class piLitPickup:
         
         self.finished = False
 
-    def power_drive(self, left, right):
-        powers = Float64MultiArray()
-        powers.data = [left, right]
-        self.powerdrive_pub.publish(powers)
+    def set_intake_state(self, state: str):
+        self.intake_command_pub.publish(state)
 
     def updatePiLitLocation(self, location):
         piLitLocation = location.data
@@ -138,6 +136,8 @@ class piLitPickup:
 
         while(time.time() - intakeInitTime < 3):
             print(time.time() - intakeInitTime)
+            self.set_intake_state("intake")
+            self.set_intake_state(intakeSide)
         while(time.time() - intakeInitTime < 10 and self.piLitAngle == 0):
             print("HAVEN'T FOUND A PI LIT YET")
             self.velocityMsg.linear.x = 0
@@ -180,10 +180,14 @@ class piLitPickup:
                     self.moveToPiLitRunning = True
                 self.moveToPiLit()
             else:
-                self.velocityMsg.linear.x = 0
-                self.velocityMsg.angular.z = 0
-                self.velocitydrive_pub.publish(self.velocityMsg)
+                storeInitTime = time.time()
+                while(time.time() < 3):
+                    self.set_intake_state("store")
+                    self.velocityMsg.linear.x = 0
+                    self.velocityMsg.angular.z = 0
+                    self.velocitydrive_pub.publish(self.velocityMsg)
         self.setAllZeros()
+        self.set_intake_state("disable")
         self._as.set_succeeded(self._result)
 
     def run(self):
