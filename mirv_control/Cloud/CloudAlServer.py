@@ -22,6 +22,10 @@ class CloudAlServer():
     maxAngularVel = 2
     maxStrafeVel = 1
     lastJoy = True
+    purePursuit = False
+    ppTarget = []
+    pickup = False
+    joystick = False
 
     def __init__(self):
         rospy.init_node("CloudAlServer")
@@ -31,7 +35,7 @@ class CloudAlServer():
         self._action_name = "CloudAlServer"
         self._as = actionlib.SimpleActionServer(self._action_name, mirv_control.msg.ControllerAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
-        self._as.register_preempt_callback()
+        self._as.register_preempt_callback(self.preemptCallback)
         self._as.start()
 
     def scaleJoyInput(self, x, y):
@@ -46,12 +50,13 @@ class CloudAlServer():
         if(self.joystick == True):
             print("driving with a joystick")
         else:
-            self._result.purePursuit = purePursuit
-            self._result.ppTarget = ppTarget
-            self._result.pickup = pickup
+            self._result.purePursuit = self.purePursuit
+            self._result.ppTarget = self.ppTarget
+            self._result.pickup = self.pickup
             self._result.finished = True
             self._as.set_succeeded(self._result)
-        
+    def preemptCallback(self):
+        pass 
 
     def cloud_cb(self, message):
         msg = json.loads(message.data)
@@ -76,16 +81,16 @@ class CloudAlServer():
             self.pub.publish(self.rosPubMsg)
             self.lastJoy = False
 
-        purePursuit = msg.get("purePursuit")
+        self.purePursuit = msg.get("purePursuit")
         if(purePursuit == None):
-            purePursuit = False
-        ppTarget = msg.get("ppTarget")
+            self.purePursuit = False
+        self.ppTarget = msg.get("ppTarget")
         if(ppTarget == None):
-            ppTarget = False
+            self.ppTarget = []
         if(msg.get("command") == "retrieve_pi_lits"):
-            pickup = True
+            self.pickup = True
         else:
-            pickup = False
+            self.pickup = False
         if(self._as.is_active()):
             self._feedback.joystick = self.joystick
             self._as.publish_feedback(self._feedback)

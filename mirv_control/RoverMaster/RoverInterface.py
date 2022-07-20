@@ -14,16 +14,16 @@ def convertToOneD(TwoDArray):
 
 class RoverInterface():
     def __init__(self):
-        self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
-        self.PPclient.wait_for_server()
-        print("connected to Pure Pursuit Server")
-        self.PPclient.set_feedback_callback()
+        print("setting up server connections")
+        # self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+        # self.PPclient.wait_for_server()
+        # print("connected to Pure Pursuit Server")
         # self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
         # self.pickupClient.wait_for_server()
         # print("connected to PiLit pickup Server")
-        # self.cloudControllerClient = actionlib.SimpleActionClient("CloudController", mirv_control.msg.ControllerAction)
-        # self.cloudControllerClient.wait_for_server()
-        # print("connected to Pure Pursuit Server")
+        self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
+        self.cloudControllerClient.wait_for_server()
+        print("connected to Pure Cloud AL Server")
 
     def convertToOneD(self,TwoDArray):
         temp = []
@@ -60,10 +60,11 @@ class RoverInterface():
             # print("failed to run Pure pursuit action")
 
     def cloudController_client(self):
+        mirv_control.msg.ControllerGoal.runRequested = True
         goal = mirv_control.msg.ControllerGoal
-        self.cloudController_client.send_goal(goal, feedback_callback = self.feedback_callback)
-        self.cloudController_client.wait_for_result()
-        print(self.cloudController_client.get_result())
+        self.cloudControllerClient.send_goal(goal)
+        self.cloudControllerClient.wait_for_result()
+        print(self.cloudControllerClient.get_result())
 
     def moveToPiLit_client(self, intakeSide):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
@@ -78,10 +79,13 @@ class RoverInterface():
 
     def feedback_callback(self, msg):
         print(msg)
+    def cloud_feedback_callback(self, msg):
+        print(msg)
         print(self.cloudController_client.get_state())
     def run(self):
-        self.PP_client([[10,0], [10,5]])
+        # self.PP_client([[10,0], [10,5]])
         while not rospy.is_shutdown():
+            print("looping")
             self.cloudController_client()
             time.sleep(1)
 
