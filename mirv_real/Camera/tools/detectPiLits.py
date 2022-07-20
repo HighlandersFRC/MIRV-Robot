@@ -46,6 +46,8 @@ transform=transforms.Compose([
         ])
 
 intakeSide = "switch_right"
+# global intakeSide 
+# intakeSide = "switch_right"
 
 detections = 0
 
@@ -56,6 +58,7 @@ degreesPerPixel = hFOV/horizontalPixels
 
 def intakeCommandCallback(msg):
     cmd = msg.data
+    global intakeSide
     if(cmd == "switch_right"):
         print("RIGHT SIDE INTAKE")
         intakeSide = cmd
