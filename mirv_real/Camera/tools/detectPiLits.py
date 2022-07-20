@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import math
 import cv2
-import argparse
 import os, sys
 import time
 from faster_RCNN import get_faster_rcnn_resnet
@@ -27,13 +26,8 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 import torchvision
 
-import torch.multiprocessing as mp
-
-import roslib
 import rospy
-from rospy_tutorials.msg import Floats
-from rospy.numpy_msg import numpy_msg
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
@@ -51,12 +45,23 @@ transform=transforms.Compose([
             normalize,
         ])
 
+intakeSide = "switch_right"
+
 detections = 0
 
 hFOV = 63
 horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
+
+def intakeCommandCallback(msg):
+    cmd = msg.data
+    if(cmd == "switch_right"):
+        print("RIGHT SIDE INTAKE")
+        intakeSide = cmd
+    elif(cmd == "switch_left"):
+        print("LEFT SIDE INTAKE")
+        intakeSide = cmd
 
 def gotFrame(data):
     print("GOT A FRAME")
@@ -87,65 +92,54 @@ def piLitDetect(img, frame, depthFrame):
 
             depth = (depthFrame[centerY][centerX])/1000
 
-                # if(intakeSide == "RIGHT"):
-                #     if(angleToPiLit > 0):
-                #         intakeOffset = -0.0889
-                #     else:
-                #         intakeOffset = 0.0889
-                # else:
-                #     if(angleToPiLit > 0):
-                #         intakeOffset = 0.0889
-                #     else:
-                #         intakeOffset = -0.0889
+            if(intakeSide == "switch_right"):
+                if(angleToPiLit > 0):
+                    intakeOffset = -0.0889
+                else:
+                    intakeOffset = 0.0889
+            else:
+                if(angleToPiLit > 0):
+                    intakeOffset = 0.0889
+                else:
+                    intakeOffset = -0.0889
 
-                # complementaryAngle = math.pi/2 - angleToPiLit
+            complementaryAngle = math.pi/2 - angleToPiLit
 
-                # horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
+            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
 
-                # verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
-
-                # if(depth != 0):
-                #     angleToPiLitFromIntake = math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit)
-                # else:
-                #     angleToPiLitFromIntake = angleToPiLit
-            print("DEPTH: ", depth, "ANGLE: ", (math.degrees(angleToPiLit)), " SCORE: ", score)
-
+            verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
             if(depth < 3 and depth != 0):
-                angleToPiLitFromIntake = math.degrees(angleToPiLit)
-
-                print("VALID: ", " DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
-
+                angleToPiLitFromIntake = math.degrees(math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
                 piLitLocation = [depth, angleToPiLitFromIntake]
 
                 locations = Float64MultiArray()
                 locations.data = piLitLocation
 
                 piLitLocationPub.publish(locations)
+            else:
+                angleToPiLitFromIntake = math.degrees(angleToPiLit)
+            print("DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+
+
+            # if(depth < 3 and depth != 0):
+            #     # angleToPiLitFromIntake = math.degrees(angleToPiLit)
+
+            #     print("VALID: ", " DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+
+            #     piLitLocation = [depth, angleToPiLitFromIntake]
+
+            #     locations = Float64MultiArray()
+            #     locations.data = piLitLocation
+
+            #     piLitLocationPub.publish(locations)
     # return frame
-
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
-# # parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
-# # parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-# # parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
-# # parser.add_argument('--iou-thres', type=float, default=0.75, help='IOU threshold for NMS')
-# parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-# parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
-# parser.add_argument('--augment', action='store_true', help='augmented inference')
-# parser.add_argument('--update', action='store_true', help='update all models')
-
-# api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
-
-# opt = parser.parse_args()
-
-# mp.set_start_method('spawn', force=True)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
 
-device = torch.device('cuda:0')  # make new dir
-half = device.type != 'cpu'  # half precision only supported on CUDA
+device = torch.device('cuda:0')
+half = device.type != 'cpu'
 
 piLitModel = torch.load(os.path.expanduser("~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/piLitModel.pth"))
 piLitModel.eval()
@@ -153,6 +147,7 @@ piLitModel = piLitModel.to(device)
 
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
+rospy.Subscriber("intake/command", String, intakeCommandCallback)
 
 try:
     rospy.spin()
