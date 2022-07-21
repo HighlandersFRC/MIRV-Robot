@@ -26,8 +26,7 @@ class RoverController():
 
     def main(self):
         point2 = interface.CoordConversion_client([40.4742413, -104.9693187])
-        print(point2)
-        target = [[2, -14.6304], point2]
+        target = [point2]
         # target = [[1, -16.6304], [1,1]]
         # target = [[4,0], [4,-3]]
         self.interface.PP_client_goal(target)
