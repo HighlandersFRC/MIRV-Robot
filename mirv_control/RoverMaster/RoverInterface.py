@@ -24,6 +24,9 @@ class RoverInterface():
         self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
         self.cloudControllerClient.wait_for_server()
         print("connected to Pure Cloud AL Server")
+        self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
+        self.TruckCordClient.wait_for_server()
+        print("connected to Pure Truck CordinateAS")
 
         self.isJoystickControl = True
         self.isPurePursuitControl = False
@@ -88,6 +91,18 @@ class RoverInterface():
         print("Cancelling pickup goal")
         self.pickupClient.cancel_all_goals()
         print(self.pickupClient.get_goal_status_text())
+
+
+    def CoordConversion_client(self, point):
+        # point is in lat long altitude
+        mirv_control.msg.NavSatToTruckGoal.longitude = point[1]
+        mirv_control.msg.NavSatToTruckGoal.latitude = point[0]
+        mirv_control.msg.NavSatToTruckGoal.altitude = point[2]
+        goal = mirv_control.msg.NavSatToTruckGoal
+        self.TruckCordClient.send_goal(goal)
+        self.TruckCordClient.wait_for_result()
+        truckPoint = self.TruckCordClient.get_result
+        return ([truckPoint.truckCoordX, truckPoint.truckCoordY])
 
     def feedback_callback(self, msg):
         pass
