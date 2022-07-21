@@ -71,6 +71,8 @@ add_action_files(
   FILES MovementToPiLit.action
   DIRECTORY action
   FILES Controller.action
+  DIRECTORY action
+  FILES NavSatToTruck.action
 )
 
 # Generate added messages and services with any dependencies listed here
