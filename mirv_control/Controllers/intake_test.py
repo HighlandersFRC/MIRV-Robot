@@ -4,22 +4,24 @@ import rospy
 import time
 from std_msgs.msg import String, Float64MultiArray
 
-intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
-limit_switches = [0, 0, 1, 1]
+intake_command_pub = rospy.Publisher("/intake/command", String, queue_size = 10)
+limit_switches = [1, 1, 0, 0]
 intake_is_canceled = False
 
 def limit_switch_callback(switches):
-    limit_switchs = switches.data
+    limit_switches = switches.data
+    print(limit_switches)
 
 def intake_and_store(timeout: float):
     start_time = time.time()
+    print("Intaking")
     intake_command_pub.publish(String("intake"))
-    had_pilit = False
-    while limit_switches[3] and limit_switches[2]:
-        if not had_pilit and time.time() - start_time > timeout or intake_is_canceled:
+    while not limit_switches[3] and not limit_switches[2]:
+        if time.time() - start_time > timeout or intake_is_canceled:
+            print("Timed out or canceled - Intake and Store")
             return False
     intake_command_pub.publish(String("store"))
-    while not limit_switches[0]:
+    while limit_switches[0]:
         if intake_is_canceled:
             return False
     return True
@@ -27,10 +29,11 @@ def intake_and_store(timeout: float):
 def deposit(timeout: float):
     start_time = time.time()
     intake_command_pub.publish(String("deposit"))
-    while limit_switches[3] and limit_switches[2]:
+    while not limit_switches[3] and not limit_switches[2]:
         if time.time() - start_time > timeout or intake_is_canceled:
+            print("Timed out or canceled - Deposit")
             return False
-    while not limit_switches[1]:
+    while limit_switches[1]:
         if intake_is_canceled:
             return False
     time.sleep(1)
@@ -41,11 +44,16 @@ intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiA
 def run():
     rospy.init_node("IntakeTest")
 
+    print("Intaking and storing")
     intake_and_store(5)
+    print("Done intaking and storing")
 
     time.sleep(10)
 
+    print("Depositing")
     deposit(5)
+    print("Done depositing")
+    rospy.spin()
 
 if __name__ == "__main__":
     run()

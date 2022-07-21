@@ -21,7 +21,7 @@ from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 from time import sleep
 from threading import Thread
-
+from signal import signal, SIGINT
 
 
 CLOUD_HOST = os.getenv('API_HOST')
@@ -257,27 +257,30 @@ async def offer(request):
 
 def get_token():
     login_data = {'username': USERNAME, 'password': PASSWORD}
-    response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=5)
-    contents = json.loads(response.content.decode('utf-8'))
-    token = contents.get('access_token')
-    return token
-
+    try:
+        response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=5)
+        contents = json.loads(response.content.decode('utf-8'))
+        token = contents.get('access_token')
+        return token
+    except requests.exceptions.ReadTimeout:
+        print("Unable to Acquire Token")
+        return ""
 
     
 
 # Periodically tries to connect to the cloud if the system is not connected
 async def update_connection():
-    print("Test")
     while True:
-        print("Test2")
-        #if not api_connected:
-            #pass
-            #connect_to_api()
+        print("Update Connection")
+        if token == "":
+            get_token()
+        if not api_connected: 
+            connect_to_api()
         await asyncio.sleep(5)
 
 async def update_status(): 
     while True:        
-        print("Test Status")
+        print("Update Status")
         if len(status_messages) > 0:
             status = status_messages[-1]
         else:
@@ -329,6 +332,17 @@ def connection_offer(data):
     return x.json()
 
 
+def run_webserver():
+    app = web.Application()
+    app.on_shutdown.append(on_shutdown)
+    app.router.add_post("/offer", offer)
+    web.run_app(
+        app, access_log=None, host="0.0.0.0", port=8080
+    )
+
+
+
+
 async def on_shutdown(app):
     # close peer connections
     coros = [pc.close() for pc in pcs]
@@ -336,6 +350,13 @@ async def on_shutdown(app):
     pcs.clear()
     sio.disconnect()
     stop()
+    exit()
+
+
+# Get Token from API
+token = get_token()
+connect_to_api()
+
 
 
 loop = asyncio.get_event_loop()
@@ -343,16 +364,9 @@ loop = asyncio.get_event_loop()
 status_task = loop.create_task(update_status())
 connection_task = loop.create_task(update_connection())
 
-token = get_token()
-connect_to_api()
 
-app = web.Application()
-app.on_shutdown.append(on_shutdown)
-app.router.add_post("/offer", offer)
+loop.run_in_executor(None, status_task)
+loop.run_in_executor(None, connection_task)
 
-web.run_app(
-    app, access_log=None, host="0.0.0.0", port=8080
-)
-#send("disconnect","disconnect")
-#rospy.spin()
+run_webserver()
 

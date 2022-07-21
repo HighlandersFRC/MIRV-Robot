@@ -329,6 +329,10 @@ class Intake {
 		}
 
 		if (mode == "intake"){
+			// cout << "<";
+			// cout << intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
+			// cout << intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed();
+			// cout << ">";
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			if (side > 0){

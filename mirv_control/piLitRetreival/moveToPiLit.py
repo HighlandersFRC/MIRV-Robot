@@ -92,6 +92,8 @@ class piLitPickup:
             self.piLitDepth = piLitLocation[0]
             self.piLitAngle = piLitLocation[1]
             self.setPoint = self.imu + self.piLitAngle
+            self.setPoint = self.setPoint + 360
+            self.setPoint = self.setPoint%360
             self.piLitPID.setSetPoint(self.setPoint)
             self.updatedLocation = True
             self.prevPiLitAngle = self.piLitAngle
@@ -143,31 +145,34 @@ class piLitPickup:
         running = goal.runPID
         intakeSide = goal.intakeSide
         self._result.finished = False
-
         while(time.time() - intakeInitTime < 5):
             print(time.time() - intakeInitTime)
             self.set_intake_state("intake")
             self.set_intake_state(intakeSide)
-        while(time.time() - intakeInitTime < 10 and self.piLitAngle == 0):
+        while(time.time() - intakeInitTime < 10):
+            print("Searching...")
+        while(time.time() - intakeInitTime < 20 and self.piLitAngle == 0):
             print("HAVEN'T FOUND A PI LIT YET")
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.runPID = False
+            self.moveToPiLit = False
         if(self.piLitAngle != 0):
             self.runPID = True
         else:
             print("TIMED OUT")
+            self.set_intake_state("reset")
             self._as.set_succeeded(self._result)
             self.finished = True
 
-        while(self.finished == False):
+        while(self._result.finished == False):
             # print("RUNNING CALLBACK")
             # print("RUN PID:, ", self.runPID)
             if(self.runPID):
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result
-                print("-----------------------------------------")
+                print("--------------SETPOINT: ", self.setPoint)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
@@ -196,6 +201,7 @@ class piLitPickup:
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
                     self.velocitydrive_pub.publish(self.velocityMsg)
+                    self._result.finished = True
         self.setAllZeros()
         self.set_intake_state("store")
         self._as.set_succeeded(self._result)
