@@ -18,7 +18,7 @@ class piLitPickup:
         self._feedback = msg.MovementToPiLitFeedback()
         self._result = msg.MovementToPiLitResult()
 
-        self._action_name = "RobotController"
+        self._action_name = "PickupAS"
         self._as = actionlib.SimpleActionServer(self._action_name, msg.MovementToPiLitAction, auto_start = False)
         self._as.register_goal_callback(self.turnToPiLit)
         self._as.register_preempt_callback(self.preemptedPickup)
@@ -42,7 +42,7 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.03
+        self.kP = 0.02
         self.kI = 0
         self.kD = 0.03
         self.setPoint = 0
@@ -95,10 +95,11 @@ class piLitPickup:
             self.piLitPID.setSetPoint(self.setPoint)
             self.updatedLocation = True
             self.prevPiLitAngle = self.piLitAngle
+            print("SETPOINT: ", self.setPoint)
 
     def updateIMU(self, data):
         self.imu = data.data
-        print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
+        # print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
     def cancelCallback(self):
         self.velocityMsg.linear.x = 0
@@ -135,13 +136,15 @@ class piLitPickup:
             self.finished = True
 
     def turnToPiLit(self):
+        print("GOT PICKUP CALLBACK")
         goal = self._as.accept_new_goal()
+        print("ACCEPTED GOAL TO PICKUP PI LIT!")
         intakeInitTime = time.time()
         running = goal.runPID
         intakeSide = goal.intakeSide
         self._result.finished = False
 
-        while(time.time() - intakeInitTime < 3):
+        while(time.time() - intakeInitTime < 5):
             print(time.time() - intakeInitTime)
             self.set_intake_state("intake")
             self.set_intake_state(intakeSide)
@@ -159,8 +162,8 @@ class piLitPickup:
             self.finished = True
 
         while(self.finished == False):
-            print("RUNNING CALLBACK")
-            print("RUN PID:, ", self.runPID)
+            # print("RUNNING CALLBACK")
+            # print("RUN PID:, ", self.runPID)
             if(self.runPID):
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result
@@ -194,7 +197,7 @@ class piLitPickup:
                     self.velocityMsg.angular.z = 0
                     self.velocitydrive_pub.publish(self.velocityMsg)
         self.setAllZeros()
-        self.set_intake_state("disable")
+        self.set_intake_state("store")
         self._as.set_succeeded(self._result)
 
     def run(self):

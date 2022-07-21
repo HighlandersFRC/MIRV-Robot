@@ -23,7 +23,7 @@ class PurePursuit():
     startingTheta = 3.14159/2
     lookAheadDist = 4
     allowedError = 1.0
-    allowedErrorDist = 0.1
+    allowedErrorDist = 0.05
     robotCordList = []
     cordList = []
     currentTruckCord = [0, 0, 0]

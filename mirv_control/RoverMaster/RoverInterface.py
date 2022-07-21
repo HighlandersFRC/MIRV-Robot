@@ -15,15 +15,20 @@ def convertToOneD(TwoDArray):
 class RoverInterface():
     def __init__(self):
         print("setting up server connections")
-        # self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
-        # self.PPclient.wait_for_server()
-        # print("connected to Pure Pursuit Server")
-        # self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
-        # self.pickupClient.wait_for_server()
-        # print("connected to PiLit pickup Server")
+        self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+        self.PPclient.wait_for_server()
+        print("connected to Pure Pursuit Server")
+        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
+        self.pickupClient.wait_for_server()
+        print("connected to PiLit pickup Server")
         self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
         self.cloudControllerClient.wait_for_server()
         print("connected to Pure Cloud AL Server")
+
+        self.isJoystickControl = True
+        self.isPurePursuitControl = False
+        self.purePursuitTarget = []
+        self.isPickupControl = False
 
     def convertToOneD(self,TwoDArray):
         temp = []
@@ -35,38 +40,40 @@ class RoverInterface():
                 raise Exception("Invalid points entered")
         return temp
 
+    def getIsJoystickControl(self):
+        return self.isJoystickControl
+
+    def getIsPurePursuitControl(self):
+        return self.isPurePursuitControl
+
+    def getIsPickupControl(self):
+        return self.isPickupControl
     
-    def PP_client(self, targetPoints2D):
-        # try:
-        targetPoints1D = self.convertToOneD(targetPoints2D)
-        mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
-        mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
-        goal = mirv_control.msg.PurePursuitGoal
-        self.PPclient.send_goal(goal)
-        time.sleep(5)
-        print("pre-empting goal")
-        mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
-        mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
-        goal = mirv_control.msg.PurePursuitGoal
-        self.PPclient.send_goal(goal)
-        time.sleep(5)
-        print("ending its life")
+    def PP_client_cancel(self):
+        print("canceling pure pursuit goal")
         self.PPclient.cancel_all_goals()
         print(self.PPclient.get_goal_status_text())
+    def PP_client_goal(self, targetPoints2D):
+        print("running pure pursuit")
+        try:
+            targetPoints1D = self.convertToOneD(targetPoints2D)
+            mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
+            mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
+            goal = mirv_control.msg.PurePursuitGoal
+            self.PPclient.send_goal(goal)
+            self.PPclient.wait_for_result()
+            print(PPclient.get_result())
+        except:
+            print("failed to run Pure pursuit action")
 
-        self.PPclient.wait_for_result()
-        print(PPclient.get_result())
-        # except:
-            # print("failed to run Pure pursuit action")
-
-    def cloudController_client(self):
+    def cloudController_client_goal(self):
         mirv_control.msg.ControllerGoal.runRequested = True
         goal = mirv_control.msg.ControllerGoal
-        self.cloudControllerClient.send_goal(goal)
+        self.cloudControllerClient.send_goal(goal, feedback_cb = self.cloud_feedback_callback)
         self.cloudControllerClient.wait_for_result()
         print(self.cloudControllerClient.get_result())
 
-    def moveToPiLit_client(self, intakeSide):
+    def pickup_client_goal(self, intakeSide):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
         mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
 
@@ -75,19 +82,32 @@ class RoverInterface():
 
         self.pickupClient.wait_for_result()
 
-        print(self.pickupClient.get_result())
+        # print(self.pickupClient.get_result())
+
+    def pickup_client_cancel(self, intakeSide):
+        print("Cancelling pickup goal")
+        self.pickupClient.cancel_all_goals()
+        print(self.pickupClient.get_goal_status_text())
 
     def feedback_callback(self, msg):
-        print(msg)
+        pass
+        # print(msg)
     def cloud_feedback_callback(self, msg):
-        print(msg)
-        print(self.cloudController_client.get_state())
-    def run(self):
-        # self.PP_client([[10,0], [10,5]])
-        while not rospy.is_shutdown():
-            print("looping")
-            self.cloudController_client()
-            time.sleep(1)
+        # print(msg)
+
+        self.isJoystickControl = msg.joystick
+        self.isPurePursuitControl = msg.purePursuit
+        self.purePursuitTarget = msg.ppTarget
+        self.isPickupControl = msg.pickup
+
+        # print(self.cloudController_client.get_state())
+    # def run(self):
+    #     # self.PP_client([[10,0], [10,5]])
+    #     rate = rospy.Rate(1)
+    #     while not rospy.is_shutdown():
+    #         print("looping")
+    #         self.cloudController_client_goal()
+    #         rate.sleep()
 
 if __name__ == '__main__':
     try:
@@ -96,6 +116,6 @@ if __name__ == '__main__':
         rospy.init_node('Master_client_py')
         interface = RoverInterface()
         # print(interface.convertToOneD([[1,2],[3,4],[5,6]]))
-        interface.run()
+        # interface.run()
     except rospy.ROSInterruptException:
         print("program interrupted before completion", file=sys.stderr)

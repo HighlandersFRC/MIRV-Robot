@@ -5,37 +5,38 @@
 # managing hierarchy of systems
 # calling macros or subsystem calls
 
-from std_msgs import String
 import RoverInterface
 import mirv_control.msg
 import rospy
 import actionlib
+from RoverInterface import RoverInterface
+import threading
 
 class RoverController():
-    # create messages that are used to publish feedback/result
-    _feedback = mirv_control.msg.ControllerFeedback()
-    _result = mirv_control.msg.ControllerResult()
-  
     def __init__(self):
         rospy.init_node("RoverController")
+        self.rate = rospy.Rate(1)
+        self.interface = RoverInterface()
+        # self.interface.run()
+    def updateStatus(self):
+        while not rospy.is_shutdown():
+            # print("looping")
+            self.interface.cloudController_client_goal()
+            self.rate.sleep()
 
-        cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_cb)
+    def main(self):
+        target = [[2, -14.6304], [22.86, -14.6304]]
+        # target = [[1, -16.6304], [1,1]]
+        # target = [[4,0], [4,-3]]
+        self.interface.PP_client_goal(target)
+        self.interface.pickup_client_goal("switch_right")
 
-        self._action_name = "RoverController"
-        self._as = actionlib.SimpleActionServer(self._action_name, mirv_control.msg.ControllerAction, execute_cb=self.execute_cb, auto_start = False)
-        self._as.start()
+if __name__ == "__main__":
+    controller = RoverController()
+    updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
+    mainThread = threading.Thread(target = controller.main, name = "thread2")
 
-    def cloud_cb(self, msg):
-        joystick = msg.joystick
-        purePursuit = msg.purePursuit
-        ppTarget = msg.ppTarget
-        pickup = msg.pickup
-        self._feedback.joystick = joystick
-        self._feedback.purePursuit = purePursuit
-        self._feedback.ppTarget = ppTarget
-        self._feedback.pickup = pickup
+    updateStatusThread.start()
+    mainThread.start()
 
-        self._as.publish_feedback(self._feedback)
-
-    
-            
+    print("after")

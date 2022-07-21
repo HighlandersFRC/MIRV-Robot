@@ -24,30 +24,19 @@ from threading import Thread
 
 
 
-#CLOUD_HOST = os.getenv('API_HOST')
-#CLOUD_PORT = os.getenv('API_PORT')
-#ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
-#USERNAME = os.getenv('API_USERNAME')
-#PASSWORD = os.getenv('API_PASSWORD')
+CLOUD_HOST = os.getenv('API_HOST')
+CLOUD_PORT = os.getenv('API_PORT')
+ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
+USERNAME = os.getenv('API_USERNAME')
+PASSWORD = os.getenv('API_PASSWORD')
 
 rospy.init_node("CloudConnection")
 
-
-#if rospy.has_param('api_host'):
-CLOUD_HOST = rospy.get_param('api_host')
-print(CLOUD_HOST)
-
-#if rospy.has_param('api_port'):
-CLOUD_PORT = rospy.get_param('api_port')
-
-#if rospy.has_param('mirv_common_name'):
-ROVER_COMMON_NAME = rospy.get_param('mirv_common_name')
-
-#if rospy.has_param('api_username'):
-USERNAME = rospy.get_param('api_username')
-
-#if rospy.has_param('api_password'):
-PASSWORD = rospy.get_param('api_password')
+CLOUD_HOST = rospy.get_param('api_host', CLOUD_HOST)
+CLOUD_PORT = rospy.get_param('api_port', CLOUD_PORT)
+ROVER_COMMON_NAME = rospy.get_param('mirv_common_name', ROVER_COMMON_NAME)
+USERNAME = rospy.get_param('api_username', USERNAME)
+PASSWORD = rospy.get_param('api_password', PASSWORD)
 
 
 if CLOUD_HOST is None:
