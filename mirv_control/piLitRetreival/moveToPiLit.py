@@ -56,6 +56,8 @@ class piLitPickup:
         
         self.finished = False
 
+        self.reachedEstimate = False
+
         self.setAllZeros()
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
@@ -82,6 +84,8 @@ class piLitPickup:
         self.movementInitTime = 0
         
         self.finished = False
+
+        self.reachedEstimate = False
 
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
@@ -144,7 +148,28 @@ class piLitPickup:
         intakeInitTime = time.time()
         running = goal.runPID
         intakeSide = goal.intakeSide
+        estimatedPiLitAngle = goal.estimatedPiLitAngle
         self._result.finished = False
+
+        while(self.reachedEstimate == False):
+            self.piLitPID.setSetPoint(estimatedPiLitAngle)
+            result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+            result = -result
+            print("--------------SETPOINT: ", self.setPoint)
+
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = result
+
+            self.velocitydrive_pub.publish(self.velocityMsg)
+
+            if(abs(self.imu - estimatedPiLitAngle) < 5):
+                print("GOT TO ESTIMATED TARGET!!!!")
+                self.piLitPID.setSetPoint(self.setPoint)
+                self.reachedEstimate = True
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = 0
+                self.velocitydrive_pub.publish(self.velocityMsg)
+
         while(time.time() - intakeInitTime < 5):
             print(time.time() - intakeInitTime)
             self.set_intake_state("intake")
