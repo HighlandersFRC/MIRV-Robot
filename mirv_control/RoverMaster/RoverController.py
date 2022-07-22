@@ -25,12 +25,17 @@ class RoverController():
             self.rate.sleep()
 
     def main(self):
-        point2 = interface.CoordConversion_client([40.4742413, -104.9693187])
-        target = [point2]
+        point1 = self.interface.CoordConversion_client_goal([40.4742168, -104.9692674])
+        point2 = self.interface.CoordConversion_client_goal([40.4742219, -104.9692925])
+        print(point2)
+        target = [point1,point2]
         # target = [[1, -16.6304], [1,1]]
-        # target = [[4,0], [4,-3]]
+        # target = [[1,-1]]
         self.interface.PP_client_goal(target)
         self.interface.pickup_client_goal("switch_right")
+        point2 = self.interface.CoordConversion_client_goal([40.4742168, -104.9692674])
+        target = [point2,[1,-1]]
+        self.interface.PP_client_goal(target)
 
 if __name__ == "__main__":
     controller = RoverController()

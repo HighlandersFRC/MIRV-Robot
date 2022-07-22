@@ -3,6 +3,7 @@ import math
 
 import numpy as np
 import rospy
+import actionlib
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry
@@ -24,7 +25,7 @@ class GlobalToTruck():
         rospy.init_node('TruckCoordinateConversion', anonymous=True)
         sub = rospy.Subscriber("gps/fix", NavSatFix, self.callBack)
         self._action_name = "NavSatToTruckAS"
-        self._as = actionlib.SimpleActionServer(self._action_name, mirv_control.msg.NavSatToTruck, auto_start = False)
+        self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.NavSatToTruckAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
         self._as.start()
     def convertToTruck(self, newCord):
@@ -43,17 +44,20 @@ class GlobalToTruck():
         rad = angle * np.pi/180
         return rad
 
-    def execute_cb(self)
+    def execute_cb(self):
         goal = self._as.accept_new_goal()
-        point = calcPos(goal)
-        self.result.truckCoordX = point.pose.pose.position.x
-        self.result.truckCoordY = point.pose.pose.position.y
-        self.result.distanceToOrigin = ((point.pose.pose.position.x**2)+(point.pose.pose.position.y**2))**.5
-        self._as.set_succeeded(self.result)
-
+        if(self.acceptStartingPoint == True):
+            point = self.convertToTruck([goal.latitude, goal.longitude, goal.altitude])
+            self.result.truckCoordX = point[0]
+            self.result.truckCoordY = point[1]
+            self.result.distanceToOrigin = ((point[0]**2)+(point[1]**2))**.5
+            self._as.set_succeeded(self.result)
+        else:
+            self._as.set_aborted()
+            raise Exception("no starting point has been sent, Need Data to e sent on /gps/fix ros topic")
     def calcPos(self, data):
         newCord = [data.latitude, data.longitude, data.altitude]
-        if(acceptStartingPoint == True):
+        if(self.acceptStartingPoint == True):
             if (not self.startCordSet):
                 self.setStartingPoint([data.latitude, data.longitude, data.altitude])
             output = self.convertToTruck(newCord)

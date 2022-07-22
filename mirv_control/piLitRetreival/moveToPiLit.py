@@ -42,7 +42,7 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.02
+        self.kP = 0.03
         self.kI = 0
         self.kD = 0.03
         self.setPoint = 0

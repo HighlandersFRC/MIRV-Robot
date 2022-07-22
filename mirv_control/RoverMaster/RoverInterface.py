@@ -93,15 +93,16 @@ class RoverInterface():
         print(self.pickupClient.get_goal_status_text())
 
 
-    def CoordConversion_client(self, point):
+    def CoordConversion_client_goal(self, point):
         # point is in lat long altitude
         mirv_control.msg.NavSatToTruckGoal.longitude = point[1]
         mirv_control.msg.NavSatToTruckGoal.latitude = point[0]
-        mirv_control.msg.NavSatToTruckGoal.altitude = point[2]
+        mirv_control.msg.NavSatToTruckGoal.altitude = 1500
         goal = mirv_control.msg.NavSatToTruckGoal
         self.TruckCordClient.send_goal(goal)
+        print("sentGoal")
         self.TruckCordClient.wait_for_result()
-        truckPoint = self.TruckCordClient.get_result
+        truckPoint = self.TruckCordClient.get_result()
         return ([truckPoint.truckCoordX, truckPoint.truckCoordY])
 
     def feedback_callback(self, msg):

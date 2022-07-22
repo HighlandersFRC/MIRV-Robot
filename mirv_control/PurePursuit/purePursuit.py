@@ -97,7 +97,7 @@ class PurePursuit():
     # calulates wheel velocity's for that given frame
     def calculateSpeedSide(self, maxSpeed, x, y, la):
         RobotTwist = [maxSpeed, 0]
-        if(abs(x) > self.allowedErrorDist):
+        if(abs(y) > self.allowedErrorDist):
             cRad = self.generateRadius(y, la)
             ################################
             # Take circ of radius 4 and max speed of 1
@@ -114,7 +114,10 @@ class PurePursuit():
                 RobotTwist = [maxSpeed, -angularVel]
         else:
             if(x < 0):
-                RobotTwist = [0, self.maxAngularVel]
+                if(y >= 0):
+                    RobotTwist = [0, self.maxAngularVel]
+                else:
+                    RobotTwist = [0, -self.maxAngularVel]
 
         return (RobotTwist)
 
