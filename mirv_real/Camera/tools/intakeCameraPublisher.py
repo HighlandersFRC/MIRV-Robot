@@ -166,6 +166,8 @@ while not rospy.is_shutdown():
         rotationK = rVvalues.k
         rotationReal = rVvalues.real
         
+        rospy.loginfo(rVvalues)
+
         pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
 
         pitch = pitch * 180/math.pi
