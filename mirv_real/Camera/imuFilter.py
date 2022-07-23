@@ -39,6 +39,7 @@ class imuFilter:
         orientation = np.array([-data.data * np.pi/180, 0, 0])
         orientation[0] -= self.yaw_zero
         msg.orientation = conversion_lib.euler2quat_from_pose(msg.orientation, orientation[:, None])
+        rospy.loginfo(msg)
         self.imu_pub.publish(msg)
 
 

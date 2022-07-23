@@ -82,7 +82,9 @@ class GlobalToTruck():
 
     def callBack(self, data):
         self.acceptStartingPoint = True
-        self.gps_m_pub.publish(self.calcPos(data))
+        msg = self.calcPos(data)
+        self.gps_m_pub.publish(msg)
+        rospy.loginfo(msg)
     def run(self):
         sub = rospy.Subscriber("gps/fix", NavSatFix, self.callBack)
         rospy.spin()

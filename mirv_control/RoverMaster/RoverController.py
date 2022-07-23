@@ -25,18 +25,24 @@ class RoverController():
             self.rate.sleep()
 
     def main(self):
-        point1 = self.interface.CoordConversion_client_goal([40.4742168, -104.9692674])
-        point2 = self.interface.CoordConversion_client_goal([40.4742219, -104.9692925])
-        print(point2)
-        target = [point1,point2]
-        # target = [[1, -16.6304], [1,1]]
-        # target = [[1,-1]]
+        point1 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        point2 = self.interface.CoordConversion_client_goal([40.4741859, -104.9693740])
+        point3 = self.interface.CoordConversion_client_goal([40.4740645, -104.9694917])
+        point4 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        point5 = self.interface.CoordConversion_client_goal([40.4740181, -104.9694273])
+        # point6 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # point7 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # point8 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # point2 = self.interface.CoordConversion_client_goal([40.4742288, -104.9692942])
+        # print(point2)
+        target = [point1]
+        estimatedPiLitAngle = self.interface.PP_client_goal(target)
+        self.interface.pickup_client_goal("switch_right", estimatedPiLitAngle)
+        target = [point2,point3, point4]
         self.interface.PP_client_goal(target)
-        self.interface.pickup_client_goal("switch_right")
-        point2 = self.interface.CoordConversion_client_goal([40.4742168, -104.9692674])
-        target = [point2,[1,-1]]
+        self.interface.pickup_client_goal("switch_right", estimatedPiLitAngle)
+        target = [point5]
         self.interface.PP_client_goal(target)
-
 if __name__ == "__main__":
     controller = RoverController()
     updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")

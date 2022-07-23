@@ -140,7 +140,7 @@ ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.AUTO)
 controlQueue.send(ctrl)
 
-while True:
+while not rospy.is_shutdown():
     initTime = time.time()
 
     # get imu and rgb queue data

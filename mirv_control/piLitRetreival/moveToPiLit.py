@@ -42,10 +42,15 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.03
-        self.kI = 0
+        self.kP = 0.023
+        self.kI = 0.000003
         self.kD = 0.03
         self.setPoint = 0
+
+        self.estimatekP = 0.01
+        self.estimatekI = 0
+        self.estimatekD = 0.03
+        self.estimateSetPoint = 0
 
         self.driveToPiLit = False
 
@@ -61,7 +66,9 @@ class piLitPickup:
         self.setAllZeros()
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
+        self.estimatePID = PID(self.estimatekP, self.estimatekI, self.estimatekD, self.estimateSetPoint)
         self.piLitPID.setMaxMinOutput(0.4)
+        self.estimatePID.setMaxMinOutput(0.3)
 
     def setAllZeros(self):
         self.piLitDepth = 0
@@ -145,37 +152,46 @@ class piLitPickup:
         print("GOT PICKUP CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO PICKUP PI LIT!")
-        intakeInitTime = time.time()
         running = goal.runPID
         intakeSide = goal.intakeSide
         estimatedPiLitAngle = goal.estimatedPiLitAngle
+        estimatedPiLitAngle = estimatedPiLitAngle + 360
+        estimatedPiLitAngle = estimatedPiLitAngle%360
+        estimatedPiLitAngle = estimatedPiLitAngle + self.imu
+        estimatedPiLitAngle = estimatedPiLitAngle%360
+        self.estimatePID.setSetPoint(estimatedPiLitAngle)
         self._result.finished = False
+     
+        searchStartTime = time.time()
 
-        while(self.reachedEstimate == False):
-            self.piLitPID.setSetPoint(estimatedPiLitAngle)
-            result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
-            result = -result
-            print("--------------SETPOINT: ", self.setPoint)
+        # while(self.reachedEstimate == False and self.piLitAngle == 0):
+        #     print("TRYING TO REACH ESTIMATE")
+        #     result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
+        #     print("SETPOINT: ", estimatedPiLitAngle, " CURRENT ANGLE: ", self.imu)
 
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = result
+        #     self.velocityMsg.linear.x = 0
+        #     self.velocityMsg.angular.z = result
 
-            self.velocitydrive_pub.publish(self.velocityMsg)
+        #     self.velocitydrive_pub.publish(self.velocityMsg)
 
-            if(abs(self.imu - estimatedPiLitAngle) < 5):
-                print("GOT TO ESTIMATED TARGET!!!!")
-                self.piLitPID.setSetPoint(self.setPoint)
-                self.reachedEstimate = True
-                self.velocityMsg.linear.x = 0
-                self.velocityMsg.angular.z = 0
-                self.velocitydrive_pub.publish(self.velocityMsg)
+        #     if(abs(self.imu - estimatedPiLitAngle) < 5):
+        #         print("GOT TO ESTIMATED TARGET!!!!")
+        #         self.reachedEstimate = True
+        #         self.velocityMsg.linear.x = 0
+        #         self.velocityMsg.angular.z = 0
+        #         self.velocitydrive_pub.publish(self.velocityMsg)
 
-        while(time.time() - intakeInitTime < 5):
+        intakeInitTime = time.time()
+        
+        while(time.time() - intakeInitTime < 3):
             print(time.time() - intakeInitTime)
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("intake")
             self.set_intake_state(intakeSide)
-        while(time.time() - intakeInitTime < 10):
-            print("Searching...")
+        while(abs(searchStartTime - time.time()) < 8 and self.piLitAngle == 0):
+            print("SEARCHING")
         while(time.time() - intakeInitTime < 20 and self.piLitAngle == 0):
             print("HAVEN'T FOUND A PI LIT YET")
             self.velocityMsg.linear.x = 0

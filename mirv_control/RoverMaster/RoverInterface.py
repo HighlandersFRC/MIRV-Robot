@@ -65,7 +65,8 @@ class RoverInterface():
             goal = mirv_control.msg.PurePursuitGoal
             self.PPclient.send_goal(goal)
             self.PPclient.wait_for_result()
-            print(PPclient.get_result())
+            print(self.PPclient.get_result())
+            return self.PPclient.get_result().angleToTarget
         except:
             print("failed to run Pure pursuit action")
 
@@ -74,11 +75,12 @@ class RoverInterface():
         goal = mirv_control.msg.ControllerGoal
         self.cloudControllerClient.send_goal(goal, feedback_cb = self.cloud_feedback_callback)
         self.cloudControllerClient.wait_for_result()
-        print(self.cloudControllerClient.get_result())
+        # print(self.cloudControllerClient.get_result())
 
-    def pickup_client_goal(self, intakeSide):
+    def pickup_client_goal(self, intakeSide, angleToTarget):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
         mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
+        mirv_control.msg.MovementToPiLitGoal.estimatedPiLitAngle = angleToTarget
 
         goal = mirv_control.msg.MovementToPiLitGoal
         self.pickupClient.send_goal(goal)
@@ -97,7 +99,7 @@ class RoverInterface():
         # point is in lat long altitude
         mirv_control.msg.NavSatToTruckGoal.longitude = point[1]
         mirv_control.msg.NavSatToTruckGoal.latitude = point[0]
-        mirv_control.msg.NavSatToTruckGoal.altitude = 1500
+        mirv_control.msg.NavSatToTruckGoal.altitude = 1492
         goal = mirv_control.msg.NavSatToTruckGoal
         self.TruckCordClient.send_goal(goal)
         print("sentGoal")
