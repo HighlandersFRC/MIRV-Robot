@@ -256,4 +256,6 @@ DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 catkin_install_python(PROGRAMS Controllers/tablet_controller.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-
+catkin_install_python(PROGRAMS Database/DatabaseController.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
