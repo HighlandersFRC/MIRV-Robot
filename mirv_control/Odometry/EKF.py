@@ -172,6 +172,7 @@ class DDEkf:
             # We have measurements, compute the filter normally
             pp = np.dot(F, np.dot(self.P, F.T)) + self.Q
             y = self.z - np.dot(self.H, self.xp)
+            print("self.H {}, self.H.T {}, self.R {}".format(self.H, self.H.T, self.R))
             S = np.dot(self.H, np.dot(pp, self.H.T)) + self.R
             SI = linalg.inv(S)
             kal = np.dot(pp, np.dot(self.H.T, SI))
