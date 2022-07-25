@@ -53,6 +53,7 @@ add_message_files(
     FILES
    depth_and_color_msg.msg
    pilit_db_msg.msg
+   pilit_status_msg.msg
  )
 
 ## Generate services in the 'srv' folder
