@@ -48,6 +48,7 @@ class TableManager:
 
     def close(self):
         self.conn.close()
+        self.conn = None
 
     def append_row(self, table_name, table_columns: tuple, data: tuple):
         #Append a row of data to a database
