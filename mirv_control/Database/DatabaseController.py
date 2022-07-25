@@ -154,7 +154,7 @@ if __name__ == "__main__":
     tm = TableManager()
     tm.connect(r"mirv.db")
     tm.create_table(pilit_table_cmd)
-    #tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
+    #tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", 1, 2, 3, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
     tm.close()
 
     while not rospy.is_shutdown():
