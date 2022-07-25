@@ -29,6 +29,8 @@ class piLitPickup:
         self.pilit_location_sub = rospy.Subscriber("piLitLocation", Float64MultiArray, self.updatePiLitLocation)
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
+        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, limit_switch_callback)
+
 
         self.velocityMsg = Twist()
 
@@ -42,8 +44,8 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.023
-        self.kI = 0.000003
+        self.kP = 0.015
+        self.kI = 0.000001
         self.kD = 0.03
         self.setPoint = 0
 
@@ -70,6 +72,8 @@ class piLitPickup:
         self.piLitPID.setMaxMinOutput(0.4)
         self.estimatePID.setMaxMinOutput(0.3)
 
+        self.limit_switches = [1, 1, 0, 0]
+
     def setAllZeros(self):
         self.piLitDepth = 0
         self.piLitAngle = 0
@@ -94,6 +98,15 @@ class piLitPickup:
 
         self.reachedEstimate = False
 
+        self.limit_switches = [1, 1, 0, 0]
+
+    def limit_switch_callback(switches):
+        # limit switches are in order as follows: [left button, right button, lower switch, upper switch]
+        # left and right button are 1 when not pressed, 0 when pressed
+        # lower and upper switch are 0 when not pressed, 1 when pressed
+        self.limit_switches = switches.data
+        print(limit_switches)
+
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
 
@@ -112,7 +125,7 @@ class piLitPickup:
 
     def updateIMU(self, data):
         self.imu = data.data
-        # print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
+        print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
     def cancelCallback(self):
         self.velocityMsg.linear.x = 0
@@ -135,7 +148,7 @@ class piLitPickup:
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > self.piLitDepth/0.25):
+        if(time.time() - self.movementInitTime > self.piLitDepth/0.25 or self.limit_switches[0] == 0 or self.limit_switches[1] == 0):
             print("WANTED ANGLE: ", self.setPoint)
             print("CURRENT ANGLE: ", self.imu)
             self.driveToPiLit = False
@@ -183,7 +196,7 @@ class piLitPickup:
 
         intakeInitTime = time.time()
         
-        while(time.time() - intakeInitTime < 3):
+        while(self.limit_switches[2] == 0):
             print(time.time() - intakeInitTime)
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
@@ -203,7 +216,8 @@ class piLitPickup:
             self.runPID = True
         else:
             print("TIMED OUT")
-            self.set_intake_state("reset")
+            while(self.limit_switches[3] == 0)
+                self.set_intake_state("reset")
             self._as.set_succeeded(self._result)
             self.finished = True
 
@@ -237,7 +251,7 @@ class piLitPickup:
                 self.moveToPiLit()
             else:
                 storeInitTime = time.time()
-                while(time.time() < 3):
+                while(self.limit_switches[3] == 0):
                     self.set_intake_state("store")
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0

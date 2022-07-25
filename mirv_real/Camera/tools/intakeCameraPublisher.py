@@ -50,7 +50,7 @@ cam_rgb.isp.link(xoutIsp.input)
 imu = pipeline.createIMU()
 xlinkOut = pipeline.createXLinkOut()
 xlinkOut.setStreamName("imu")
-imu.enableIMUSensor(depthai.IMUSensor.ROTATION_VECTOR, 400)
+imu.enableIMUSensor(depthai.IMUSensor.ARVR_STABILIZED_GAME_ROTATION_VECTOR, 400)
 imu.setBatchReportThreshold(1)
 imu.setMaxBatchReports(10)
 imu.out.link(xlinkOut.input)
@@ -180,7 +180,7 @@ while not rospy.is_shutdown():
         pitch = pitch + 180
         pitch = pitch%360
 
-        #print("PITCH: ", pitch)
+        print("PITCH: ", pitch)
 
         if(i == len(imuPackets) - 1):
             imuPub.publish(pitch)
