@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from tablemanager import TableManager
 import rospy
-from mirv_description.msg import pilit_db_msg
+from mirv_description.msg import pilit_db_msg, pilit_status_msg
 import time
 import actionlib
 import mirv_control.msg as msg
@@ -122,9 +122,31 @@ def query_callback():
     result.altitude = [alt for alt in result.altitude if alt != None]
     action_server.set_succeeded(result)
 
+def publish_pilit_info(time):
+    t = TableManager()
+    t.connect(r"mirv.db")
+    data = t.get_last_row("pilits")
+    t.close()
+    status = pilit_status_msg()
+    if data[0] == None:
+        return
+    status.timestamp.data = data[0]
+    status.right_count.data = data[1]
+    status.left_count.data = data[2]
+    status.latitudes.data = data[5::5]
+    status.latitudes.data = [lat for lat in status.latitudes.data if lat != None]
+    status.longitudes.data = data[6::5]
+    status.longitudes.data = [long for long in status.longitudes.data if long != None]
+    status.altitudes.data = data[7::5]
+    status.altitudes.data = [alt for alt in status.altitudes.data if alt != None]
+    pilit_pub.publish(status)
+
 if __name__ == "__main__":
     rospy.init_node("DatabaseController")
     pilit_sub = rospy.Subscriber("pilit/events", pilit_db_msg, pilit_callback)
+    pilit_pub = rospy.Publisher("pilit/status", pilit_status_msg, queue_size = 10)
+    pilit_pub_timer = rospy.Timer(rospy.Duration(1), publish_pilit_info)
+
     action_server = actionlib.SimpleActionServer("Database", msg.DatabaseAction, auto_start = False)
     action_server.register_goal_callback(query_callback)
     action_server.start()
@@ -132,7 +154,8 @@ if __name__ == "__main__":
     tm = TableManager()
     tm.connect(r"mirv.db")
     tm.create_table(pilit_table_cmd)
-    tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
+    #tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
+    tm.close()
 
     while not rospy.is_shutdown():
         pass
