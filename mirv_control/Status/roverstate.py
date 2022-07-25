@@ -34,7 +34,8 @@ class RoverState:
                 "gps": HEALTH_STATES[2],
                 "encoders": HEALTH_STATES[2],
                 "camera-frames": HEALTH_STATES[2],
-                "camera-imu": HEALTH_STATES[2]
+                "camera-imu": HEALTH_STATES[2],
+                "pilit-table": HEALTH_STATES[2],
             },
             "telemetry": {
                 "lat": ROVER_LOCATION[0],
