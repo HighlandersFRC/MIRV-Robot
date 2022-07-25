@@ -12,44 +12,44 @@ pilit_table_cmd = """ CREATE TABLE IF NOT EXISTS pilits (
     left_count integer NOT NULL,
     p1_timestamp double NOT NULL,
     p1_state text NOT NULL,
-    p1_lat double NOT NULL,
-    p1_long double NOT NULL,
-    p1_elev double NOT NULL,
-    p2_timestamp double NOT NULL,
+    p1_lat double,
+    p1_long double,
+    p1_elev double,
+    p2_timestamp double,
     p2_state text NOT NULL,
-    p2_lat double NOT NULL,
-    p2_long double NOT NULL,
-    p2_elev double NOT NULL,
-    p3_timestamp double NOT NULL,
+    p2_lat double,
+    p2_long double,
+    p2_elev double,
+    p3_timestamp double,
     p3_state text NOT NULL,
-    p3_lat double NOT NULL,
-    p3_long double NOT NULL,
-    p3_elev double NOT NULL,
-    p4_timestamp double NOT NULL,
+    p3_lat double,
+    p3_long double,
+    p3_elev double,
+    p4_timestamp double,
     p4_state text NOT NULL,
-    p4_lat double NOT NULL,
-    p4_long double NOT NULL,
-    p4_elev double NOT NULL,
-    p5_timestamp double NOT NULL,
+    p4_lat double,
+    p4_long double,
+    p4_elev double,
+    p5_timestamp double,
     p5_state text NOT NULL,
-    p5_lat double NOT NULL,
-    p5_long double NOT NULL,
-    p5_elev double NOT NULL,
-    p6_timestamp double NOT NULL,
+    p5_lat double,
+    p5_long double,
+    p5_elev double,
+    p6_timestamp double,
     p6_state text NOT NULL,
-    p6_lat double NOT NULL,
-    p6_long double NOT NULL,
-    p6_elev double NOT NULL,
-    p7_timestamp double NOT NULL,
+    p6_lat double,
+    p6_long double,
+    p6_elev double,
+    p7_timestamp double,
     p7_state text NOT NULL,
-    p7_lat double NOT NULL,
-    p7_long double NOT NULL,
-    p7_elev double NOT NULL,
-    p8_timestamp double NOT NULL,
+    p7_lat double,
+    p7_long double,
+    p7_elev double,
+    p8_timestamp double,
     p8_state text NOT NULL,
-    p8_lat double NOT NULL,
-    p8_long double NOT NULL,
-    p8_elev double NOT NULL
+    p8_lat double,
+    p8_long double,
+    p8_elev double
 ); """
 pilit_table_columns = (
     "timestamp",
@@ -98,10 +98,13 @@ pilit_table_columns = (
 )
 
 def pilit_callback(pilit_event):
+    t = TableManager()
+    t.connect(r"mirv.db")
     if pilit_event.deploy_or_retrieve.data == "deploy":
-        tm.deployed_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
+        t.deployed_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
     elif pilit_event.deploy_or_retrieve.data == "retrieve":
-        tm.retrieved_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
+        t.retrieved_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
+    t.close()
 
 def query_callback():
     goal = action_server.accept_new_goal()
@@ -112,8 +115,11 @@ def query_callback():
     data = t.get_last_row("pilits")
     t.close()
     result.latitude = data[5::5]
+    result.latitude = [lat for lat in result.latitude if lat != None]
     result.longitude = data[6::5]
+    result.longitude = [long for long in result.longitude if long != None]
     result.altitude = data[7::5]
+    result.altitude = [alt for alt in result.altitude if alt != None]
     action_server.set_succeeded(result)
 
 if __name__ == "__main__":
@@ -126,7 +132,7 @@ if __name__ == "__main__":
     tm = TableManager()
     tm.connect(r"mirv.db")
     tm.create_table(pilit_table_cmd)
-    tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", 0, 0, 0, 0, "stored", 0, 0, 0, 0, "stored", 0, 0, 0, 0, "stored", 0, 0, 0, 0, "stored", 0, 0, 0, 0, "stored", 0, 0, 0, 0, "stored", 0, 0, 0, 0, "stored", 0, 0, 0))
+    tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
 
     while not rospy.is_shutdown():
         pass
