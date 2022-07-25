@@ -223,7 +223,7 @@ class DDEkf:
 
 
 def main():
-    rospy.init_node('ack_ekf', anonymous=True)
+    rospy.init_node('diff_ekf', anonymous=True)
     ekf = DDEkf()
     r = rospy.Rate(ekf.update_frequency)
     ekf.sensor_timeout = 1
