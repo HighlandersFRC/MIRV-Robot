@@ -73,6 +73,8 @@ add_action_files(
   FILES Controller.action
   DIRECTORY action
   FILES Database.action
+  DIRECTORY action
+  FILES NavSatToTruck.action
 )
 
 # Generate added messages and services with any dependencies listed here

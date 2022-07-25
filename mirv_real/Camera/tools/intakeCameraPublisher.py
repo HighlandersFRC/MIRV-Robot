@@ -50,7 +50,7 @@ cam_rgb.isp.link(xoutIsp.input)
 imu = pipeline.createIMU()
 xlinkOut = pipeline.createXLinkOut()
 xlinkOut.setStreamName("imu")
-imu.enableIMUSensor(depthai.IMUSensor.ROTATION_VECTOR, 400)
+imu.enableIMUSensor(depthai.IMUSensor.ARVR_STABILIZED_GAME_ROTATION_VECTOR, 400)
 imu.setBatchReportThreshold(1)
 imu.setMaxBatchReports(10)
 imu.out.link(xlinkOut.input)
@@ -140,7 +140,7 @@ ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.AUTO)
 controlQueue.send(ctrl)
 
-while True:
+while not rospy.is_shutdown():
     initTime = time.time()
 
     # get imu and rgb queue data
@@ -166,6 +166,8 @@ while True:
         rotationK = rVvalues.k
         rotationReal = rVvalues.real
         
+        rospy.loginfo(rVvalues)
+
         pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
 
         pitch = pitch * 180/math.pi
@@ -180,7 +182,7 @@ while True:
         pitch = pitch + 180
         pitch = pitch%360
 
-        #print("PITCH: ", pitch)
+        print("PITCH: ", pitch)
 
         if(i == len(imuPackets) - 1):
             imuPub.publish(pitch)

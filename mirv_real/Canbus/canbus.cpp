@@ -109,13 +109,16 @@ void initializeDriveMotors(){
 	frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
 	backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-	backRightDrive.Set(ControlMode::Velocity, 0.0);
+	backRightDrive.Set(ControlMode::PercentOutput, 0.0);
 }
 
 void initializeIntakeMotors(){
 	intakeArmMotor.SetInverted(false);
 	intakeArmMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
 	intakeArmMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyClosed);
+
+	intakeWheelMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
+	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
 }
 
 //maximum rpm of drive motors
@@ -234,6 +237,7 @@ class Publisher {
 	ros::Publisher batteryVoltagePub;
 	ros::Publisher encoderOdometryPub;
 	ros::Publisher encoderVelocityPub;
+	ros::Publisher intakeLSPub;
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -268,6 +272,15 @@ class Publisher {
 		};
 
 		encoderVelocityPub.publish(jointState);
+	}
+
+	void publishIntakeLimitSwitches(){
+		std_msgs::Float64MultiArray limitSwitches;
+		limitSwitches.data.push_back(intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed());
+		limitSwitches.data.push_back(intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed());
+		limitSwitches.data.push_back(intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed());
+		limitSwitches.data.push_back(intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed());
+		intakeLSPub.publish(limitSwitches);
 	}
 };
 
@@ -316,6 +329,10 @@ class Intake {
 		}
 
 		if (mode == "intake"){
+			// cout << "<";
+			// cout << intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
+			// cout << intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed();
+			// cout << ">";
 			rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 			if (side > 0){
@@ -516,6 +533,9 @@ int main(int argc, char **argv) {
 	ros::Subscriber velocityDriveSub = n.subscribe("cmd_vel", 10, velocityDriveCallback);
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
 	//ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
+
+	publisher.intakeLSPub = n.advertise<std_msgs::Float64MultiArray>("intake/limitswitches", 10);
+	ros::Timer intakeLSTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishIntakeLimitSwitches, publisher));
 
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));

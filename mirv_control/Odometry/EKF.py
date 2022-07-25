@@ -196,6 +196,7 @@ class DDEkf:
         cov = conversion_lib.state_cov_to_covariance_matrix(cov_6x6)
         odom.pose.covariance = list(conversion_lib.covariance_to_ros_covariance(cov))
         self.pose_pub.publish(odom)
+        rospy.loginfo(odom)
 
     def gps_callback(self, data):
         self.last_gps_time = rospy.Time.now().to_sec()

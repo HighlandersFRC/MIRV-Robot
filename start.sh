@@ -4,8 +4,10 @@ sudo ip link set can0 type can bitrate 1000000
 sudo ifconfig can0 up
 sudo ifconfig can0 txqueuelen 1000
 
-
+echo "seting up enviornment variables"
+source set_envs.sh
 source setenv.sh
+echo "set up enviornment variables"
 #roslaunch mirv_real mirv.launch
 
 function exposeDI() {

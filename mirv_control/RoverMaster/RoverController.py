@@ -5,37 +5,52 @@
 # managing hierarchy of systems
 # calling macros or subsystem calls
 
-from std_msgs import String
 import RoverInterface
 import mirv_control.msg
 import rospy
 import actionlib
+from RoverInterface import RoverInterface
+import threading
+from PiLitController import PiLitControl as PiLitController
 
 class RoverController():
-    # create messages that are used to publish feedback/result
-    _feedback = mirv_control.msg.ControllerFeedback()
-    _result = mirv_control.msg.ControllerResult()
-  
     def __init__(self):
         rospy.init_node("RoverController")
+        self.rate = rospy.Rate(1)
+        self.interface = RoverInterface()
+        # self.interface.run()
+    def updateStatus(self):
+        while not rospy.is_shutdown():
+            # print("looping")
+            self.interface.cloudController_client_goal()
+            self.rate.sleep()
 
-        cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_cb)
+    def main(self):
+        # point1 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # point2 = self.interface.CoordConversion_client_goal([40.4741859, -104.9693740])
+        # point3 = self.interface.CoordConversion_client_goal([40.4740645, -104.9694917])
+        # point4 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # point5 = self.interface.CoordConversion_client_goal([40.4740181, -104.9694273])
+        # # point6 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # # point7 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # # point8 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
+        # # point2 = self.interface.CoordConversion_client_goal([40.4742288, -104.9692942])
+        # # print(point2)
+        # target = [point1]
+        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
+        # self.interface.pickup_client_goal("switch_right", estimatedPiLitAngle)
+        # target = [point2,point3, point4]
+        # self.interface.PP_client_goal(target)
+        # self.interface.pickup_client_goal("switch_right", estimatedPiLitAngle)
+        # target = [point5]
+        # self.interface.PP_client_goal(target)
+        self.interface.pickup_client_goal("switch_right", 5)
+if __name__ == "__main__":
+    controller = RoverController()
+    updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
+    mainThread = threading.Thread(target = controller.main, name = "thread2")
 
-        self._action_name = "RoverController"
-        self._as = actionlib.SimpleActionServer(self._action_name, mirv_control.msg.ControllerAction, execute_cb=self.execute_cb, auto_start = False)
-        self._as.start()
+    updateStatusThread.start()
+    mainThread.start()
 
-    def cloud_cb(self, msg):
-        joystick = msg.joystick
-        purePursuit = msg.purePursuit
-        ppTarget = msg.ppTarget
-        pickup = msg.pickup
-        self._feedback.joystick = joystick
-        self._feedback.purePursuit = purePursuit
-        self._feedback.ppTarget = ppTarget
-        self._feedback.pickup = pickup
-
-        self._as.publish_feedback(self._feedback)
-
-    
-            
+    print("after")

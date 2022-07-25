@@ -22,8 +22,8 @@ class PurePursuit():
     currentMaxDriveSpeed = 0.75
     startingTheta = 3.14159/2
     lookAheadDist = 4
-    allowedError = 1.0
-    allowedErrorDist = 0.1
+    allowedError = 1.5
+    allowedErrorDist = 0.04
     robotCordList = []
     cordList = []
     currentTruckCord = [0, 0, 0]
@@ -32,6 +32,7 @@ class PurePursuit():
     debugPub = rospy.Publisher("PPdebug", Float64MultiArray, queue_size=5)
     debugMsg = Float64MultiArray()
     feedback = ASmsg.PurePursuitFeedback()
+    angleToTarget = 0
     result = ASmsg.PurePursuitResult()
     lastlooptime = 0
 
@@ -80,7 +81,7 @@ class PurePursuit():
         print(self.robotCordList)
 
     def removeTargetPoint(self):
-        if (abs(self.robotCordList[0][2]) < 1.5 and len(self.robotCordList) > 1):
+        if (abs(self.robotCordList[0][2]) < 1.7 and len(self.robotCordList) > 1):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
             print("removing target point")
@@ -89,6 +90,8 @@ class PurePursuit():
             else:
                 return True
         elif (self.robotCordList[0][2] < self.allowedError and len(self.robotCordList) <= 1):
+            #calculate angle here
+            self.angleToTarget = math.degrees(math.atan2(self.robotCordList[0][1],self.robotCordList[0][0]))
             self.robotCordList.pop(0)
             self.cordList.pop(0)
             print("removing target point")
@@ -97,7 +100,7 @@ class PurePursuit():
     # calulates wheel velocity's for that given frame
     def calculateSpeedSide(self, maxSpeed, x, y, la):
         RobotTwist = [maxSpeed, 0]
-        if(abs(x) > self.allowedErrorDist):
+        if(abs(y) > self.allowedErrorDist):
             cRad = self.generateRadius(y, la)
             ################################
             # Take circ of radius 4 and max speed of 1
@@ -108,13 +111,18 @@ class PurePursuit():
             # we get 2*pi/8*pi = 1/4
             ################################
             angularVel = maxSpeed/cRad
+            if(x<0):
+               angularVel = 2*angularVel 
             if(y >= 0):
                 RobotTwist = [maxSpeed, angularVel]
             else:
                 RobotTwist = [maxSpeed, -angularVel]
         else:
             if(x < 0):
-                RobotTwist = [0, self.maxAngularVel]
+                if(y >= 0):
+                    RobotTwist = [0, self.maxAngularVel]
+                else:
+                    RobotTwist = [0, -self.maxAngularVel]
 
         return (RobotTwist)
 
@@ -261,6 +269,7 @@ class PurePursuit():
                     self.result.AtTargetPoint = True
                     self.result.errorToPoint = 0.5
                     self.result.finalTargetPoint = self.currentTruckCord
+                    self.result.angleToTarget = self.angleToTarget
                     self._as.set_succeeded(self.result)
                 print(self.rosPubMsg)
 
@@ -276,7 +285,7 @@ class PurePursuit():
             looptime = time.time()-self.lastlooptime
             self.lastlooptime = time.time()
             self.pub.publish(self.rosPubMsg)
-            print("looptime: {}".format(looptime))
+            # print("looptime: {}".format(looptime))
     def run(self):
         try:
             rospy.spin()

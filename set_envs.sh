@@ -7,3 +7,4 @@
 export API_HOST=""
 export MIRV_CLOUD_SERVER_PORT="8000"
 export MIRV_COMMON_NAME=""
+export ROS_LOG_DIR=/mnt/samsung980pro/ROS/

@@ -16,6 +16,11 @@ class RobotController:
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
 
+        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
+        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.limit_switches = [0, 0, 1, 1]
+        self.intake_is_canceled = False
+
         self.velocityMsg = Twist()
 
         self.piLitDepth = 0
@@ -44,6 +49,34 @@ class RobotController:
 
         self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
         self.piLitPID.setMaxMinOutput(0.4)
+
+    def limit_switch_callback(self, switches):
+        self.limit_switchs = switches.data
+
+    def intake_and_store(self, timeout: float):
+        start_time = time.time()
+        self.intake_command_pub.publish(String("intake"))
+        had_pilit = False
+        while self.limit_switches[3] and self.limit_switches[2]:
+            if not had_pilit and time.time() - start_time > timeout or self.intake_is_canceled:
+                return False
+        self.intake_command_pub.publish(String("store"))
+        while not self.limit_switches[0]:
+            if self.intake_is_canceled:
+                return False
+        return True
+        
+    def deposit(self, timeout: float):
+        start_time = time.time()
+        self.intake_command_pub.publish(String("deposit"))
+        while self.limit_switches[3] and self.limit_switches[2]:
+            if time.time() - start_time > timeout or self.intake_is_canceled:
+                return False
+        while not self.limit_switches[1]:
+            if self.intake_is_canceled:
+                return False
+        time.sleep(1)
+        return True
 
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)

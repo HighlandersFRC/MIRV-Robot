@@ -17,9 +17,10 @@ def digitalWrite(pin, state):
 def callback(data):
     inputData = data.split(",", 1)
     digitalWrite(outputsDict[inputData[0]], inputData[1])
+
 def listen():
+    rospy.Subscriber("DOControl", String, callback)
     while not rospy.is_shutdown():
-        rospy.Subscriber("DOControl", String, callback)
         rospy.spin()
 
 def main():
