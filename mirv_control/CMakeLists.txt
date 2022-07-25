@@ -72,6 +72,8 @@ add_action_files(
   DIRECTORY action
   FILES Controller.action
   DIRECTORY action
+  FILES Database.action
+  DIRECTORY action
   FILES NavSatToTruck.action
 )
 
@@ -258,6 +260,6 @@ DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 catkin_install_python(PROGRAMS Controllers/tablet_controller.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS Controllers/intake_test.py
+catkin_install_python(PROGRAMS Database/DatabaseController.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

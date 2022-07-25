@@ -52,6 +52,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
     FILES
    depth_and_color_msg.msg
+   pilit_db_msg.msg
  )
 
 ## Generate services in the 'srv' folder
