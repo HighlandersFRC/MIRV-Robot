@@ -1,7 +1,7 @@
 <launch>
     <arg name="wheel_base_width" default="0.483"/>
     <arg name="wheel_radius" default="0.1905"/>
-    <arg name="param_file_name" default="nmea"/>
+    <arg name="param_file_name" default="mirv"/>
     <arg name="param_file_dir" default="$(find mirv_real)/GPS/config"/>
     <param name="api_host" type="String" value="20.236.228.19"/>
     <param name="api_port" type="String" value="8080"/>
@@ -32,7 +32,7 @@
     <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
     <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"/>
     <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py" />
-    <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py" />
+    <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py" output="screen"/>
     <node name="EKF" pkg="mirv_control" type="EKF.py"/>
     <node name="CloudAlServer" pkg="mirv_control" type="CloudAlServer.py"/>
     <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py" output="screen"/>
