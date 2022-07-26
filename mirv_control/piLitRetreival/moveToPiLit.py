@@ -319,7 +319,7 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.02
+        self.kP = 0.016
         self.kI = 0
         self.kD = 2
         self.setPoint = 0
@@ -410,6 +410,7 @@ class piLitPickup:
             self.cancelCallback()
          
     def moveToPiLit(self):
+        print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
         result = -result
         self.velocityMsg.linear.x = 0.25 # m/s
@@ -434,7 +435,7 @@ class piLitPickup:
         print("GOT PICKUP CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO PICKUP PI LIT!")
-        running = goal.runPID
+        # running = goal.runPID
         intakeSide = goal.intakeSide
         estimatedPiLitAngle = goal.estimatedPiLitAngle
         estimatedPiLitAngle = estimatedPiLitAngle + 360
@@ -510,7 +511,7 @@ class piLitPickup:
                 self._feedback.result = result
                 self._as.publish_feedback(self._feedback)
 
-                if(abs(self.imu - self.setPoint) < 5 and result < 0.08):
+                if(abs(self.imu - self.setPoint) < 5 and abs(result) < 0.05):
                     print("GOT TO TARGET!!!!")
                     self.driveToPiLit = True
                     self.runPID = False

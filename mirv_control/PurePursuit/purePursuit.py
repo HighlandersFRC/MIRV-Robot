@@ -22,8 +22,8 @@ class PurePursuit():
     currentMaxDriveSpeed = 0.75
     startingTheta = 3.14159/2
     lookAheadDist = 4
-    allowedError = 1.5
-    allowedErrorDist = 0.04
+    allowedError = 2
+    allowedErrorDist = 0.06
     robotCordList = []
     cordList = []
     currentTruckCord = [0, 0, 0]

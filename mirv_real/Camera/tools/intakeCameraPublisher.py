@@ -141,65 +141,72 @@ ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.AUTO)
 controlQueue.send(ctrl)
 
 while not rospy.is_shutdown():
-    initTime = time.time()
+    try:
+        initTime = time.time()
 
-    # get imu and rgb queue data
-    in_rgb = q_rgb.tryGet()
-    imuData = imuQueue.get()
-    inDepth = depthQueue.get()
-    #print("PAST QUEUE GET")
-    depthFrame = inDepth.getFrame()
-    depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
-    depthFrameColor = cv2.equalizeHist(depthFrameColor)
-    depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_OCEAN)
+        # get imu and rgb queue data
+        in_rgb = q_rgb.tryGet()
+        imuData = imuQueue.get()
+        inDepth = depthQueue.get()
+        #print("PAST QUEUE GET")
+        depthFrame = inDepth.getFrame()
+        depthFrameColor = cv2.normalize(depthFrame, None, 255, 0, cv2.NORM_INF, cv2.CV_8UC1)
+        depthFrameColor = cv2.equalizeHist(depthFrameColor)
+        depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_OCEAN)
 
-    # get imu values and publish them
-    imuPackets = imuData.packets
-    #print("IMU PACKET LENGTH: ", len(imuPackets))
-    i = 0
-    for imuPacket in imuPackets:
-        i += 1
-        rVvalues = imuPacket.rotationVector
+        # get imu values and publish them
+        imuPackets = imuData.packets
+        #print("IMU PACKET LENGTH: ", len(imuPackets))
+        i = 0
+        for imuPacket in imuPackets:
+            i += 1
+            rVvalues = imuPacket.rotationVector
 
-        rotationI = rVvalues.i
-        rotationJ = rVvalues.j
-        rotationK = rVvalues.k
-        rotationReal = rVvalues.real
-        
-        rospy.loginfo(rVvalues)
+            rotationI = rVvalues.i
+            rotationJ = rVvalues.j
+            rotationK = rVvalues.k
+            rotationReal = rVvalues.real
+            
+            rospy.loginfo(rVvalues)
 
-        pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
+            pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
 
-        pitch = pitch * 180/math.pi
-        yaw = yaw * 180/math.pi
-        roll = roll * 180/math.pi
+            pitch = pitch * 180/math.pi
+            yaw = yaw * 180/math.pi
+            roll = roll * 180/math.pi
 
-        pitch = pitch - 270
+            pitch = pitch - 270
 
-        pitch = pitch + 360
-        pitch = pitch%360
+            pitch = pitch + 360
+            pitch = pitch%360
 
-        pitch = pitch + 180
-        pitch = pitch%360
+            pitch = pitch + 180
+            pitch = pitch%360
 
-        print("PITCH: ", pitch)
+            print("PITCH: ", pitch)
 
-        if(i == len(imuPackets) - 1):
-            imuPub.publish(pitch)
+            if(i == len(imuPackets) - 1):
+                imuPub.publish(pitch)
 
 
-    if in_rgb is not None and inDepth is not None:
-        frame = qIsp.get().getCvFrame()
+        if in_rgb is not None and inDepth is not None:
+            frame = qIsp.get().getCvFrame()
 
-        # resize frame for neural nets
-        resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
+            # resize frame for neural nets
+            resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
 
-        # create custom frame message to publish
-        framesMessage = depthAndColorFrame()
-        framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
-        framesMessage.color_frame = br.cv2_to_imgmsg(resizedFrame)
-        imgPub.publish(framesMessage)
-        endTime = time.time()
+            # create custom frame message to publish
+            framesMessage = depthAndColorFrame()
+            framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
+            framesMessage.color_frame = br.cv2_to_imgmsg(resizedFrame)
+            imgPub.publish(framesMessage)
+            endTime = time.time()
+
+        if cv2.waitKey(1) == ord('q'):
+                break
     
-    if cv2.waitKey(1) == ord('q'):
-            break
+    except KeyboardInterrupt:
+        break
+    except:
+        print("here")
+        break
