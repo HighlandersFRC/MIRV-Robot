@@ -55,7 +55,7 @@ pilit_state_sub = rospy.Subscriber("pilit/status", PilitStatus, pilit_callback)
 
 #Status publisher and timer
 status_pub = rospy.Publisher("RoverStatus", String, queue_size = 10)
-status_pub_timer = rospy.Timer(rospy.Duration(1), publish_status)
+status_pub_timer = rospy.Timer(rospy.Duration(5), publish_status)
 
 while not rospy.is_shutdown():
     #For each timer update the respective health substatus based on if the timer is timed out
