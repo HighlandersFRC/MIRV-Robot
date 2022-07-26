@@ -263,3 +263,6 @@ catkin_install_python(PROGRAMS Controllers/tablet_controller.py
 catkin_install_python(PROGRAMS Database/DatabaseController.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+catkin_install_python(PROGRAMS Status/StatusManager.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
