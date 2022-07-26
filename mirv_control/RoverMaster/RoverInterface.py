@@ -17,7 +17,7 @@ class RoverInterface():
         print("setting up server connections")
         self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
         self.calibrationClient.wait_for_server()
-        print("connected to Pure Truck CordinateAS")
+        print("connected to starting heading AS")
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
@@ -56,7 +56,8 @@ class RoverInterface():
         return self.isPickupControl
 
     def Calibrate_client_goal(self):
-        goal = mirv_control.msg.IMUCalibrationGoal.calibrate = True
+        mirv_control.msg.IMUCalibrationGoal.calibrate = True
+        goal = mirv_control.msg.IMUCalibrationGoal
         self.calibrationClient.send_goal(goal)
         self.calibrationClient.wait_for_result()
         return self.calibrationClient.get_result().succeeded
