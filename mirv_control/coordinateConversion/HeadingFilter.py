@@ -5,6 +5,7 @@ import time
 from ublox_msgs.msg import NavPVT
 import mirv_control.msg as ASmsg
 from geometry_msgs.msg import Twist
+import actionlib
 
 class ComputeHeading():
     relativeHeadingChange = 0
@@ -27,12 +28,12 @@ class ComputeHeading():
         self.headingPub = rospy.Publisher("Start/Heading", Float64, queue_size=2)
         self.drivePub = rospy.Publisher("cmd_vel", Twist, queue_size=2)
         self._action_name = "StartingHeading"
-        self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.IMUCalibration, auto_start = False)
+        self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.IMUCalibrationAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
         self._as.start()
 
 
-    def execute_cb(self)
+    def execute_cb(self):
         goal = self._as.accept_new_goal()
         self.sampleCountGPS = 0
         self.sampleCountIMU = 0
@@ -40,7 +41,7 @@ class ComputeHeading():
         self.rosPubMsg.angular.z = 0
         self.driverPub.publish(self.rosPubMsg)
         startHead = self.run()
-        self.rosPubMsg.linear.x 0 
+        self.rosPubMsg.linear.x = 0 
         self.rosPubMsg.angular.z = 0
         self.driverPub.publish(self.rosPubMsg)
         self.result.succeeded = self.succeeded
@@ -74,7 +75,7 @@ class ComputeHeading():
                 return startingHeading
             if (abs(sampleCountGPS - sampleCountIMU) > self.failCount):
                 self.succeeded = False
-                if( self.sampleCountIMU = 0):
+                if( self.sampleCountIMU == 0):
                     return self.currentHeading
                 else:
                     return self.startingAngle

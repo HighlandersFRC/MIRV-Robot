@@ -35,13 +35,14 @@ class RoverController():
         # # point7 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
         # # point8 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
         # # point2 = self.interface.CoordConversion_client_goal([40.4742288, -104.9692942])
+        print(self.interface.Calibrate_client_goal())
         # # print(point2)
-        target = [point1]
-        estimatedPiLitAngle = self.interface.PP_client_goal(target)
-        self.interface.pickup_client_goal("switch_right", 5)
-        target = [point2, point3, point4]
-        estimatedPiLitAngle = self.interface.PP_client_goal(target)
-        self.interface.pickup_client_goal("switch_left", 5)
+        # target = [point1]
+        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
+        # self.interface.pickup_client_goal("switch_right", 5)
+        # target = [point2, point3, point4]
+        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
+        # self.interface.pickup_client_goal("switch_left", 5)
         # target = [point5]
         # self.interface.PP_client_goal(target)
         # self.interface.pickup_client_goal("switch_right", 5)
