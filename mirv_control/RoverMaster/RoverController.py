@@ -26,22 +26,22 @@ class RoverController():
             self.rate.sleep()
 
     def main(self):
-        point1 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
-        point2 = self.interface.CoordConversion_client_goal([40.4741859, -104.9693740])
-        point3 = self.interface.CoordConversion_client_goal([40.4740645, -104.9694917])
-        point4 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
-        point5 = self.interface.CoordConversion_client_goal([40.4740181, -104.9694273])
+        point1 = self.interface.CoordConversion_client_goal([40.4741943, -104.9692452])
+        point2 = self.interface.CoordConversion_client_goal([40.4742012, -104.9693351])
+        point3 = self.interface.CoordConversion_client_goal([40.4741130, -104.9694685])
+        point4 = self.interface.CoordConversion_client_goal([40.4740620, -104.9694769])
+        # point5 = self.interface.CoordConversion_client_goal([40.4740181, -104.9694273])
         # # point6 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
         # # point7 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
         # # point8 = self.interface.CoordConversion_client_goal([40.4741910, -104.9692516])
         # # point2 = self.interface.CoordConversion_client_goal([40.4742288, -104.9692942])
         # # print(point2)
-        # target = [point1]
-        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
+        target = [point1]
+        estimatedPiLitAngle = self.interface.PP_client_goal(target)
         self.interface.pickup_client_goal("switch_right", 5)
-        # target = [point2,point3]
+        target = [point2, point3, point4]
         # self.interface.PP_client_goal(target)
-        # self.interface.pickup_client_goal("switch_right", estimatedPiLitAngle)
+        self.interface.pickup_client_goal("switch_left", 5)
         # target = [point5]
         # self.interface.PP_client_goal(target)
         # self.interface.pickup_client_goal("switch_right", 5)
