@@ -128,7 +128,7 @@ def publish_pilit_info(time):
     data = t.get_last_row("pilits")
     t.close()
     status = pilit_status_msg()
-    if data[0] == None:
+    if not data:
         return
     status.timestamp.data = data[0]
     status.right_count.data = data[1]
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     tm = TableManager()
     tm.connect(r"mirv.db")
     tm.create_table(pilit_table_cmd)
-    #tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", 1, 2, 3, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
+    tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", 1, 2, 3, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
     tm.close()
 
     while not rospy.is_shutdown():

@@ -48,13 +48,10 @@ class RoverState:
                 "speed": 0
             },
             "pi_lits": {
-                "right_count": 4,
-                "left_count": 4,
-                "locations": {
-                    "latitudes": [],
-                    "longitudes": [],
-                    "altitudes": []
-                }
+                "state": "sequential_1",
+                "pi_lits_stowed_left": 4,
+                "pi_lits_stowed_right": 4,
+                "deployed_pi_lits": []
             }
         }
         self.timers = {

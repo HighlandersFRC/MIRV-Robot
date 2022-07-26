@@ -34,11 +34,9 @@ def state_callback(state):
 
 def pilit_callback(state):
     rover_state.timers["pilit_table"].reset()
-    rover_state.rover_state["pi_lits"]["right_count"] = state.right_count.data
-    rover_state.rover_state["pi_lits"]["left_count"] = state.left_count.data
-    rover_state.rover_state["pi_lits"]["locations"]["latitudes"] = state.latitudes.data
-    rover_state.rover_state["pi_lits"]["locations"]["longitudes"] = state.longitudes.data
-    rover_state.rover_state["pi_lits"]["locations"]["altitudes"] = state.altitudes.data
+    rover_state.rover_state["pi_lits"]["pi_lits_stowed_right"] = state.right_count.data
+    rover_state.rover_state["pi_lits"]["pi_lits_stowed_left"] = state.left_count.data
+    rover_state.rover_state["pi_lits"]["deployed_pi_lits"] = [{"lat": state.latitudes.data[i], "long": state.longitudes.data[i], "elev": state.altitudes.data[i]} for i in range(len(state.latitudes.data))]
 
 def publish_status(timer_event):
     msg = json.dumps(rover_state.rover_state)
