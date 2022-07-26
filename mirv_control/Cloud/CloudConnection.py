@@ -97,8 +97,7 @@ def get_webrtc_state():
 def connect_to_api():
     print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
     try:
-        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"roverId": ROVER_COMMON_NAME},
-                auth={"token": token}, socketio_path="/ws/socket.io")
+        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover"}, auth={"token": token}, socketio_path="/ws/socket.io")
         print("Connection Succeeded")
     except socketio.exceptions.ConnectionError as e:
         print(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
@@ -223,6 +222,7 @@ async def offer(request):
     def on_datachannel(channel):
         @channel.on("message")
         def on_message(message):
+            print(message)
             command_pub.publish(message)
             channel.send("")
             #send_rtc("I Really Like Turtles!")
@@ -256,11 +256,14 @@ async def offer(request):
     )
 
 def get_token():
+
     login_data = {'username': USERNAME, 'password': PASSWORD}
+    print(login_data)
     try:
         response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=5)
         contents = json.loads(response.content.decode('utf-8'))
         token = contents.get('access_token')
+        print(token)
         return token
     except requests.exceptions.ReadTimeout:
         print("Unable to Acquire Token")
