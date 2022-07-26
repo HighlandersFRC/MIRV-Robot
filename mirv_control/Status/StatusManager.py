@@ -41,7 +41,9 @@ def pilit_callback(state):
     rover_state.rover_state["pi_lits"]["locations"]["altitudes"] = state.altitudes.data
 
 def publish_status(timer_event):
-    status_pub.publish(json.dumps(rover_state.rover_state))
+    msg = json.dumps(rover_state.rover_state)
+    rospy.loginfo(msg)
+    status_pub.publish(msg)
 
 rospy.init_node("StatusManager")
 
