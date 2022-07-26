@@ -80,9 +80,9 @@ class CloudAlServer():
             self.rosPubMsg.angular.z = 0
             self.pub.publish(self.rosPubMsg)
             self.lastJoy = False
-
+        '''
         self.purePursuit = msg.get("purePursuit")
-        if(purePursuit == None):
+        if(self.purePursuit == None):
             self.purePursuit = False
         self.ppTarget = msg.get("ppTarget")
         if(ppTarget == None):
@@ -91,6 +91,8 @@ class CloudAlServer():
             self.pickup = True
         else:
             self.pickup = False
+
+        '''
         if(self._as.is_active()):
             self._feedback.joystick = self.joystick
             self._as.publish_feedback(self._feedback)
