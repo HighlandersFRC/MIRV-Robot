@@ -410,15 +410,15 @@ class piLitPickup:
             self.cancelCallback()
          
     def moveToPiLit(self):
-        print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
+        # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
         result = -result
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > self.piLitDepth/0.25):
-            print("WANTED ANGLE: ", self.setPoint)
-            print("CURRENT ANGLE: ", self.imu)
+            # print("WANTED ANGLE: ", self.setPoint)
+            # print("CURRENT ANGLE: ", self.imu)
             self.driveToPiLit = False
             self.moveToPiLitRunning = False
             self.velocityMsg.linear.x = 0
@@ -477,7 +477,11 @@ class piLitPickup:
         searchStartTime = time.time()
         
         while(abs(searchStartTime - time.time()) < 7):
-            print("SEARCHING")
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+            self.set_intake_state("intake")
+            self.set_intake_state(intakeSide)
         while(time.time() - searchStartTime < 15 and self.piLitAngle == 0):
             # print("HAVEN'T FOUND A PI LIT YET")
             self.velocityMsg.linear.x = 0
@@ -501,7 +505,7 @@ class piLitPickup:
             if(self.runPID):
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result
-                print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
+                # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result

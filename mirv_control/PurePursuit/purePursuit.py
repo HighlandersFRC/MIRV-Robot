@@ -143,7 +143,6 @@ class PurePursuit():
         if (closePoint and farPoint):
             targetPoint = self.doubleVectorIntercept(closePoint, farPoint, la)
         elif farPoint:
-            self.maxDriveSpeed = 0.5
             targetPoint = farPoint
             snapshotLa = (targetPoint[0]**2 + targetPoint[1]**2)**0.5
             self.currentMaxDriveSpeed = 0.5
@@ -270,6 +269,7 @@ class PurePursuit():
                     self.result.errorToPoint = 0.5
                     self.result.finalTargetPoint = self.currentTruckCord
                     self.result.angleToTarget = self.angleToTarget
+                    self.currentMaxDriveSpeed = self.maxDriveSpeed
                     self._as.set_succeeded(self.result)
                 print(self.rosPubMsg)
 

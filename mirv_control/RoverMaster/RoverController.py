@@ -40,7 +40,7 @@ class RoverController():
         estimatedPiLitAngle = self.interface.PP_client_goal(target)
         self.interface.pickup_client_goal("switch_right", 5)
         target = [point2, point3, point4]
-        # self.interface.PP_client_goal(target)
+        estimatedPiLitAngle = self.interface.PP_client_goal(target)
         self.interface.pickup_client_goal("switch_left", 5)
         # target = [point5]
         # self.interface.PP_client_goal(target)
