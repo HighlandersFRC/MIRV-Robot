@@ -15,6 +15,9 @@ def convertToOneD(TwoDArray):
 class RoverInterface():
     def __init__(self):
         print("setting up server connections")
+        self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
+        self.calibrationClient.wait_for_server()
+        print("connected to Pure Truck CordinateAS")
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
@@ -51,7 +54,13 @@ class RoverInterface():
 
     def getIsPickupControl(self):
         return self.isPickupControl
-    
+
+    def Calibrate_client_goal(self):
+        goal = mirv_control.msg.IMUCalibrationGoal.calibrate = True
+        self.calibrationClient.send_goal(goal)
+        self.calibrationClient.wait_for_result()
+        return self.calibrationClient.get_result().succeeded
+
     def PP_client_cancel(self):
         print("canceling pure pursuit goal")
         self.PPclient.cancel_all_goals()

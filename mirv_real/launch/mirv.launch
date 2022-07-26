@@ -25,6 +25,7 @@
     <!-- <node name="Cloud" pkg="mirv_control" type="roverClient.py"/> -->
     <node name="Canbus" pkg="mirv_real" type="canbus"/>
     <node name="IMUFilter" pkg="mirv_real" type="imuFilter.py"/>
+    <node name="ComputeStartHeading" pkg="mirv_control" type="HeadingFilter.py"/>
     <!-- <node name="CloudConnection" pkg="mirv_control" type="CloudConnection.py"/> -->
     <!-- <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/> -->
     <!-- <node name="camera" pkg="mirv_real" type="backCameraPublisher.py"/> -->
