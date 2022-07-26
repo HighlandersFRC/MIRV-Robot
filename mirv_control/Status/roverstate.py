@@ -25,39 +25,40 @@ class Timer:
 class RoverState:
     def __init__(self):
         self.rover_state = {
+            "rover_id": "rover_1",
             "state": ROVER_STATES[0],
             "status": ROVER_STATUSES[0],
-            "battery-percent": 100,
-            "battery-voltage": 14,
+            "battery_percent": 100,
+            "battery_voltage": 12.6,
             "health": {
-                "battery-voltage": HEALTH_STATES[2],
-                "gps": HEALTH_STATES[2],
-                "encoders": HEALTH_STATES[2],
-                "camera-frames": HEALTH_STATES[2],
-                "camera-imu": HEALTH_STATES[2],
-                "pilit-table": HEALTH_STATES[2],
+                "electronics": HEALTH_STATES[2],
+                "drivetrain": HEALTH_STATES[2],
+                "intake": HEALTH_STATES[2],
+                "sensors": HEALTH_STATES[2],
+                "garage": HEALTH_STATES[2],
+                "power": HEALTH_STATES[2],
+                "general": HEALTH_STATES[2]
             },
             "telemetry": {
-                "lat": ROVER_LOCATION[0],
-                "long": ROVER_LOCATION[1],
+                "location": {
+                    "lat": ROVER_LOCATION[0],
+                    "long": ROVER_LOCATION[1]
+                },
                 "heading": 90,
                 "speed": 0
             },
-            "pi-lits": {
-                "right-count": 4,
-                "left-count": 4,
-                "locations": {
-                    "latitudes": [],
-                    "longitudes": [],
-                    "altitudes": []
-                }
+            "pi_lits": {
+                "state": "sequential_1",
+                "pi_lits_stowed_left": 4,
+                "pi_lits_stowed_right": 4,
+                "deployed_pi_lits": []
             }
         }
         self.timers = {
-            "battery-voltage": Timer(5),
+            "battery_voltage": Timer(5),
             "gps": Timer(1),
             "encoders": Timer(1),
-            "camera-frames": Timer(1),
-            "camera-imu": Timer(1),
-            "pilit-table": Timer(5)
+            "camera_frames": Timer(1),
+            "camera_imu": Timer(1),
+            "pilit_table": Timer(5)
         }
