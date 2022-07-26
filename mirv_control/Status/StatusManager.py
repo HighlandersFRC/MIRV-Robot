@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from std_msgs.msg import Float64, Float64MultiArray, String
+from sensor_msgs.msg import JointState
 from mirv_description.msg import depth_and_color_msg as Frames
 from mirv_description.msg import pilit_status_msg as PilitStatus
 from roverstate import RoverState
@@ -19,7 +20,7 @@ def gps_callback(lat_long):
     rover_state.timers["gps"].reset()
 
 def encoder_callback(velocities):
-    rover_state.rover_state["telemetry"]["speed"] = (velocities.data[0] + velocities.data[1]) / 2
+    rover_state.rover_state["telemetry"]["speed"] = (velocities.velocity[0] + velocities.velocity[1]) / 2
     rover_state.timers["encoders"].reset()
 
 def camera_frames_callback(frames):
@@ -48,7 +49,7 @@ rospy.init_node("StatusManager")
 #Subscribers
 battery_voltage_sub = rospy.Subscriber("battery/voltage", Float64, battery_voltage_callback)
 gps_sub = rospy.Subscriber("GPSCoordinates", Float64MultiArray, gps_callback)
-encoder_sub = rospy.Subscriber("encoder/velocity", Float64MultiArray, encoder_callback)
+encoder_sub = rospy.Subscriber("encoder/velocity", JointState, encoder_callback)
 camera_frames_sub = rospy.Subscriber("CameraFrames", Frames, camera_frames_callback)
 camera_imu_sub = rospy.Subscriber("CameraIMU", Float64, camera_imu_callback)
 pilit_state_sub = rospy.Subscriber("pilit/status", PilitStatus, pilit_callback)
