@@ -26,25 +26,25 @@ class RoverState:
     def __init__(self):
         self.rover_state = {
             "rover_id": "rover_1",
-            "state": ROVER_STATES[0],
-            "status": ROVER_STATUSES[0],
-            "battery_percent": 100,
-            "battery_voltage": 12.6,
+            "state": ROVER_STATES[2],
+            "status": ROVER_STATUSES[1],
+            "battery_percent": 0,
+            "battery_voltage": 0,
             "health": {
-                "electronics": HEALTH_STATES[2],
-                "drivetrain": HEALTH_STATES[2],
-                "intake": HEALTH_STATES[2],
-                "sensors": HEALTH_STATES[2],
-                "garage": HEALTH_STATES[2],
-                "power": HEALTH_STATES[2],
-                "general": HEALTH_STATES[2]
+                "electronics": HEALTH_STATES[3],
+                "drivetrain": HEALTH_STATES[3],
+                "intake": HEALTH_STATES[3],
+                "sensors": HEALTH_STATES[3],
+                "garage": HEALTH_STATES[3],
+                "power": HEALTH_STATES[3],
+                "general": HEALTH_STATES[3]
             },
             "telemetry": {
                 "location": {
-                    "lat": ROVER_LOCATION[0],
-                    "long": ROVER_LOCATION[1]
+                    "lat": 0,
+                    "long": 0
                 },
-                "heading": 90,
+                "heading": 0,
                 "speed": 0
             },
             "pi_lits": {
