@@ -6,7 +6,7 @@ from ublox_msgs.msg import NavPVT
 
 class ComputeHeading():
     relativeHeadingChange = 0
-    calibrationLength = 100
+    calibrationLength = 40
     currentHeading = 0
     sampleCountGPS = 0
     sampleCountIMU = 0
@@ -22,10 +22,10 @@ class ComputeHeading():
     def callBackGPS(self, data):
         self.currentHeading = data.heading/100000
         self.sampleCountGPS+=1
-        print("got GPS heading")
+        # print("got GPS heading")
 
     def callBackIMU(self, data):
-        print("got imu data")
+        # print("got imu data")
         if(self.startSet == False):
             self.startingAngle = data.data
             self.startSet = True
@@ -34,13 +34,14 @@ class ComputeHeading():
             self.relativeHeadingChange = data.data - self.startingAngle
     def run(self):
         while not rospy.is_shutdown():
+            print("gps {}, IMU, {}".format(self.sampleCountGPS, self.sampleCountIMU))
             if( self.sampleCountGPS >= self.calibrationLength and self.sampleCountIMU >= self.calibrationLength ):
                 startingHeading = self.currentHeading - self.relativeHeadingChange
-                self.pub.publish(self.startingHeading)
-                print(self.startingHeading)
+                self.pub.publish(startingHeading)
+                print(startingHeading)
                 time.sleep(5)
                 break
-
+            time.sleep(0.5)
 if __name__ == '__main__':
     compute = ComputeHeading()
     compute.run()

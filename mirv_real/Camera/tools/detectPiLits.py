@@ -84,7 +84,8 @@ def piLitDetect(img, frame, depthFrame):
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
         if(score > 0.7):
-            print("GOT A PI LIT")    
+            # print("GOT A PI LIT")
+            print(intakeSide)    
             x0,y0,x1,y1 = bbox
             centerX = int((x0 + x1)/2)
             centerY = int((y0 + y1)/2)
@@ -95,26 +96,20 @@ def piLitDetect(img, frame, depthFrame):
 
             depth = (depthFrame[centerY][centerX])/1000
 
-            # if(intakeSide == "switch_right"):
-            #     if(angleToPiLit > 0):
-            #         intakeOffset = -0.0889
-            #     else:
-            #         intakeOffset = 0.0889
-            # else:
-            #     if(angleToPiLit > 0):
-            #         intakeOffset = 0.0889
-            #     else:
-            #         intakeOffset = -0.0889
+            if(intakeSide == "switch_right"):
+                intakeOffset = -0.0635
+            else:
+                intakeOffset = 0.0635
 
-            # complementaryAngle = math.pi/2 - angleToPiLit
+            complementaryAngle = math.pi/2 - angleToPiLit
 
-            # horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
+            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
 
-            # verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
+            verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
             if(depth < 3 and depth != 0):
-                angleToPiLitFromIntake = math.degrees(angleToPiLit)
-                # angleToPiLitFromIntake = math.degrees(math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
+                # angleToPiLitFromIntake = math.degrees(angleToPiLit)
+                angleToPiLitFromIntake = math.degrees(math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
                 piLitLocation = [depth, angleToPiLitFromIntake]
 
                 locations = Float64MultiArray()
@@ -123,7 +118,7 @@ def piLitDetect(img, frame, depthFrame):
                 piLitLocationPub.publish(locations)
             else:
                 angleToPiLitFromIntake = math.degrees(angleToPiLit)
-            print("DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+            print("DEPTH: ", depth, " ORIGINAL ANGLE: ", math.degrees(angleToPiLit), "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
 
 
             # if(depth < 3 and depth != 0):
