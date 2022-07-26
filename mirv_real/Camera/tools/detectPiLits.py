@@ -60,10 +60,10 @@ def intakeCommandCallback(msg):
     cmd = msg.data
     global intakeSide
     if(cmd == "switch_right"):
-        print("RIGHT SIDE INTAKE")
+        # print("RIGHT SIDE INTAKE")
         intakeSide = cmd
     elif(cmd == "switch_left"):
-        print("LEFT SIDE INTAKE")
+        # print("LEFT SIDE INTAKE")
         intakeSide = cmd
 
 def gotFrame(data):
