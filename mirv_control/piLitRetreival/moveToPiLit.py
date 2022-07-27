@@ -319,7 +319,7 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.016
+        self.kP = 0.017
         self.kI = 0
         self.kD = 2
         self.setPoint = 0
@@ -476,7 +476,7 @@ class piLitPickup:
 
         searchStartTime = time.time()
         
-        while(abs(searchStartTime - time.time()) < 7):
+        while(abs(searchStartTime - time.time()) < 12):
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
@@ -515,7 +515,7 @@ class piLitPickup:
                 self._feedback.result = result
                 self._as.publish_feedback(self._feedback)
 
-                if(abs(self.imu - self.setPoint) < 5 and abs(result) < 0.05):
+                if(abs(self.imu - self.setPoint) < 6.5 and abs(result) < 0.05):
                     print("GOT TO TARGET!!!!")
                     self.driveToPiLit = True
                     self.runPID = False
