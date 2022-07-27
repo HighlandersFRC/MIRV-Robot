@@ -99,7 +99,7 @@ def gotFrame(data):
     detections = laneLineDetect(tensorImg, frame, depthFrame)
     # cv2.imshow("detections", detections)
     # cv2.waitKey(1)
-    print("TIMEDIFF: ", time.time() - initTime)
+    # print("TIMEDIFF: ", time.time() - initTime)
     # cv2.destroyAllWindows()
 
 # detect lane lines and determine which lane MIRV is in
@@ -258,6 +258,8 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
             y = (location[0] * math.sin(theta)) + (y * math.cos(theta))
             piLitPlacementList[i] = [x - laneOffsetFromCenterLeft, y + yTruckOffset]
         
+        print(piLitPlacementList)
+
         return piLitPlacementList
     else:
         return None
@@ -287,15 +289,18 @@ half = device.type != 'cpu'  # half precision only supported on CUDA
 
 # Load model
 model = get_net(cfg)
-checkpoint = torch.load('~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/End-to-end.pth', map_location= device)
-model.load_state_dict(checkpoint['state_dict'])
-model = model.to(device)
+# model = torch.load(os.path.expanduser('~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/End-to-end.pth'))
+# checkpoint = torch.load('~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/End-to-end.pth', map_location= device)
+# model.load_state_dict(checkpoint['state_dict'])
+# model = model.to(device)
 
 model.eval()
 model.cuda()
 
+print("loaded model")
+
 rospy.init_node('laneLineDetector')
-rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
+rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 
 placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
 
