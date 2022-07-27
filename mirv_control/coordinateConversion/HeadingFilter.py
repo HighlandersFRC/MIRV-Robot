@@ -20,13 +20,12 @@ class ComputeHeading():
     result = ASmsg.IMUCalibrationResult()
     rosPubMsg = Twist()
     rosPubMsgHeading = Float64()
-
+    headingPub = rospy.Publisher("Start/Heading", Float64, queue_size=2)
+    drivePub = rospy.Publisher("cmd_vel", Twist, queue_size=2)
     def __init__(self):
         rospy.init_node("ComputeStartHeading")
         self.imu_dumb_sub = rospy.Subscriber("/CameraIMU", Float64, self.callBackIMU)
         self.GPS_sub = rospy.Subscriber("ublox/navpvt", NavPVT , self.callBackGPS)
-        self.headingPub = rospy.Publisher("Start/Heading", Float64, queue_size=2)
-        self.drivePub = rospy.Publisher("cmd_vel", Twist, queue_size=2)
         self._action_name = "StartingHeading"
         self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.IMUCalibrationAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
@@ -39,16 +38,17 @@ class ComputeHeading():
         self.sampleCountIMU = 0
         self.rosPubMsg.linear.x = 0.2
         self.rosPubMsg.angular.z = 0
-        self.driverPub.publish(self.rosPubMsg)
+        self.drivePub.publish(self.rosPubMsg)
         startHead = self.run()
         self.rosPubMsg.linear.x = 0 
         self.rosPubMsg.angular.z = 0
-        self.driverPub.publish(self.rosPubMsg)
+        self.drivePub.publish(self.rosPubMsg)
         self.result.succeeded = self.succeeded
-        self._as.set_succeeded(self.result)
+      
         self.rosPubMsgHeading.data = startHead
         self.headingPub.publish(self.rosPubMsgHeading)
-        
+        time.sleep(5)
+        self._as.set_succeeded(self.result)
 
 
     def callBackGPS(self, data):
@@ -69,11 +69,10 @@ class ComputeHeading():
             print("gps {}, IMU, {}".format(self.sampleCountGPS, self.sampleCountIMU))
             if( self.sampleCountGPS >= self.calibrationLength and self.sampleCountIMU >= self.calibrationLength ):
                 startingHeading = self.currentHeading - self.relativeHeadingChange
-                self.pub.publish(startingHeading)
                 print(startingHeading)
                 self.succeeded = True
                 return startingHeading
-            if (abs(sampleCountGPS - sampleCountIMU) > self.failCount):
+            if (abs(self.sampleCountGPS - self.sampleCountIMU) > self.failCount):
                 self.succeeded = False
                 if( self.sampleCountIMU == 0):
                     return self.currentHeading

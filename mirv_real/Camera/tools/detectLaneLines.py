@@ -209,7 +209,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
         laneOffsetFromCenterLeft = laneLineDepthLeft * math.sin(laneLineAngleInFrameLeft)
         laneOffsetFromCenterRight = laneLineDepthRight * math.sin(laneLineAngleInFrameRight)
 
-        depthToFarthestPoint = 91.44 #meters, converts to 200 ft
+        depthToFarthestPoint = 237.74 #meters, converts to 200 ft
 
         laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
         piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
@@ -250,10 +250,13 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
                 piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
             
                 piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            
+        theta = 0
+
         for i in range(len(piLitPlacementList)):
             location = piLitPlacementList[i]
-            piLitPlacementList[i] = [location[0] - laneOffsetFromCenterLeft, location[1] + yTruckOffset]
+            x = (location[0] * math.cos(theta)) - (y * math.sin(theta))
+            y = (location[0] * math.sin(theta)) + (y * math.cos(theta))
+            piLitPlacementList[i] = [x - laneOffsetFromCenterLeft, y + yTruckOffset]
         
         return piLitPlacementList
     else:
@@ -292,11 +295,9 @@ model.eval()
 model.cuda()
 
 rospy.init_node('laneLineDetector')
-rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
+rospy.Subscriber("BackCameraFrames", depthAndColorFrame, gotFrame)
 
 placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
-
-# self.showFrame = True
 
 try:
     rospy.spin()

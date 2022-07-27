@@ -2,8 +2,10 @@
 import math
 
 import numpy as np
+from torch import float64
 import rospy
 import actionlib
+from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry
@@ -17,6 +19,7 @@ class GlobalToTruck():
     startingHeading = 0
     result = ASmsg.NavSatToTruckResult()
     startCordSet = False
+    startHeadSet = False
     # EarthSMaxis = 6378137
     # eccentricity = 0.08181919
     gps_m_pub = rospy.Publisher("gps/odom", Odometry, queue_size=2)
@@ -24,6 +27,7 @@ class GlobalToTruck():
     def __init__(self):
         rospy.init_node('TruckCoordinateConversion', anonymous=True)
         sub = rospy.Subscriber("gps/fix", NavSatFix, self.callBack)
+        sub = rospy.Subscriber("Start/Heading", Float64, self.setStartingHeading)
         self._action_name = "NavSatToTruckAS"
         self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.NavSatToTruckAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
@@ -75,16 +79,21 @@ class GlobalToTruck():
         else:
             raise Exception("no starting point has been sent, Need Data to e sent on /gps/fix ros topic")
 
+    def setStartingHeading(self, data):
+        self.startingHeading = self.degToRad(data.data)
+        self.startHeadSet = True
     def setStartingPoint(self, data):
-        self.startingHeading = self.degToRad(230)
         self.startingCord = data
         self.startCordSet = True
 
     def callBack(self, data):
         self.acceptStartingPoint = True
         msg = self.calcPos(data)
-        self.gps_m_pub.publish(msg)
-        rospy.loginfo(msg)
+        if(self.startHeadSet == True):
+            self.gps_m_pub.publish(msg)
+            rospy.loginfo(msg)
+        else:
+            rospy.loginfo("waiting for starting heading")
     def run(self):
         sub = rospy.Subscriber("gps/fix", NavSatFix, self.callBack)
         rospy.spin()

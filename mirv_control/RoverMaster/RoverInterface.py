@@ -8,6 +8,11 @@ import time
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
 import mirv_control.msg
+
+from mirv_description.msg import pilit_db_msg
+
+from sensor_msgs.msg import NavSatFix
+
 def convertToOneD(TwoDArray):
     for point in TwoDArray:
         pass
@@ -31,10 +36,46 @@ class RoverInterface():
         self.TruckCordClient.wait_for_server()
         print("connected to Pure Truck CordinateAS")
 
+        # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
+        self.gpsOdomSub = rospy.Subscriber("gps/odom", Odometry, self.updateOdometry)
+        self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg)
+
         self.isJoystickControl = True
         self.isPurePursuitControl = False
         self.purePursuitTarget = []
         self.isPickupControl = False
+
+        self.latitude = 0
+        self.longitude = 0
+        self.altitude = 0
+
+    def updateOdometry(self, data):
+        self.latitude = data.latitude
+        self.longitude = data.longitude
+        self.altitude = data.altitude
+
+    def getCurrentLatitude(self):
+        return self.latitude
+
+    def getCurrentLongitude(self):
+        return self.longitude
+
+    def getCurrentAltitude(self):
+        return self.altitude
+    
+    def loadPointToSQL(self, intakeSide):
+        msg = pilit_db_msg()
+        msg.deploy_or_retrieve.data = "deploy"
+        msg.side.data = intakeSide
+
+        navSatFixMsg = NavSatFix()
+        navSatFixMsg.latitude = self.latitude
+        navSatFixMsg.longitude = self.longitude
+        navSatFixMsg.altitude = self.altitude
+
+        msg.gps_pos = navSatFixMsg
+
+        self.sqlPub.publish(msg)
 
     def convertToOneD(self,TwoDArray):
         temp = []
