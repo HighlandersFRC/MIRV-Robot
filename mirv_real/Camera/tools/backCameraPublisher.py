@@ -29,7 +29,7 @@ br = CvBridge()
 imgPub = rospy.Publisher('BackCameraFrames', depthAndColorFrame, queue_size=1)
 rospy.init_node('backCameraPublisher', anonymous=True)
 
-imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
+# imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
 pipeline = depthai.Pipeline()
 
 # creating rgb camera
@@ -139,12 +139,19 @@ ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.AUTO)
 controlQueue.send(ctrl)
 
+def interrupt_handler(signal, frame):
+    # print('You pressed Ctrl+C!')
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, interrupt_handler)
+
 while True:
     initTime = time.time()
 
     # get imu and rgb queue data
     in_rgb = q_rgb.tryGet()
-    imuData = imuQueue.get()
+    # imuData = imuQueue.get()
     inDepth = depthQueue.get()
     print("PAST QUEUE GET")
     depthFrame = inDepth.getFrame()
@@ -153,36 +160,36 @@ while True:
     depthFrameColor = cv2.applyColorMap(depthFrameColor, cv2.COLORMAP_OCEAN)
 
     # get imu values and publish them
-    imuPackets = imuData.packets
-    print("IMU PACKET LENGTH: ", len(imuPackets))
-    i = 0
-    for imuPacket in imuPackets:
-        i += 1
-        rVvalues = imuPacket.rotationVector
+    # imuPackets = imuData.packets
+    # print("IMU PACKET LENGTH: ", len(imuPackets))
+    # i = 0
+    # for imuPacket in imuPackets:
+    #     i += 1
+    #     rVvalues = imuPacket.rotationVector
 
-        rotationI = rVvalues.i
-        rotationJ = rVvalues.j
-        rotationK = rVvalues.k
-        rotationReal = rVvalues.real
+    #     rotationI = rVvalues.i
+    #     rotationJ = rVvalues.j
+    #     rotationK = rVvalues.k
+    #     rotationReal = rVvalues.real
         
-        pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
+    #     pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
 
-        pitch = pitch * 180/math.pi
-        yaw = yaw * 180/math.pi
-        roll = roll * 180/math.pi
+    #     pitch = pitch * 180/math.pi
+    #     yaw = yaw * 180/math.pi
+    #     roll = roll * 180/math.pi
 
-        pitch = pitch - 270
+    #     pitch = pitch - 270
 
-        pitch = pitch + 360
-        pitch = pitch%360
+    #     pitch = pitch + 360
+    #     pitch = pitch%360
 
-        pitch = pitch + 180
-        pitch = pitch%360
+    #     pitch = pitch + 180
+    #     pitch = pitch%360
 
-        print("PITCH: ", pitch)
+    #     print("PITCH: ", pitch)
 
-        if(i == len(imuPackets) - 1):
-            imuPub.publish(pitch)
+    #     if(i == len(imuPackets) - 1):
+    #         imuPub.publish(pitch)
 
 
     if in_rgb is not None and inDepth is not None:
@@ -197,6 +204,3 @@ while True:
         framesMessage.color_frame = br.cv2_to_imgmsg(resizedFrame)
         imgPub.publish(framesMessage)
         endTime = time.time()
-    
-    if cv2.waitKey(1) == ord('q'):
-            break

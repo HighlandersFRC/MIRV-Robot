@@ -14,6 +14,8 @@ from sensor_msgs.msg import Image, Imu
 from geometry_msgs.msg import Quaternion
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
+import sys
+import signal
 
 def quat_2_radians(x, y, z, w):
     pitch = math.atan2(2*x*w - 2*y*z, 1-2*x*x - 2* z*z)
@@ -140,8 +142,16 @@ ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
 ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.AUTO)
 controlQueue.send(ctrl)
 
-while not rospy.is_shutdown():
-    try:
+def interrupt_handler(signal, frame):
+    # print('You pressed Ctrl+C!')
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, interrupt_handler)
+
+try:
+    while(not rospy.is_shutdown()):
+        # while not rospy.is_shutdown():
         initTime = time.time()
 
         # get imu and rgb queue data
@@ -202,11 +212,12 @@ while not rospy.is_shutdown():
             imgPub.publish(framesMessage)
             endTime = time.time()
 
-        if cv2.waitKey(1) == ord('q'):
-                break
-    
-    except KeyboardInterrupt:
-        break
-    except:
-        print("here")
-        break
+        # if cv2.waitKey(1) == ord('q'):
+        #         break
+
+except KeyboardInterrupt:
+    print("KEYBOARD INTERRUPT")
+    # break
+    # except:
+    #     print("here")
+    #     break

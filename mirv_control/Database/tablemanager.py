@@ -71,13 +71,13 @@ class TableManager:
         index += 3
         new_entry = prev_entry
         new_entry[0] = time.time()
-        if side == "right":
+        if side == "switch_right":
             if prev_entry[1] > 0:
                 new_entry[1] = prev_entry[1] - 1
             else: 
                 print("Right conveyor is already empty")
                 return
-        elif side == "left":
+        elif side == "switch_left":
             if prev_entry[2] > 0:
                 new_entry[2] = prev_entry[2] - 1
             else: 
@@ -109,9 +109,9 @@ class TableManager:
         index = distances.index(min(distances))
         new_entry = prev_entry
         new_entry[0] = time.time()
-        if side == "right":
+        if side == "switch_right":
             new_entry[1] = prev_entry[1] + 1
-        elif side == "left":
+        elif side == "switch_left":
             new_entry[2] = prev_entry[2] + 1
         new_entry[index * 5 + 3] = time.time()
         new_entry[index * 5 + 4] = "stored"

@@ -8,6 +8,11 @@ import time
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
 import mirv_control.msg
+
+from mirv_description.msg import pilit_db_msg
+
+from sensor_msgs.msg import NavSatFix
+
 def convertToOneD(TwoDArray):
     for point in TwoDArray:
         pass
@@ -15,6 +20,9 @@ def convertToOneD(TwoDArray):
 class RoverInterface():
     def __init__(self):
         print("setting up server connections")
+        self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
+        self.calibrationClient.wait_for_server()
+        print("connected to starting heading AS")
         self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
@@ -28,10 +36,56 @@ class RoverInterface():
         self.TruckCordClient.wait_for_server()
         print("connected to Pure Truck CordinateAS")
 
+        # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
+        self.gpsOdomSub = rospy.Subscriber("gps/odom", Odometry, self.updateOdometry)
+        self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg)
+
+        self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
+
         self.isJoystickControl = True
         self.isPurePursuitControl = False
         self.purePursuitTarget = []
         self.isPickupControl = False
+
+        self.latitude = 0
+        self.longitude = 0
+        self.altitude = 0
+
+        self.placementPoints = []
+
+    def updatePlacementPoints(self, data):
+        self.placementPoints = data.data
+
+    def updateOdometry(self, data):
+        self.latitude = data.latitude
+        self.longitude = data.longitude
+        self.altitude = data.altitude
+
+    def getCurrentLatitude(self):
+        return self.latitude
+
+    def getCurrentLongitude(self):
+        return self.longitude
+
+    def getCurrentAltitude(self):
+        return self.altitude
+
+    def getPlacementPoints(self):
+        return self.placementPoints
+    
+    def loadPointToSQL(self, action, intakeSide):
+        msg = pilit_db_msg()
+        msg.deploy_or_retrieve.data = action
+        msg.side.data = intakeSide
+
+        navSatFixMsg = NavSatFix()
+        navSatFixMsg.latitude = self.latitude
+        navSatFixMsg.longitude = self.longitude
+        navSatFixMsg.altitude = self.altitude
+
+        msg.gps_pos = navSatFixMsg
+
+        self.sqlPub.publish(msg)
 
     def convertToOneD(self,TwoDArray):
         temp = []
@@ -51,7 +105,14 @@ class RoverInterface():
 
     def getIsPickupControl(self):
         return self.isPickupControl
-    
+
+    def Calibrate_client_goal(self):
+        mirv_control.msg.IMUCalibrationGoal.calibrate = True
+        goal = mirv_control.msg.IMUCalibrationGoal
+        self.calibrationClient.send_goal(goal)
+        self.calibrationClient.wait_for_result()
+        return self.calibrationClient.get_result().succeeded
+
     def PP_client_cancel(self):
         print("canceling pure pursuit goal")
         self.PPclient.cancel_all_goals()
