@@ -2,7 +2,7 @@
 import time
 
 HEALTH_STATES = ["unhealthy", "degraded", "healthy", "unavailable"]
-ROVER_STATES = ["docked", "remoteOperation", "disabled", "eStop"]
+ROVER_STATES = ["disconnected","disconnected_fault", "e_stop", "connected_disabled", "connected_idle_roaming", "connected_idle_docked","connected_fault","autonomous","remote_operation"]
 ROVER_STATUSES = ["available", "unavailable"]
 ROVER_LOCATION = [-104.969523, 40.474083]
 
@@ -27,7 +27,7 @@ class RoverState:
         self.rover_state = {
             "rover_id": "rover_1",
             "state": ROVER_STATES[2],
-            "status": ROVER_STATUSES[1],
+            "status": ROVER_STATUSES[0],
             "battery_percent": 0,
             "battery_voltage": 0,
             "health": {

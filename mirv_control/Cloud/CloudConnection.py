@@ -97,11 +97,14 @@ def get_webrtc_state():
 def connect_to_api():
     print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
     try:
-        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover"}, auth={"token": token}, socketio_path="/ws/socket.io")
+        #sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover"}, auth={"token": token}, socketio_path="/ws/socket.io")
+        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover", "token": token}, socketio_path="/ws/socket.io")
+ 
         print("Connection Succeeded")
     except socketio.exceptions.ConnectionError as e:
         print(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
         print(e)
+
 # Sends a Message to the API
 def send_to_api(message, type="data"):
     try:
@@ -135,8 +138,14 @@ def frameSubscriber(data):
 # Receives data about robot status and passes it on to the Cloud
 def statusSubscriber(data):
     if data is not None and len(str(data.data)) > 0:
-        json_data = json.loads(str(data.data))
-        status_messages[0] = json_data
+        status = json.loads(str(data.data))
+        print(status)
+        if api_connected:
+            send_to_api(status)
+        
+        if get_webrtc_state == "connected":
+            send_to_webrtc(status)
+
     else:
         print("Received Data with Type None", data)
 
@@ -162,7 +171,7 @@ api_connected = False
 
 # Activate ROS Nodes
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
-rospy.Subscriber("RobotStatus", String, statusSubscriber)
+rospy.Subscriber("RoverStatus", String, statusSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 
 
@@ -280,7 +289,7 @@ async def update_connection():
         if not api_connected: 
             connect_to_api()
         await asyncio.sleep(5)
-
+'''
 async def update_status(): 
     while True:        
         print("Update Status")
@@ -292,10 +301,10 @@ async def update_status():
         if api_connected:
             send_to_api(status)
         
-        #if get_webrtc_state == "connected":
-        #    send_to_webrtc(status)
+        if get_webrtc_state == "connected":
+            send_to_webrtc(status)
         await asyncio.sleep(5)
-
+'''
 
 def stop():
     connection_task.cancel()
@@ -364,11 +373,11 @@ connect_to_api()
 
 loop = asyncio.get_event_loop()
 
-status_task = loop.create_task(update_status())
+#status_task = loop.create_task(update_status())
 connection_task = loop.create_task(update_connection())
 
 
-loop.run_in_executor(None, status_task)
+#loop.run_in_executor(None, status_task)
 loop.run_in_executor(None, connection_task)
 
 run_webserver()
