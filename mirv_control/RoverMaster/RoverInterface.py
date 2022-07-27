@@ -40,6 +40,8 @@ class RoverInterface():
         self.gpsOdomSub = rospy.Subscriber("gps/odom", Odometry, self.updateOdometry)
         self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg)
 
+        self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
+
         self.isJoystickControl = True
         self.isPurePursuitControl = False
         self.purePursuitTarget = []
@@ -48,6 +50,11 @@ class RoverInterface():
         self.latitude = 0
         self.longitude = 0
         self.altitude = 0
+
+        self.placementPoints = []
+
+    def updatePlacementPoints(self, data):
+        self.placementPoints = data.data
 
     def updateOdometry(self, data):
         self.latitude = data.latitude
@@ -62,6 +69,9 @@ class RoverInterface():
 
     def getCurrentAltitude(self):
         return self.altitude
+
+    def getPlacementPoints(self):
+        return self.placementPoints
     
     def loadPointToSQL(self, intakeSide):
         msg = pilit_db_msg()

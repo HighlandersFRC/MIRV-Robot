@@ -29,12 +29,14 @@ class RoverController():
 
     def main(self):
         print(self.interface.Calibrate_client_goal())
-        point1 = self.interface.CoordConversion_client_goal([40.4741943, -104.9692452])
-        point2 = self.interface.CoordConversion_client_goal([40.4742012, -104.9693351])
-        point3 = self.interface.CoordConversion_client_goal([40.4741130, -104.9694685])
-        point4 = self.interface.CoordConversion_client_goal([40.4740620, -104.9694769])
+        # point1 = self.interface.CoordConversion_client_goal([40.4741943, -104.9692452])
+        # point2 = self.interface.CoordConversion_client_goal([40.4742012, -104.9693351])
+        # point3 = self.interface.CoordConversion_client_goal([40.4741130, -104.9694685])
+        # point4 = self.interface.CoordConversion_client_goal([40.4740620, -104.9694769])
 
-        target = [point1, point2, point3, point4]
+        # target = [point1, point2, point3, point4]
+
+        target = self.interface.getPlacementPoints()
 
         self.macros.placeAllPiLits(target)
 
