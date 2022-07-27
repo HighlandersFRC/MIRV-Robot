@@ -9,8 +9,7 @@ connectionPin = "DI1"
 
 class PiLitControl():
     DI1 = False
-
-    #Constructor
+    
     def __init__(self):
         self.a_class_constant
         self.pub = rospy.Publisher("DOControl", String, queue_size=10)
