@@ -40,9 +40,25 @@ class roverMacros():
             self.placePiLit(4, intakeSide)
             self.intake_command_pub.publish(String("reset"))
 
-            self.interface.loadPointToSQL(intakeSide)
+            self.interface.loadPointToSQL("deploy", intakeSide)
 
             if(intakeSide == "switch_right"):
                 intakeSide = "switch_left"
             else:
                 intakeSide = "switch_right"
+
+    def pickupAllPiLits(self, points):
+        intakeSide = "switch_right"
+        for point in points:
+            target = [point]
+            self.interface.PP_client_goal(target)
+            self.interface.pickup_client_goal(intakeSide, 5)
+
+            self.interface.loadPointToSQL("retrieve", intakeSide)
+
+            if(intakeSide == "switch_right"):
+                intakeSide = "switch_left"
+            else:
+                intakeSide = "switch_right"
+
+            

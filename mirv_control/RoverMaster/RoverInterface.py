@@ -63,9 +63,9 @@ class RoverInterface():
     def getCurrentAltitude(self):
         return self.altitude
     
-    def loadPointToSQL(self, intakeSide):
+    def loadPointToSQL(self, action, intakeSide):
         msg = pilit_db_msg()
-        msg.deploy_or_retrieve.data = "deploy"
+        msg.deploy_or_retrieve.data = action
         msg.side.data = intakeSide
 
         navSatFixMsg = NavSatFix()
