@@ -13,13 +13,15 @@ from RoverInterface import RoverInterface
 import threading
 from PiLitController import PiLitControl as PiLitController
 from RoverMacros import roverMacros as RoverMacros
+from FaultState import FaultStates
 
 class RoverController():
     def __init__(self):
         rospy.init_node("RoverController")
         self.rate = rospy.Rate(1)
         self.interface = RoverInterface()
-        self.macros = RoverMacros()
+        self.macros = RoverMacros(self.interface)
+        self.faults = FaultStates(self.interface)
         # self.interface.run()
     def updateStatus(self):
         while not rospy.is_shutdown():

@@ -11,10 +11,10 @@ from std_msgs.msg import String, Float64MultiArray
 import time
 
 class roverMacros():
-    def __init__(self):
+    def __init__(self, Interface):
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
-        self.interface = RoverInterface()
+        self.interface = Interface
         self.limit_switches = [1, 1, 0, 0]
 
     def limit_switch_callback(self, switches):
