@@ -4,6 +4,9 @@ import rospy
 # Brings in the SimpleActionClient
 import actionlib
 import time
+from std_msgs.msg import Float64, Float64MultiArray
+from nav_msgs.msg import Odometry
+from sensor_msgs.msg import NavSatFix
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -37,7 +40,7 @@ class RoverInterface():
         print("connected to Pure Truck CordinateAS")
 
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
-        self.gpsOdomSub = rospy.Subscriber("gps/odom", Odometry, self.updateOdometry)
+        self.gpsOdomSub = rospy.Subscriber("gps/fix", Odometry, self.updateOdometry)
         self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg)
 
         self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)

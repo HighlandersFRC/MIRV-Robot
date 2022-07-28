@@ -250,9 +250,6 @@ catkin_install_python(PROGRAMS Controllers/remotedrive_master.py
 catkin_install_python(PROGRAMS Odometry/EKF.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS RoverMaster/TestServer.py
-	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
 catkin_install_python(PROGRAMS RoverMaster/RoverInterface.py
 DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

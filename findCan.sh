@@ -9,5 +9,9 @@ for X in /sys/bus/usb/devices/*; do
 	cat "$X/manufacturer" 2>/dev/null 
 	cat "$X/idVendor" 2>/dev/null 
 	cat "$X/idProduct" 2>/dev/null
+	sudo sh -c "echo 0 > $X/authorized"
+	sudo sh -c "echo 1 > $X/authorized"
+
+	
 	echo
 done

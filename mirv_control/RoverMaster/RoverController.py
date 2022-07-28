@@ -43,7 +43,7 @@ class RoverController():
         # target = self.interface.getPlacementPoints()
 
         self.macros.placeAllPiLits(target)
-
+        # point1 = self.interface.CoordConversion_client_goal([40.4741954, -104.9692536])
         # target = [point1]
         # estimatedPiLitAngle = self.interface.PP_client_goal(target)
         # self.macros.placePiLit(4)

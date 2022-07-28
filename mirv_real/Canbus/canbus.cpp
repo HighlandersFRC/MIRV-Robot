@@ -62,11 +62,16 @@ double wheelRadius = 0.0;
 
 void initializeDriveMotors(){
 	//PID config
-	float kF = 0.05;
+	float kF = 0.025;
 	float kP = 0.18;
 	float kI = 0.000;
 	float kD = 0.5;
 	float maxAllowedError = getTicksPer100MSFromVelocity(0.05);
+
+	frontRightDrive.ConfigFactoryDefault();
+	frontLeftDrive.ConfigFactoryDefault();
+	backLeftDrive.ConfigFactoryDefault();
+	backRightDrive.ConfigFactoryDefault();
 
 	frontRightDrive.ConfigAllowableClosedloopError(0, maxAllowedError);
 	frontRightDrive.Config_kF(0, kF);
@@ -119,6 +124,8 @@ void initializeIntakeMotors(){
 
 	intakeWheelMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
 	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
+
+	intakeWheelMotor.OverrideLimitSwitchesEnable(false);
 }
 
 //maximum rpm of drive motors
@@ -304,9 +311,9 @@ class Intake {
 	void update(){
 
 		// cout << " Fwd: ";
-		// cout << intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
+		// cout << intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
 		// cout << " Rev: ";
-		// cout << intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed();
+		// cout << intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed();
 
 		//not moving at all
 		if (mode == "disable"){
@@ -364,7 +371,7 @@ class Intake {
 				} else {
 					leftConvMotor.Set(ControlMode::PercentOutput, 0.4);
 				}
-				if (time(NULL) - startTime > 1){
+				if (time(NULL) - startTime > 2){
 					cout << "reset ";
 					mode = "reset";
 				}
@@ -383,6 +390,7 @@ class Intake {
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
 			} else {
 				if (side > 0){
+					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 					leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 					if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
 						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
@@ -395,6 +403,7 @@ class Intake {
 					}
 				} else {
 					rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
+					leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 					if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
 						intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
@@ -546,11 +555,13 @@ int main(int argc, char **argv) {
 	initializeDriveMotors();
 	initializeIntakeMotors();
 
+	ros::Rate rate(10);
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(500);
 
 		intake.update();
 
+		rate.sleep();
 		ros::spinOnce();
 	}
   	
