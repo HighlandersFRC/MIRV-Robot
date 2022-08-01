@@ -1,12 +1,12 @@
 <launch>
   
-  <param name="api_host" type="String" value=""/>
+  <param name="api_host" type="String" value="20.9.96.89"/>
   <param name="api_port" type="String" value="8080"/>
   <param name="mirv_common_name" type="String" value="rover_1"/>
-  <param name="api_username" type="String" value=""/>
-  <param name="api_password" type="String" value=""/>
+  <param name="api_username" type="String" value="rover_dev"/>
+  <param name="api_password" type="String" value="1234"/>
   
-  <node name="CameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"/>
+  <!--<node name="CameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"/>-->
   <node name="CloudConnection" pkg="mirv_control" type="CloudConnection.py"/>
   <node name="TabletDrive" pkg="mirv_control" type="CloudAlServer.py"/>
   <node name="Canbus" pkg="mirv_real" type="canbus"/>

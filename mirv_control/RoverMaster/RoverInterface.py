@@ -4,7 +4,7 @@ import rospy
 # Brings in the SimpleActionClient
 import actionlib
 import time
-from std_msgs.msg import Float64, Float64MultiArray
+from std_msgs.msg import Float64, Float64MultiArray, String
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 
@@ -40,8 +40,10 @@ class RoverInterface():
         print("connected to Pure Truck CordinateAS")
 
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
-        self.gpsOdomSub = rospy.Subscriber("gps/fix", Odometry, self.updateOdometry)
+        self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
         self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg)
+
+        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
 
         self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
 
@@ -113,6 +115,8 @@ class RoverInterface():
         mirv_control.msg.IMUCalibrationGoal.calibrate = True
         goal = mirv_control.msg.IMUCalibrationGoal
         self.calibrationClient.send_goal(goal)
+        self.intake_command_pub.publish(String("reset"))
+        # self.intake_command_pub.publish(String("reset"))
         self.calibrationClient.wait_for_result()
         return self.calibrationClient.get_result().succeeded
 

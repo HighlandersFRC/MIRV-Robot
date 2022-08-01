@@ -99,10 +99,12 @@ pilit_table_columns = (
 
 def pilit_callback(pilit_event):
     t = TableManager()
-    t.connect(r"mirv.db")
+    t.connect(r"/mnt/SSD/mirv.db")
     if pilit_event.deploy_or_retrieve.data == "deploy":
+        print("deployed pilit")
         t.deployed_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
     elif pilit_event.deploy_or_retrieve.data == "retrieve":
+        print("retrieved pilit")
         t.retrieved_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
     t.close()
 
@@ -111,7 +113,7 @@ def query_callback():
     feedback = msg.DatabaseFeedback()
     result = msg.DatabaseResult()
     t = TableManager()
-    t.connect(r"mirv.db")
+    t.connect(r"/mnt/SSD/mirv.db")
     data = t.get_last_row("pilits")
     t.close()
     result.latitude = data[5::5]
@@ -124,7 +126,7 @@ def query_callback():
 
 def publish_pilit_info(time):
     t = TableManager()
-    t.connect(r"mirv.db")
+    t.connect(r"/mnt/SSD/mirv.db")
     data = t.get_last_row("pilits")
     t.close()
     status = pilit_status_msg()
@@ -141,21 +143,20 @@ def publish_pilit_info(time):
     status.altitudes.data = [alt for alt in status.altitudes.data if alt != None]
     pilit_pub.publish(status)
 
-if __name__ == "__main__":
-    rospy.init_node("DatabaseController")
-    pilit_sub = rospy.Subscriber("pilit/events", pilit_db_msg, pilit_callback)
-    pilit_pub = rospy.Publisher("pilit/status", pilit_status_msg, queue_size = 10)
-    pilit_pub_timer = rospy.Timer(rospy.Duration(1), publish_pilit_info)
+rospy.init_node("DatabaseController")
+pilit_sub = rospy.Subscriber("pilit/events", pilit_db_msg, pilit_callback)
+pilit_pub = rospy.Publisher("pilit/status", pilit_status_msg, queue_size = 10)
+pilit_pub_timer = rospy.Timer(rospy.Duration(1), publish_pilit_info)
 
-    action_server = actionlib.SimpleActionServer("Database", msg.DatabaseAction, auto_start = False)
-    action_server.register_goal_callback(query_callback)
-    action_server.start()
+action_server = actionlib.SimpleActionServer("Database", msg.DatabaseAction, auto_start = False)
+action_server.register_goal_callback(query_callback)
+action_server.start()
 
-    tm = TableManager()
-    tm.connect(r"mirv.db")
-    tm.create_table(pilit_table_cmd)
-    tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", 1, 2, 3, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
-    tm.close()
+tm = TableManager()
+tm.connect(r"/mnt/SSD/mirv.db")
+tm.create_table(pilit_table_cmd)
+tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
+tm.close()
 
-    while not rospy.is_shutdown():
-        pass
+while not rospy.is_shutdown():
+    pass

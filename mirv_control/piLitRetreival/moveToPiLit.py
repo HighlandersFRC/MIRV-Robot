@@ -29,6 +29,7 @@ class piLitPickup:
         self.pilit_location_sub = rospy.Subscriber("piLitLocation", Float64MultiArray, self.updatePiLitLocation)
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
+        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
 
         self.velocityMsg = Twist()
 
@@ -70,6 +71,13 @@ class piLitPickup:
         self.piLitPID.setMaxMinOutput(0.5)
         self.estimatePID.setMaxMinOutput(0.3)
         self.allowSearch = False
+
+        # in order: Left button, Right Button, Bottom Switch, Top Switch
+        self.limit_switches = [0, 0, 1, 1]
+
+    def limit_switch_callback(self, switches):
+        self.limit_switches = switches.data
+        print(self.limit_switches)
 
     def setAllZeros(self):
         self.piLitDepth = 0
@@ -139,7 +147,7 @@ class piLitPickup:
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > self.piLitDepth/0.25):
+        if(time.time() - self.movementInitTime > 2/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
             # print("WANTED ANGLE: ", self.setPoint)
             # print("CURRENT ANGLE: ", self.imu)
             self.driveToPiLit = False

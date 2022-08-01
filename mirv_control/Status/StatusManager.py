@@ -10,8 +10,8 @@ import json
 rover_state = RoverState()
 
 def battery_voltage_callback(voltage):
-    rover_state.rover_state["battery_voltage"] = voltage.data
-    rover_state.rover_state["battery_percent"] = ((voltage.data - 10.5) / (12.6 - 10.5)) * 100
+    rover_state.rover_state["battery_voltage"] = int(voltage.data)
+    rover_state.rover_state["battery_percent"] = int(((voltage.data - 10.5) / (12.6 - 10.5)) * 100)
     rover_state.timers["battery_voltage"].reset()
 
 def gps_callback(lat_long):

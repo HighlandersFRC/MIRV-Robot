@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import math
 from RoverInterface import RoverInterface
 import rospy
 import mirv_control.msg
@@ -10,6 +11,8 @@ from PiLitController import PiLitControl as PiLitController
 from std_msgs.msg import String, Float64MultiArray
 import time
 
+from sensor_msgs.msg import NavSatFix
+
 class roverMacros():
     def __init__(self, Interface):
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
@@ -19,7 +22,7 @@ class roverMacros():
 
     def limit_switch_callback(self, switches):
         limit_switches = switches.data
-        print(limit_switches)
+        # print(limit_switches)
 
     def placePiLit(self, timeout, intakeSide):
         start_time = time.time()
@@ -37,7 +40,7 @@ class roverMacros():
         for point in points:
             target = [point]
             self.interface.PP_client_goal(target)
-            self.placePiLit(4, intakeSide)
+            self.placePiLit(6, intakeSide)
             self.intake_command_pub.publish(String("reset"))
 
             self.interface.loadPointToSQL("deploy", intakeSide)
@@ -47,12 +50,60 @@ class roverMacros():
             else:
                 intakeSide = "switch_right"
 
-    def pickupAllPiLits(self, points):
+            time.sleep(2)
+
+    def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"
-        for point in points:
-            target = [point]
+        for i in range(0, count):
+            self.placePiLit(4, intakeSide)
+
+            self.intake_command_pub.publish(String("reset"))
+
+            if(intakeSide == "switch_right"):
+                intakeSide = "switch_left"
+            else:
+                intakeSide = "switch_right"
+
+            time.sleep(4)
+
+    def pickupAllPiLits(self, lists, reverse):
+        intakeSide = "switch_right"
+        # points = [[lists.latitude[i], lists.longitude[i]] for i in range(len(lists.latitude))]
+        if(reverse):
+            lists.reverse()
+        for point in lists:
+            print(f"POINT {point}")
+            convertedPoint = self.interface.CoordConversion_client_goal(point)
+            placementX = convertedPoint[0]
+            placementY = convertedPoint[1]
+
+            currentLocationLongLat = [self.interface.getCurrentLatitude, self.interface.getCurrentLongitude]
+
+            navSatFixMsg = NavSatFix()
+            navSatFixMsg.latitude = currentLocationLongLat[0]
+            navSatFixMsg.longitude = currentLocationLongLat[0]
+            navSatFixMsg.altitude = 1492
+
+            currentLocationConverted = self.interface.CoordConversion_client_goal(currentLocationLongLat)
+
+            currentX = currentLocationConverted[0]
+            currentY = currentLocationConverted[1]
+
+            # this is correct, x points forward from the truck, y points to the left
+            angleToPlacement = math.atan2(placementY, placementX)
+            distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
+            distanceBeforePiLit = distanceToPlacement - 1
+
+            pickupDistanceX = distanceBeforePiLit * math.cos(angleToPlacement)
+            pickupDistanceY = distanceBeforePiLit * math.sin(angleToPlacement)
+
+            convertedPoint = [pickupDistanceX, pickupDistanceY]
+            target = [convertedPoint]
+            print(target)
             self.interface.PP_client_goal(target)
             self.interface.pickup_client_goal(intakeSide, 5)
+
+            print("finished pickup")
 
             self.interface.loadPointToSQL("retrieve", intakeSide)
 

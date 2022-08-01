@@ -38,6 +38,7 @@ ROVER_COMMON_NAME = rospy.get_param('mirv_common_name', ROVER_COMMON_NAME)
 USERNAME = rospy.get_param('api_username', USERNAME)
 PASSWORD = rospy.get_param('api_password', PASSWORD)
 
+CLOUD_HOST="20.9.96.89"
 
 if CLOUD_HOST is None:
     print("Please set the API_HOST Environment Variable to the IP of the cloud server")
