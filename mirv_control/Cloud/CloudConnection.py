@@ -41,15 +41,15 @@ PASSWORD = rospy.get_param('api_password', PASSWORD)
 CLOUD_HOST="20.9.96.89"
 
 if CLOUD_HOST is None:
-    print("Please set the API_HOST Environment Variable to the IP of the cloud server")
+    rospy.logerr("Please set the API_HOST Environment Variable to the IP of the cloud server")
     exit()
 
 if CLOUD_PORT is None:
-    print("Please set the API_PORT Environment Variable to the PORT of the cloud server")
+    rospy.logerr("Please set the API_PORT Environment Variable to the PORT of the cloud server")
     exit()
 
 if ROVER_COMMON_NAME is None:
-    print("Please set the ROVER_COMMON_NAME Environment Variable to the proper Rover ID in order to connect to cloud resources")
+    rospy.logerr("Please set the ROVER_COMMON_NAME Environment Variable to the proper Rover ID in order to connect to cloud resources")
     exit()
 
 
@@ -96,15 +96,14 @@ def get_webrtc_state():
 
 # Tries to connect to Cloud API and form Socket Connection
 def connect_to_api():
-    print(f"http://{CLOUD_HOST}:{CLOUD_PORT}/ws")
     try:
         #sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover"}, auth={"token": token}, socketio_path="/ws/socket.io")
         sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover", "token": token}, socketio_path="/ws/socket.io")
  
-        print("Connection Succeeded")
+        rospy.loginfo("Cloud Connection Succeeded")
     except socketio.exceptions.ConnectionError as e:
-        print(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
-        print(e)
+        rospy.logwarn(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
+        rospy.logwarn(e)
 
 # Sends a Message to the API
 def send_to_api(message, type="data"):
@@ -112,9 +111,9 @@ def send_to_api(message, type="data"):
         if api_connected:
             sio.emit(type, message)
         else:
-            print("API Disconnected. Cannot Send Message")
+            rospy.logwarn("API Disconnected. Cannot Send Message")
     except socketio.exceptions.BadNamespaceError:
-        print("Unable to send message to socket server")
+        rospy.logwarn("Unable to send message to socket server")
 
 
 # Send a Message on Webrtc Channel
@@ -122,7 +121,7 @@ def send_to_webrtc(message):
     try:
         str_msg = json.dumps(msg)
         for channel in channels:
-            print("Sending", + str_msg)
+            rospy.loginfo("Sending", + str_msg)
             channel.send(str_msg)
     except Exception as e:
         print("Unable to send message to webrtc")
@@ -140,7 +139,7 @@ def frameSubscriber(data):
 def statusSubscriber(data):
     if data is not None and len(str(data.data)) > 0:
         status = json.loads(str(data.data))
-        print(status)
+        rospy.loginfo(status)
         if api_connected:
             send_to_api(status)
         
