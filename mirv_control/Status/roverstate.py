@@ -4,7 +4,6 @@ import time
 HEALTH_STATES = ["unhealthy", "degraded", "healthy", "unavailable"]
 ROVER_STATES = ["disconnected","disconnected_fault", "e_stop", "connected_disabled", "connected_idle_roaming", "connected_idle_docked","connected_fault","autonomous","remote_operation"]
 ROVER_STATUSES = ["available", "unavailable"]
-ROVER_LOCATION = [-104.969523, 40.474083]
 
 class Timer:
     def __init__(self, timeout):
@@ -31,13 +30,13 @@ class RoverState:
             "battery_percent": 0,
             "battery_voltage": 0,
             "health": {
-                "electronics": HEALTH_STATES[3],
-                "drivetrain": HEALTH_STATES[3],
-                "intake": HEALTH_STATES[3],
-                "sensors": HEALTH_STATES[3],
-                "garage": HEALTH_STATES[3],
-                "power": HEALTH_STATES[3],
-                "general": HEALTH_STATES[3]
+                "electronics": HEALTH_STATES[2],
+                "drivetrain": HEALTH_STATES[2],
+                "intake": HEALTH_STATES[2],
+                "sensors": HEALTH_STATES[2],
+                "garage": HEALTH_STATES[2],
+                "power": HEALTH_STATES[2],
+                "general": HEALTH_STATES[2]
             },
             "telemetry": {
                 "location": {
@@ -59,6 +58,6 @@ class RoverState:
             "gps": Timer(1),
             "encoders": Timer(1),
             "camera_frames": Timer(1),
-            "camera_imu": Timer(1),
+            "heading": Timer(1),
             "pilit_table": Timer(5)
         }
