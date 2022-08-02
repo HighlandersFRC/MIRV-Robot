@@ -34,63 +34,58 @@ class RoverController():
             self.rate.sleep()
 
     def main(self):
-        print(self.interface.Calibrate_client_goal())
-        point1 = self.interface.CoordConversion_client_goal([40.47392328681292, -104.96971142862967])
-        # point2 = self.interface.CoordConversion_client_goal([40.47394062987316, -104.96967924212126])
+        self.macros.pickupOnePiLit()
+        # print(self.interface.Calibrate_client_goal())
+        # point1 = self.interface.CoordConversion_client_goal([40.47392328681292, -104.96971142862967])
+        # # point2 = self.interface.CoordConversion_client_goal([40.47394062987316, -104.96967924212126])
         # point3 = self.interface.CoordConversion_client_goal([40.47396868481405, -104.96964035009026])
-        # point4 = self.interface.CoordConversion_client_goal([40.47399571956421, -104.96960279916378])
+        # # point4 = self.interface.CoordConversion_client_goal([40.47399571956421, -104.96960279916378])
         # point5 = self.interface.CoordConversion_client_goal([40.47401561305263, -104.96957128320763])
-        point6 = self.interface.CoordConversion_client_goal([40.47404009733802, -104.96954446111727])
+        # # point6 = self.interface.CoordConversion_client_goal([40.47404009733802, -104.96954446111727])
 
-        # point1 = self.interface.CoordConversion_client_goal([40.473920199999995, -104.9697041])
-        # point2 = self.interface.CoordConversion_client_goal([40.4739442, -104.969698])
-        # point3 = self.interface.CoordConversion_client_goal([40.473968299999996, -104.96965089999999])
-        # point4 = self.interface.CoordConversion_client_goal([40.473991, -104.9696108])
-        # point5 = self.interface.CoordConversion_client_goal([40.4740143, -104.9695814])
-        # point6 = self.interface.CoordConversion_client_goal([40.4740385, -104.9695536])
+        # # point1 = self.interface.CoordConversion_client_goal([40.473920199999995, -104.9697041])
+        # # point2 = self.interface.CoordConversion_client_goal([40.4739442, -104.969698])
+        # # point3 = self.interface.CoordConversion_client_goal([40.473968299999996, -104.96965089999999])
+        # # point4 = self.interface.CoordConversion_client_goal([40.473991, -104.9696108])
+        # # point5 = self.interface.CoordConversion_client_goal([40.4740143, -104.9695814])
+        # # point6 = self.interface.CoordConversion_client_goal([40.4740385, -104.9695536])
 
-        # point1 = self.interface.CoordConversion_client_goal([40.4738434, -104.9696352])
-        # point2 = self.interface.CoordConversion_client_goal([40.4738715, -104.9697072])
+        # # point1 = self.interface.CoordConversion_client_goal([40.4738434, -104.9696352])
+        # # point2 = self.interface.CoordConversion_client_goal([40.4738715, -104.9697072])
 
 
-        # target = [point1, point2, point3, point4, point5, point6]
-        target = [point1, point6]
+        # target = [point1, point3, point5]
+        # # target = [point1, point6]
 
-        self.macros.placeAllPiLits(target)
+        # self.macros.placeAllPiLits(target)
 
-        # # # # target = self.interface.getPlacementPoints()
+        # # # # # target = self.interface.getPlacementPoints()
 
-        mirv_control.msg.DatabaseGoal.SendLatest = True
-        self.goal = mirv_control.msg.DatabaseGoal
-        self.client.send_goal(self.goal)
-        self.client.wait_for_result()
-        placedPiLitLocations = self.client.get_result()
-        points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
-        print(points)
+        # points = self.interface.getLatestSqlPoints()
 
-        point7 = self.interface.CoordConversion_client_goal([40.47406707881761, -104.96963093669557])
-        point8 = self.interface.CoordConversion_client_goal([40.47395230869571, -104.96976437659356])
-        point9 = self.interface.CoordConversion_client_goal([40.47389568869821, -104.96976102383228])
-        target2= [point7, point8, point9]
-        self.interface.PP_client_goal(target2)
+        # point7 = self.interface.CoordConversion_client_goal([40.47406707881761, -104.96963093669557])
+        # point8 = self.interface.CoordConversion_client_goal([40.47395230869571, -104.96976437659356])
+        # point9 = self.interface.CoordConversion_client_goal([40.4738521, -104.9698155])
+        # target2= [point7, point8, point9]
+        # self.interface.PP_client_goal(target2)
 
-        # self.macros.placeAllPiLitsNoMovement(6)
+        # # self.macros.placeAllPiLitsNoMovement(6)
 
-        # self.interface.PP_client_goal(target)
+        # # self.interface.PP_client_goal(target)
         
-        # mirv_control.msg.DatabaseGoal.SendLatest = True
-        # self.goal = mirv_control.msg.DatabaseGoal
-        # self.client.send_goal(self.goal)
-        # self.client.wait_for_result()
-        # placedPiLitLocations = self.client.get_result()
-        # points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
-        # print(points)
+        # # mirv_control.msg.DatabaseGoal.SendLatest = True
+        # # self.goal = mirv_control.msg.DatabaseGoal
+        # # self.client.send_goal(self.goal)
+        # # self.client.wait_for_result()
+        # # placedPiLitLocations = self.client.get_result()
+        # # points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
+        # # print(points)
 
-        # target3 = points
+        # # target3 = points
 
-        # self.interface.PP_client_goal(target3)
+        # # self.interface.PP_client_goal(target3)
 
-        self.macros.pickupAllPiLits(points, False)
+        # self.macros.pickupAllPiLits(points, False)
         # point1 = self.interface.CoordConversion_client_goal([40.4741954, -104.9692536])
         # target = [point1]
         # estimatedPiLitAngle = self.interface.PP_client_goal(target)
