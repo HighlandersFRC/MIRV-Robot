@@ -9,10 +9,21 @@
     <param name="api_username" type="String" value="rover_dev"/>
     <param name="api_password" type="String" value="1234"/>
 
-    <!-- start control nodes -->
+    <!-- RTK GPS Start -->
+    <include file="$(find ublox_gps)/launch/ublox_device.launch">
+        <arg name="node_name" value="ublox_gps"/>
+        <arg name="param_file_name" value="zed-f9p"/>
+        <arg name="output" value="screen"/>
+        <arg name="respawn" value="true"/>
+        <arg name="respawn_delay" value="30"/>
+        <arg name="clear_params" value="false"/>
+    </include>
+    <!-- m8 GPS start -->
     <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true"/>
     <remap from="/ublox/fix" to="/gps/fix"/>
     <include file="$(find ublox_gps)/launch/ublox_device.launch" pass_all_args="true"/>
+
+    <!-- start control nodes -->
 
     <!-- Transforms Stack -->
     <param name="robot_description" textfile="$(find mirv_description)/urdf/mirv_real.urdf"/>
