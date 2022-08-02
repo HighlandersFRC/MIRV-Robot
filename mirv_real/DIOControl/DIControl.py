@@ -12,14 +12,18 @@ def digitalRead(pin):
 def main():
     pub1 = rospy.Publisher("/DIO/DI1", Bool, queue_size = 10)
     pub2 = rospy.Publisher("/DIO/DI2", Bool, queue_size = 10)
-    pub3 = rospy.Publisher("/DOI/DI3", Bool, queue_size = 10)
+    pub3 = rospy.Publisher("/DIO/DI3", Bool, queue_size = 10)
     rospy.init_node("DIPublisher")
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(2)
     while not rospy.is_shutdown():
-        pub1.publish(digitalRead(DI1))
-        pub2.publish(digitalRead(DI2))
-        pub3.publish(digitalRead(DI3))
+        pub1.publish(digitalRead(DI1)=="1")
+        pub2.publish(digitalRead(DI2)=="1")
+        pub3.publish(digitalRead(DI3)=="1")
         rate.sleep()
+        print(digitalRead(DI1)=="1\n")
+        print(digitalRead(DI2)=="1\n")
+        print(digitalRead(DI3)=="1\n")
+        print("\n")
 
 
 if __name__ == '__main__':

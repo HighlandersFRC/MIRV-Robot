@@ -38,10 +38,12 @@ class RoverInterface():
         self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
         self.TruckCordClient.wait_for_server()
         print("connected to Pure Truck CordinateAS")
+        self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
+        self.databaseClient.wait_for_server()
 
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
-        self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg)
+        self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg, queue_size=5)
 
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
 
@@ -114,8 +116,8 @@ class RoverInterface():
     def Calibrate_client_goal(self):
         mirv_control.msg.IMUCalibrationGoal.calibrate = True
         goal = mirv_control.msg.IMUCalibrationGoal
-        self.calibrationClient.send_goal(goal)
         self.intake_command_pub.publish(String("reset"))
+        self.calibrationClient.send_goal(goal)
         # self.intake_command_pub.publish(String("reset"))
         self.calibrationClient.wait_for_result()
         return self.calibrationClient.get_result().succeeded
@@ -174,6 +176,16 @@ class RoverInterface():
         self.TruckCordClient.wait_for_result()
         truckPoint = self.TruckCordClient.get_result()
         return ([truckPoint.truckCoordX, truckPoint.truckCoordY])
+
+    def getLatestSqlPoints(self):
+        mirv_control.msg.DatabaseGoal.SendLatest = True
+        self.goal = mirv_control.msg.DatabaseGoal
+        self.databaseClient.send_goal(self.goal)
+        self.databaseClient.wait_for_result()
+        placedPiLitLocations = self.databaseClient.get_result()
+        points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
+        print(points)
+        return points
 
     def feedback_callback(self, msg):
         pass
