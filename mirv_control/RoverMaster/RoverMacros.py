@@ -66,6 +66,9 @@ class roverMacros():
 
             time.sleep(4)
 
+    def pickupOnePiLit(self):
+        self.interface.pickup_client_goal("switch_right", 5)
+
     def pickupAllPiLits(self, lists, reverse):
         intakeSide = "switch_right"
         # points = [[lists.latitude[i], lists.longitude[i]] for i in range(len(lists.latitude))]
@@ -74,30 +77,29 @@ class roverMacros():
         for point in lists:
             print(f"POINT {point}")
             convertedPoint = self.interface.CoordConversion_client_goal(point)
-            placementX = convertedPoint[0]
-            placementY = convertedPoint[1]
+            # placementX = convertedPoint[0]
+            # placementY = convertedPoint[1]
 
-            currentLocationLongLat = [self.interface.getCurrentLatitude, self.interface.getCurrentLongitude]
+            # currentLocationLongLat = [self.interface.getCurrentLatitude, self.interface.getCurrentLongitude]
 
-            navSatFixMsg = NavSatFix()
-            navSatFixMsg.latitude = currentLocationLongLat[0]
-            navSatFixMsg.longitude = currentLocationLongLat[0]
-            navSatFixMsg.altitude = 1492
+            # navSatFixMsg = NavSatFix()
+            # navSatFixMsg.latitude = currentLocationLongLat[0]
+            # navSatFixMsg.longitude = currentLocationLongLat[0]
+            # navSatFixMsg.altitude = 1492
 
-            currentLocationConverted = self.interface.CoordConversion_client_goal(currentLocationLongLat)
+            # currentLocationConverted = self.interface.CoordConversion_client_goal(currentLocationLongLat)
 
-            currentX = currentLocationConverted[0]
-            currentY = currentLocationConverted[1]
+            # currentX = currentLocationConverted[0]
+            # currentY = currentLocationConverted[1]
 
-            # this is correct, x points forward from the truck, y points to the left
-            angleToPlacement = math.atan2(placementY, placementX)
-            distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
-            distanceBeforePiLit = distanceToPlacement - 1
+            # angleToPlacement = math.atan2(placementY, placementX)
+            # distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
+            # distanceBeforePiLit = distanceToPlacement - 1
 
-            pickupDistanceX = distanceBeforePiLit * math.cos(angleToPlacement)
-            pickupDistanceY = distanceBeforePiLit * math.sin(angleToPlacement)
+            # pickupDistanceX = distanceBeforePiLit * math.cos(angleToPlacement)
+            # pickupDistanceY = distanceBeforePiLit * math.sin(angleToPlacement)
 
-            convertedPoint = [pickupDistanceX, pickupDistanceY]
+            # convertedPoint = [pickupDistanceX, pickupDistanceY]
             target = [convertedPoint]
             print(target)
             self.interface.PP_client_goal(target)

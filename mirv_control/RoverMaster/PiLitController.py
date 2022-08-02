@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import Bool, String
+import time
 reversePin = "DO0"
 inhibitPin = "DO1"
 resetPin = "DO2"
@@ -32,7 +33,7 @@ class PiLitControl():
 
 
     def patternType(self, isWave):
-        self.pub.publish("{},{}".format(wavePin, isWave))
+        self.pub.publish("{},{}".format(patternPin, isWave))
 
 
     def resetcontroller(self):
