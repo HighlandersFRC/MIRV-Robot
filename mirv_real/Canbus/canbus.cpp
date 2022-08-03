@@ -346,13 +346,13 @@ class Intake {
 				if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
-					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.6 * side);
 				}
 			} else {
 				if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
-					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.6 * side);
 				}
 			}
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
@@ -385,6 +385,9 @@ class Intake {
 		}
 
 		if (mode == "deposit"){
+			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
+				startTime = time(NULL);
+			}
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);

@@ -23,8 +23,9 @@ exposeDO 323
 
 echo "seting up enviornment variables"
 source set_envs.sh
-source setenv.sh
+# source setenv.sh
 echo "set up enviornment variables"
 #roslaunch mirv_real mirv.launch
 
-
+export OPENBLAS_CORETYPE=ARMV8 python
+export OPENBLAS_CORETYPE=ARMV8 python3
