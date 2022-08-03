@@ -93,8 +93,8 @@ def get_taper_pi_lit_locations(lat_long, heading, lane_width, left_side=False):
 
 def get_spear_pi_lit_locations(lat_long, heading, lane_width):
     NUMBER_PI_LITS = 7
-    NUMBER_PI_LIT_LEFT = (NUMBER_PI_LITS - 1) / 2 + 1
-    NUMBER_PI_LIT_RIGHT = (NUMBER_PI_LITS - 1) / 2
+    NUMBER_PI_LIT_LEFT = int((NUMBER_PI_LITS - 1) / 2 + 1)
+    NUMBER_PI_LIT_RIGHT = int((NUMBER_PI_LITS - 1) / 2)
     LONGITUDINAL_DISTANCE_METERS = 10 * FEET_TO_METERS
     LATERAL_DISTANCE_METERS = lane_width / (NUMBER_PI_LITS - 1)
 
@@ -115,13 +115,15 @@ def get_spear_pi_lit_locations(lat_long, heading, lane_width):
     for i in range(1, NUMBER_PI_LIT_LEFT):
         location = getEndPoint(start_lat, start_long,
                                pi_lit_angle_start, pi_lit_distance * i)
-        pi_lit_locations.append(location)
+        loc_rev = [location[0], location[1]]
+        pi_lit_locations.append(loc_rev)
     point_lat = pi_lit_locations[-1][0]
     point_long = pi_lit_locations[-1][1]
     for i in range(1, NUMBER_PI_LIT_RIGHT):
         location = getEndPoint(point_lat, point_long,
                                pi_lit_angle_start, pi_lit_distance * i)
-        pi_lit_locations.append(location)
+        loc_rev = [location[0], location[1]]
+        pi_lit_locations.append(loc_rev)
 
     return pi_lit_locations
 
@@ -141,7 +143,7 @@ def test():
     heading = 45
     lane_width = 2
     lane_type = "general"
-    print(generate_pi_lit_formation(lat, long, heading, lane_width, lane_type))
+    print(generate_pi_lit_formation((lat, long), heading, lane_width, lane_type))
 
 
 if __name__ == "__main__":
