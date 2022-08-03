@@ -60,6 +60,9 @@ def update_general(timer_event):
         rospy.logwarn("Can adapter is not connected")
         rover_state.rover_state["health"]["drivetrain"] = "unavailable"
         rover_state.rover_state["health"]["intake"] = "unavailable"
+    elif "DOWN" in sp.getoutput("ip link show can0"):
+        rover_state.rover_state["health"]["drivetrain"] = "unavailable"
+        rover_state.rover_state["health"]["intake"] = "unavailable"
 
 def publish_status(timer_event):
     msg = json.dumps(rover_state.rover_state)
