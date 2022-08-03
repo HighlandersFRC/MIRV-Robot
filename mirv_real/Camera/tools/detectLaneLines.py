@@ -81,22 +81,33 @@ transform=transforms.Compose([
 
 detections = 0
 
+runningNeuralNetwork = True
+
 hFOV = 52
 horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
+def allowNeuralNetRun(msg):
+    cmd = msg.data
+    global runningNeuralNetwork
+    if(cmd == "lanes" or cmd == "both"):
+        runningNeuralNetwork = True
+    else:
+        runningNeuralNetwork = False
+
 # callback function when receiving a frame
 def gotFrame(data):
     print("GOT A FRAME")
-    initTime = time.time()
-    frame = ros_numpy.numpify(data.color_frame)
-    depthFrame = ros_numpy.numpify(data.depth_frame)
-    # print(frame.shape)
-    tensorImg = transform(frame).to(device)
-    if tensorImg.ndimension() == 3:
-        tensorImg = tensorImg.unsqueeze(0)
-    detections = laneLineDetect(tensorImg, frame, depthFrame)
+    if(runningNeuralNetwork):
+        initTime = time.time()
+        frame = ros_numpy.numpify(data.color_frame)
+        depthFrame = ros_numpy.numpify(data.depth_frame)
+        # print(frame.shape)
+        tensorImg = transform(frame).to(device)
+        if tensorImg.ndimension() == 3:
+            tensorImg = tensorImg.unsqueeze(0)
+        detections = laneLineDetect(tensorImg, frame, depthFrame)
     # cv2.imshow("detections", detections)
     # cv2.waitKey(1)
     # print("TIMEDIFF: ", time.time() - initTime)
@@ -209,7 +220,7 @@ def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
         laneOffsetFromCenterLeft = laneLineDepthLeft * math.sin(laneLineAngleInFrameLeft)
         laneOffsetFromCenterRight = laneLineDepthRight * math.sin(laneLineAngleInFrameRight)
 
-        depthToFarthestPoint = 237.74 #meters, converts to 200 ft
+        depthToFarthestPoint = 237.74
 
         laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
         piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
@@ -303,6 +314,7 @@ rospy.init_node('laneLineDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 
 placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
+rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
 try:
     rospy.spin()
