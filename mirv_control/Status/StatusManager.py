@@ -53,7 +53,7 @@ def pilit_mode_callback(mode):
     rover_state.rover_state["pi_lits"]["state"] = mode.data
 
 def update_general(timer_event):
-    if ("unavailable" or "degraded" or "unhealthy") in rover_state.rover_state["health"].values():
+    if any(value in rover_state.rover_state["health"].values() for value in ("unhealthy", "degraded", "unavailable")):
         rover_state.rover_state["health"]["general"] = "unhealthy"
     else:
         rover_state.rover_state["health"]["general"] = "healthy"
