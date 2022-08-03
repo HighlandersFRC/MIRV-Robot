@@ -34,13 +34,13 @@ class RoverController():
             self.rate.sleep()
 
     def main(self):
-        self.macros.pickupOnePiLit()
-        # print(self.interface.Calibrate_client_goal())
-        # point1 = self.interface.CoordConversion_client_goal([40.47392328681292, -104.96971142862967])
-        # # point2 = self.interface.CoordConversion_client_goal([40.47394062987316, -104.96967924212126])
-        # point3 = self.interface.CoordConversion_client_goal([40.47396868481405, -104.96964035009026])
-        # # point4 = self.interface.CoordConversion_client_goal([40.47399571956421, -104.96960279916378])
-        # point5 = self.interface.CoordConversion_client_goal([40.47401561305263, -104.96957128320763])
+        # self.macros.pickupOnePiLit()
+        print(self.interface.Calibrate_client_goal())
+        # point1 = self.interface.CoordConversion_client_goal([40.47418975564257, -104.96924959123135])
+        point2 = self.interface.CoordConversion_client_goal([40.47421934074345, -104.96928915381432])
+        point3 = self.interface.CoordConversion_client_goal([40.474175983263564,  -104.96935822069644])
+        point4 = self.interface.CoordConversion_client_goal([40.4740867177757, -104.96949836611748])
+        point5 = self.interface.CoordConversion_client_goal([40.4740362189614, -104.96944606304169])
         # # point6 = self.interface.CoordConversion_client_goal([40.47404009733802, -104.96954446111727])
 
         # # point1 = self.interface.CoordConversion_client_goal([40.473920199999995, -104.9697041])
@@ -54,7 +54,8 @@ class RoverController():
         # # point2 = self.interface.CoordConversion_client_goal([40.4738715, -104.9697072])
 
 
-        # target = [point1, point3, point5]
+        target = [point2, point3, point4, point5]
+        self.interface.PP_client_goal(target)
         # # target = [point1, point6]
 
         # self.macros.placeAllPiLits(target)
@@ -71,7 +72,7 @@ class RoverController():
 
         # # self.macros.placeAllPiLitsNoMovement(6)
 
-        # # self.interface.PP_client_goal(target)
+        # self.interface.PP_client_goal(target)
         
         # # mirv_control.msg.DatabaseGoal.SendLatest = True
         # # self.goal = mirv_control.msg.DatabaseGoal
