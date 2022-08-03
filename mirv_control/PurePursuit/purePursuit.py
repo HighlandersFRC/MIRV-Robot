@@ -8,7 +8,7 @@ import sys
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-import helpful_functions_lib as conversion_lib
+import mirv_description.helpful_functions_lib as conversion_lib
 
 class PurePursuit():
     wheelBaseWidth = 0.483
@@ -27,7 +27,7 @@ class PurePursuit():
     cordList = []
     currentTruckCord = [0,0,0]
     rosPubMsg = Twist()
-    pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
+    pub = rospy.Publisher("cmd_vel_test", Twist, queue_size=5)
 
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)

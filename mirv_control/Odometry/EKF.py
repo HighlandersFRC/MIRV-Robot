@@ -11,7 +11,7 @@ from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Float32
 from scipy import linalg
 
-import helpful_functions_lib as conversion_lib
+import mirv_description.helpful_functions_lib as conversion_lib
 
 class DDEkf:
 

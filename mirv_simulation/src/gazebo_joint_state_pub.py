@@ -17,7 +17,7 @@ import tf2_geometry_msgs
 import message_filters
 import copy
 from threading import Thread, Lock
-import helpful_functions_lib
+import mirv_description.helpful_functions_lib as helpful_functions_lib
 
 # JointState message definition: http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/JointState.html
 # JointState message example:

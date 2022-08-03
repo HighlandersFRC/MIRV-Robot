@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # import tf2_ros
 # import tf2_geometry_msgs
 
-import constants
+import mirv_description.constants as constants
 
 
 # # From https://answers.ros.org/question/323075/transform-the-coordinate-frame-of-a-pose-from-one-fixed-frame-to-another/

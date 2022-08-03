@@ -9,7 +9,7 @@ import sys
 sys.path.append('./')
 sys.path.append('../')
 sys.path.append('../../')
-import helpful_functions_lib
+import mirv_description.helpful_functions_lib
 from odometrystate import State
 
 state = State()
@@ -28,7 +28,7 @@ def gps_callback(pose):
 
 def imu_callback(msg):
     imu_quat = msg.orientation
-    euler_zyx = helpful_functions_lib.quat_from_pose2eul(msg.pose)
+    euler_zyx = mirv_description.helpful_functions_lib.quat_from_pose2eul(msg.pose)
     state.imu_angle = euler_zyx[0]
 
 

@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Grid1
       Splitter Ratio: 0.5
     Tree Height: 478
   - Class: rviz/Selection
@@ -35,7 +36,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 1
+      Cell Size: 5
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -268,7 +269,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 19.457380294799805
+      Distance: 64.80145263671875
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -276,9 +277,9 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.4726964831352234
-        Y: 0.28375300765037537
-        Z: 0.9493719935417175
+        X: 2.8984851837158203
+        Y: -0.6194766163825989
+        Z: 0.952747642993927
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -286,7 +287,7 @@ Visualization Manager:
       Near Clip Distance: 0.009999999776482582
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
-      Yaw: 3.135413885116577
+      Yaw: 3.1454150676727295
     Saved: ~
 Window Geometry:
   Displays:

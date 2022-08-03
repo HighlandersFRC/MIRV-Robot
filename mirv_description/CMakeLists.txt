@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
+catkin_python_setup()
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -216,3 +217,6 @@ include
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+# catkin_install_python(PROGRAMS scripts/helpful_functions_lib.py scripts/constants.py
+#     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

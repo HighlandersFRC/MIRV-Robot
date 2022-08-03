@@ -8,7 +8,7 @@ import numpy as np
 from sensor_msgs.msg import Imu
 from std_msgs.msg import Float64
 
-import helpful_functions_lib as conversion_lib
+import mirv_description.helpful_functions_lib as conversion_lib
 
 
 class imuFilter:
