@@ -35,6 +35,8 @@ class PurePursuit():
     angleToTarget = 0
     result = ASmsg.PurePursuitResult()
     lastlooptime = 0
+    upperBoundLine = []
+    lowerBoundLine = []
 
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)
@@ -81,7 +83,7 @@ class PurePursuit():
         print(self.robotCordList)
 
     def removeTargetPoint(self):
-        if (abs(self.robotCordList[0][2]) < 1.7 and len(self.robotCordList) > 1):
+        if (abs(self.robotCordList[0][2]) < 2.5 and len(self.robotCordList) > 1):
             self.robotCordList.pop(0)
             self.cordList.pop(0)
             print("removing target point")
@@ -96,6 +98,10 @@ class PurePursuit():
             self.cordList.pop(0)
             print("removing target point")
             return True
+
+    def checkOutside(self):
+        pass
+        
 
     # calulates wheel velocity's for that given frame
     def calculateSpeedSide(self, maxSpeed, x, y, la):
