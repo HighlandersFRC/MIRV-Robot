@@ -2,10 +2,23 @@
 from tablemanager import TableManager
 import rospy
 from mirv_description.msg import pilit_db_msg, pilit_status_msg
+from sensor_msgs.msg import NavSatFix
 import time
 import actionlib
 import mirv_control.msg as msg
 
+garage_table_cmd = """ CREATE TABLE IF NOT EXISTS garage (
+    timestamp double PRIMARY KEY,
+    latitude double NOT NULL,
+    longitude double NOT NULL,
+    altitude double NOT NULL
+); """
+garage_table_columns = (
+    "timestamp",
+    "latitude",
+    "longitude",
+    "altitude"
+)
 pilit_table_cmd = """ CREATE TABLE IF NOT EXISTS pilits (
     timestamp double PRIMARY KEY,
     right_count integer NOT NULL,
@@ -97,15 +110,22 @@ pilit_table_columns = (
     "p8_elev"
 )
 
-def pilit_callback(pilit_event):
+def pilit_callback(pilit_event: pilit_db_msg):
     t = TableManager()
     t.connect(r"/mnt/SSD/mirv.db")
     if pilit_event.deploy_or_retrieve.data == "deploy":
-        print("deployed pilit")
+        rospy.loginfo(f"Deployed pili at lat: {pilit_event.gps_pos.latitude} long: {pilit_event.gps_pos.longitude} alt: {pilit_event.gps_pos.altitude}t")
         t.deployed_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
     elif pilit_event.deploy_or_retrieve.data == "retrieve":
-        print("retrieved pilit")
+        rospy.loginfo(f"Retrieved pilit at lat: {pilit_event.gps_pos.latitude} long: {pilit_event.gps_pos.longitude} alt: {pilit_event.gps_pos.altitude}")
         t.retrieved_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
+    t.close()
+
+def garage_callback(gps_pos: NavSatFix):
+    t = TableManager()
+    t.connect(r"/mnt/SSD/mirv.db")
+    rospy.loginfo(f"Recorded garage position at lat: {gps_pos.latitude} long: {gps_pos.longitude} alt: {gps_pos.altitude}")
+    t.append_row("garage", garage_table_columns, (time.time(), gps_pos.latitude, gps_pos.longitude, gps_pos.altitude))
     t.close()
 
 def query_callback():
@@ -114,14 +134,21 @@ def query_callback():
     result = msg.DatabaseResult()
     t = TableManager()
     t.connect(r"/mnt/SSD/mirv.db")
-    data = t.get_last_row("pilits")
+    if goal == "pilits":
+        data = t.get_last_row("pilits")
+        result.latitude = data[5::5]
+        result.latitude = [lat for lat in result.latitude if lat != None]
+        result.longitude = data[6::5]
+        result.longitude = [long for long in result.longitude if long != None]
+        result.altitude = data[7::5]
+        result.altitude = [alt for alt in result.altitude if alt != None]
+    elif goal == "garage":
+        data = t.get_last_row("garage")
+        data = [0 for value in data if not value]
+        result.latitude = data[1]
+        result.longitude = data[2]
+        result.altitude = data[3]
     t.close()
-    result.latitude = data[5::5]
-    result.latitude = [lat for lat in result.latitude if lat != None]
-    result.longitude = data[6::5]
-    result.longitude = [long for long in result.longitude if long != None]
-    result.altitude = data[7::5]
-    result.altitude = [alt for alt in result.altitude if alt != None]
     action_server.set_succeeded(result)
 
 def publish_pilit_info(time):
@@ -155,8 +182,9 @@ action_server.start()
 tm = TableManager()
 tm.connect(r"/mnt/SSD/mirv.db")
 tm.create_table(pilit_table_cmd)
+tm.create_table(garage_table_cmd)
 tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))
 tm.close()
 
 while not rospy.is_shutdown():
-    pass
+    time.sleep(0.1)

@@ -3,13 +3,14 @@
     <arg name="wheel_radius" default="0.1905"/>
     <arg name="param_file_name" default="mirv"/>
     <arg name="param_file_dir" default="$(find mirv_real)/GPS/config"/>
-    <param name="api_host" type="String" value="20.236.228.19"/>
+    <param name="api_host" type="String" value="20.9.96.89"/>
     <param name="api_port" type="String" value="8080"/>
-    <param name="mirv_common_name" type="String" value="rover_1"/>
+    <param name="mirv_common_name" type="String" value="rover_69"/>
     <param name="api_username" type="String" value="rover_dev"/>
     <param name="api_password" type="String" value="1234"/>
-
     <!-- RTK GPS Start -->
+    <remap from="/ublox_gps/fix" to="/gps/fix"/>
+    <remap from="/ublox_gps/navpvt" to="/ublox/navpvt"/>
     <include file="$(find ublox_gps)/launch/ublox_device.launch">
         <arg name="node_name" value="ublox_gps"/>
         <arg name="param_file_name" value="zed-f9p"/>
@@ -18,10 +19,11 @@
         <arg name="respawn_delay" value="30"/>
         <arg name="clear_params" value="false"/>
     </include>
+    
     <!-- m8 GPS start -->
-    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true"/>
+    <!-- <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true"/>
     <remap from="/ublox/fix" to="/gps/fix"/>
-    <include file="$(find ublox_gps)/launch/ublox_device.launch" pass_all_args="true"/>
+    <include file="$(find ublox_gps)/launch/ublox_device.launch" pass_all_args="true"/> -->
 
     <!-- start control nodes -->
 
@@ -39,7 +41,7 @@
     <node name="Canbus" pkg="mirv_real" type="canbus"/>
     <node name="IMUFilter" pkg="mirv_real" type="imuFilter.py"/>
     <node name="ComputeStartHeading" pkg="mirv_control" type="HeadingFilter.py"/>
-    <!-- <node name="CloudConnection" pkg="mirv_control" type="CloudConnection.py"/> -->
+    <node name="CloudConnection" pkg="mirv_control" type="CloudConnection.py"/>
     <!-- <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/> -->
     <!-- <node name="camera" pkg="mirv_real" type="backCameraPublisher.py"/> -->
     <!-- <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/> -->

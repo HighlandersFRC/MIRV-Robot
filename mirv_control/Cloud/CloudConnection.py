@@ -38,8 +38,6 @@ ROVER_COMMON_NAME = rospy.get_param('mirv_common_name', ROVER_COMMON_NAME)
 USERNAME = rospy.get_param('api_username', USERNAME)
 PASSWORD = rospy.get_param('api_password', PASSWORD)
 
-CLOUD_HOST="20.9.96.89"
-
 if CLOUD_HOST is None:
     rospy.logerr("Please set the API_HOST Environment Variable to the IP of the cloud server")
     exit()
@@ -173,7 +171,7 @@ api_connected = False
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
 rospy.Subscriber("RoverStatus", String, statusSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
-
+availability_pub = rospy.Publisher('RoverAvailable', String, queue_size=1)
 
 
 # Class Describing how to send VideoStreams to the Cloud
@@ -242,8 +240,11 @@ async def offer(request):
         if pc.connectionState == "failed":
             await pc.close()
             pcs.discard(pc)
-
-
+        state = get_webrtc_state()
+        if state == "connected":
+            availability_pub.publish("Unavailable")
+        else:
+            availability_pub.publish("Available")
     # handle offer
     await pc.setRemoteDescription(offer)
 
@@ -269,7 +270,7 @@ def get_token():
     login_data = {'username': USERNAME, 'password': PASSWORD}
     print(login_data)
     try:
-        response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=5)
+        response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=20)
         contents = json.loads(response.content.decode('utf-8'))
         token = contents.get('access_token')
         print(token)
@@ -277,6 +278,8 @@ def get_token():
     except requests.exceptions.ReadTimeout:
         print("Unable to Acquire Token")
         return ""
+    except requests.exceptions.ConnectionError as e:
+        print("Unable to Acquire Token", e)
 
     
 

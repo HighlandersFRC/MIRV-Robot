@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import math
+from operator import truediv
 import cv2
 import os, sys
 import time
@@ -46,6 +47,8 @@ transform=transforms.Compose([
         ])
 
 intakeSide = "switch_right"
+
+runningNeuralNetwork = True
 # global intakeSide 
 # intakeSide = "switch_right"
 
@@ -66,16 +69,25 @@ def intakeCommandCallback(msg):
         # print("LEFT SIDE INTAKE")
         intakeSide = cmd
 
+def allowNeuralNetRun(msg):
+    cmd = msg.data
+    global runningNeuralNetwork
+    if(cmd == "piLit" or cmd == "both"):
+        runningNeuralNetwork = True
+    else:
+        runningNeuralNetwork = False
+
 def gotFrame(data):
     print("GOT A FRAME")
-    initTime = time.time()
-    frame = ros_numpy.numpify(data.color_frame)
-    depthFrame = ros_numpy.numpify(data.depth_frame)
-    # print(frame.shape)
-    tensorImg = transform(frame).to(device)
-    if tensorImg.ndimension() == 3:
-        tensorImg = tensorImg.unsqueeze(0)
-    piLitDetect(tensorImg, frame, depthFrame)
+    if(runningNeuralNetwork):
+        initTime = time.time()
+        frame = ros_numpy.numpify(data.color_frame)
+        depthFrame = ros_numpy.numpify(data.depth_frame)
+        # print(frame.shape)
+        tensorImg = transform(frame).to(device)
+        if tensorImg.ndimension() == 3:
+            tensorImg = tensorImg.unsqueeze(0)
+        piLitDetect(tensorImg, frame, depthFrame)
 
 def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
@@ -147,6 +159,7 @@ piLitModel = piLitModel.to(device)
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
 rospy.Subscriber("intake/command", String, intakeCommandCallback)
+rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
 try:
     rospy.spin()
