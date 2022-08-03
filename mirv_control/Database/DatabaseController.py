@@ -187,4 +187,4 @@ tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", No
 tm.close()
 
 while not rospy.is_shutdown():
-    pass
+    time.sleep(0.1)

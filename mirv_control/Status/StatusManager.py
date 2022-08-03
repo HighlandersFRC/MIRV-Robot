@@ -9,6 +9,7 @@ import helpful_functions_lib as conversion
 from roverstate import RoverState
 import json
 import subprocess as sp
+import time
 
 rover_state = RoverState()
 
@@ -52,15 +53,16 @@ def pilit_mode_callback(mode):
     rover_state.rover_state["pi_lits"]["state"] = mode.data
 
 def update_general(timer_event):
-    if "unavailable" in rover_state.rover_state["health"].values():
-        rover_state.rover_state["health"]["general"] = "unavailable"
+    if ("unavailable" or "degraded" or "unhealthy") in rover_state.rover_state["health"].values():
+        rover_state.rover_state["health"]["general"] = "unhealthy"
     else:
         rover_state.rover_state["health"]["general"] = "healthy"
     if not "OpenMoko" in sp.getoutput("lsusb"):
-        rospy.logwarn("Can adapter is not connected")
+        rospy.logwarn("CAN adapter is not connected")
         rover_state.rover_state["health"]["drivetrain"] = "unavailable"
         rover_state.rover_state["health"]["intake"] = "unavailable"
     elif "DOWN" in sp.getoutput("ip link show can0"):
+        rospy.logwarn("can0 network is down")
         rover_state.rover_state["health"]["drivetrain"] = "unavailable"
         rover_state.rover_state["health"]["intake"] = "unavailable"
 
@@ -79,6 +81,7 @@ camera_frames_sub = rospy.Subscriber("CameraFrames", Frames, camera_frames_callb
 heading_sub = rospy.Subscriber("EKF/Odometry", Odometry, heading_callback)
 pilit_state_sub = rospy.Subscriber("pilit/status", PilitStatus, pilit_state_callback)
 pilit_mode_sub = rospy.Subscriber("pilit/mode", String, pilit_mode_callback)
+status_sub = rospy.Subscriber("i", String, status_callback)
 
 
 
@@ -106,3 +109,4 @@ while not rospy.is_shutdown():
             rover_state.rover_state["health"]["sensors"] = state
         elif key == "encoders":
             rover_state.rover_state["health"]["drivetrain"] = state
+    time.sleep(0.1)
