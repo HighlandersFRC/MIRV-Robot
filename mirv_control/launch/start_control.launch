@@ -1,7 +1,10 @@
 <launch>
-    <arg name="initial_x" default="0.0"/>
     <!-- <node name="record" pkg="mirv_control" type="record.py"/> -->
-    <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
+    <node name="gps_to_local" pkg="mirv_control" type="globalToTruck.py"/>
+    <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/>
+    <node name="IMUFilter" pkg="mirv_real" type="imuFilter.py"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_broadcaster"  args="0 0 0 0 0 0 /map /odom 1"/>
 
     <!-- Start RViz for visualization -->
     <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mirv_description)/rviz/mirv_sensors.rviz" /> -->

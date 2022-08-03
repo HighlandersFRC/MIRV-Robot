@@ -137,9 +137,9 @@
   <xacro:dd_controller name="mirv_controller" wheelbase="${2*half_wheelbase}" wheel_diameter="${2*wheel_radius}" left_joint="wheel_fl_joint" right_joint="wheel_fr_joint" />
 
   <!-- LiDAR Hokuyo ust10lx -->
-  <xacro:sensor_hokuyo_ust10lx name="lidar" parent="base_link" color="black" visualize="true">
-    <origin xyz="0.25 0 0.4" rpy="0 0 0"/>
-  </xacro:sensor_hokuyo_ust10lx>
+<!--  <xacro:sensor_hokuyo_ust10lx name="lidar" parent="base_link" color="black" visualize="true">-->
+<!--    <origin xyz="0.25 0 0.4" rpy="0 0 0"/>-->
+<!--  </xacro:sensor_hokuyo_ust10lx>-->
 <!--  <xacro:sensor_hokuyo_ust10lx_gazebo name="lidar"/>-->
 
   <!-- Camera Orbbec Astra -->
@@ -165,14 +165,17 @@
 
   <!-- GPS w/ Variable Dropouts-->
   <xacro:sensor_standard_gps name="gps" parent="base_link" color="white"
+				  frame_id="map"
+				  topic_name="/gps/fix"
+				  velocity_topic_name="/gps/vel"
                   ref_lat="40.1021496545"
                   ref_long="-88.2267974168"
-                  ref_head="90.0"
+                  ref_head="50.0"
                   update_rate="10.0"
                   drift="0.0"
-                  noise="0.001"
-                  vel_drift="0.00001"
-                  vel_noise="0.00001">
+                  noise="0.5"
+                  vel_drift="0.00"
+                  vel_noise="0.1">
     <origin xyz="-0.14 0 0.12" rpy="0 0 0"/>
   </xacro:sensor_standard_gps>
 <!--  <xacro:sensor_standard_gps_gazebo name="gps" ref_lat="1" ref_long="2" ref_head="3" drift="4" vel_drift="5" noise="6" vel_noise="7" update_rate="8"/>-->

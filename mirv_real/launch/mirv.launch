@@ -13,13 +13,9 @@
     <param name="robot_description" textfile="$(find mirv_description)/urdf/mirv_real.urdf"/>
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
 
-    <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_broadcaster"  args="0 0 0 0 0 0 /map /odom 1"/>
-
     <!-- start real-world nodes -->
     <node name="Canbus" pkg="mirv_real" type="canbus"/>
-    <node name="IMUFilter" pkg="mirv_real" type="imuFilter.py"/>
     <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
     <!-- <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/> -->
     <node name="camera" pkg="mirv_real" type="cameraPublisher.py"/>
-    <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/>
 </launch>
