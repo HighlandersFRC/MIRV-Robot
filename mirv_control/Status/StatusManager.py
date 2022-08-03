@@ -59,14 +59,16 @@ def update_general(timer_event):
         rover_state.rover_state["health"]["general"] = "healthy"
     if not "OpenMoko" in sp.getoutput("lsusb"):
         rospy.logwarn("CAN adapter is not connected")
-        rover_state.rover_state["health"]["drivetrain"] = "unavailable"
-        rover_state.rover_state["health"]["intake"] = "unavailable"
+        rover_state.rover_state["health"]["drivetrain"] = "degraded"
+        rover_state.rover_state["health"]["intake"] = "degraded"
+        rover_state.rover_state["health"]["electronics"] = "degraded"
     elif "DOWN" in sp.getoutput("ip link show can0"):
-        rospy.logwarn("can0 network is down")
+        rospy.logwarn("can0 network is DOWN")
         rover_state.rover_state["health"]["drivetrain"] = "unavailable"
         rover_state.rover_state["health"]["intake"] = "unavailable"
 
 def publish_status(timer_event):
+    rover_state.update_timestamp()
     msg = json.dumps(rover_state.rover_state)
     rospy.loginfo(msg)
     status_pub.publish(msg)
@@ -81,7 +83,7 @@ camera_frames_sub = rospy.Subscriber("CameraFrames", Frames, camera_frames_callb
 heading_sub = rospy.Subscriber("EKF/Odometry", Odometry, heading_callback)
 pilit_state_sub = rospy.Subscriber("pilit/status", PilitStatus, pilit_state_callback)
 pilit_mode_sub = rospy.Subscriber("pilit/mode", String, pilit_mode_callback)
-status_sub = rospy.Subscriber("i", String, status_callback)
+status_sub = rospy.Subscriber("RoverAvailable", String, status_callback)
 
 
 
@@ -89,6 +91,7 @@ status_sub = rospy.Subscriber("i", String, status_callback)
 status_pub = rospy.Publisher("RoverStatus", String, queue_size = 10)
 status_pub_timer = rospy.Timer(rospy.Duration(5), publish_status)
 
+#General update timer
 update_general_timer = rospy.Timer(rospy.Duration(5), update_general)
 
 while not rospy.is_shutdown():
@@ -98,7 +101,7 @@ while not rospy.is_shutdown():
         if is_healthy:
             state = "healthy"
         else:
-            state = "unavailable"
+            state = "degraded"
         if key == "battery_voltage":
             rover_state.rover_state["health"]["power"] = state
         elif key == "gps":

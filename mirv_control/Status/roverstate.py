@@ -24,6 +24,7 @@ class Timer:
 class RoverState:
     def __init__(self):
         self.rover_state = {
+            "timestamp": int(time.time() * 1000),
             "rover_id": "rover_1",
             "state": ROVER_STATES[2],
             "status": ROVER_STATUSES[0],
@@ -61,3 +62,6 @@ class RoverState:
             "heading": Timer(1),
             "pilit_table": Timer(5)
         }
+
+    def update_timestamp(self):
+        self.rover_state["timestamp"] = int(time.time() * 1000)
