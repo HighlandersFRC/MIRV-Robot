@@ -372,7 +372,6 @@ class Intake {
 					leftConvMotor.Set(ControlMode::PercentOutput, 0.4);
 				}
 				if (time(NULL) - startTime > 2){
-					cout << "reset ";
 					mode = "reset";
 				}
 			} else {
@@ -487,6 +486,7 @@ class Intake {
 				mode = cmd;
 			}
 		}
+		//cout << mode;
 	}
 };
 
@@ -530,7 +530,7 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	double rightVelocity = -(V + w * (wheelBaseWidth / 2.0)) / wheelCircumference;
 
 
-	cout << "Setting Wheel Velocity: " << leftVelocity << ", " << rightVelocity<<"\n";
+	//cout << "Setting Wheel Velocity: " << leftVelocity << ", " << rightVelocity<<"\n";
 
 	//double leftVelocity = msg->data[0];
 	//double rightVelocity = msg->data[1];
@@ -566,7 +566,9 @@ void powerDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& powers){
 }
 
 void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
+	//cout << "Received intake command";
 	intake.setMode(cmd->data);
+	//cout << cmd->data;
 }
 
 int main(int argc, char **argv) {

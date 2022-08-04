@@ -64,8 +64,6 @@ class TableManager:
             return
         prev_entry = prev_entry[:-1]
         prev_times = prev_entry[3::5]
-        print(prev_entry)
-        print(prev_times)
         index = prev_times.index(min(prev_times))
         index *= 5
         index += 3
@@ -102,7 +100,6 @@ class TableManager:
                 distances.append(abs(gps_pos.latitude - prev_locations[0][i]) + abs(gps_pos.longitude - prev_locations[1][i]))
             else:
                 distances.append(9999999)
-        print(distances)
         if not distances:
             print("All pilits are already stored")
             return
@@ -118,7 +115,6 @@ class TableManager:
         new_entry[index * 5 + 5] = 0
         new_entry[index * 5 + 6] = 0
         new_entry[index * 5 + 7] = 0
-        print(new_entry)
         self.append_row("pilits", table_columns, tuple(new_entry))
 
     def get_rows(self, table_name):

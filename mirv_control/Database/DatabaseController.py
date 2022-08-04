@@ -134,7 +134,8 @@ def query_callback():
     result = msg.DatabaseResult()
     t = TableManager()
     t.connect(r"/mnt/SSD/mirv.db")
-    if goal == "pilits":
+    print(f"QUERY: {goal.table}")
+    if goal.table == "pilits":
         data = t.get_last_row("pilits")
         result.latitude = data[5::5]
         result.latitude = [lat for lat in result.latitude if lat != None]
@@ -142,7 +143,7 @@ def query_callback():
         result.longitude = [long for long in result.longitude if long != None]
         result.altitude = data[7::5]
         result.altitude = [alt for alt in result.altitude if alt != None]
-    elif goal == "garage":
+    elif goal.table == "garage":
         data = t.get_last_row("garage")
         data = [0 for value in data if not value]
         result.latitude = data[1]

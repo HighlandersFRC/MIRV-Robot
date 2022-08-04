@@ -19,10 +19,10 @@ class PurePursuit():
     logData = [0, 0]
     maxAngularVel = 1.5
     maxDriveSpeed = 0.75
-    currentMaxDriveSpeed = 0.75
+    currentMaxDriveSpeed = 0.5
     startingTheta = 3.14159/2
-    lookAheadDist = 4
-    allowedError = 0.5
+    lookAheadDist = 3
+    allowedError = 0.83
     allowedErrorDist = 0.04
     robotCordList = []
     cordList = []
@@ -93,7 +93,7 @@ class PurePursuit():
                 return True
         elif (self.robotCordList[0][2] < self.allowedError and len(self.robotCordList) <= 1):
             #calculate angle here
-            self.angleToTarget = math.degrees(math.atan2(self.robotCordList[0][1],self.robotCordList[0][0]))
+            self.angleToTarget = math.degrees(math.atan2(-self.robotCordList[0][1],self.robotCordList[0][0]))
             self.robotCordList.pop(0)
             self.cordList.pop(0)
             print("removing target point")
@@ -118,7 +118,7 @@ class PurePursuit():
             ################################
             angularVel = maxSpeed/cRad
             if(x<0):
-               angularVel = 2*angularVel 
+               angularVel = 2.5*angularVel 
             if(y >= 0):
                 RobotTwist = [maxSpeed, angularVel]
             else:

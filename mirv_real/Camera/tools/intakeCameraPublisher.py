@@ -2,16 +2,9 @@
 import math
 import cv2
 import time
-from pathlib import Path
 import depthai
-from numpy import asarray
 import rospy
-from rospy.numpy_msg import numpy_msg
-from rospy_tutorials.msg import Floats
 from std_msgs.msg import Float64
-from std_msgs.msg import Float64MultiArray
-from sensor_msgs.msg import Image, Imu
-from geometry_msgs.msg import Quaternion
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
 import sys

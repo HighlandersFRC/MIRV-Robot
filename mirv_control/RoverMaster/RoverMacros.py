@@ -10,6 +10,7 @@ import threading
 from PiLitController import PiLitControl as PiLitController
 from std_msgs.msg import String, Float64MultiArray
 import time
+import numpy as np
 
 from sensor_msgs.msg import NavSatFix
 
@@ -19,6 +20,10 @@ class roverMacros():
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
         self.interface = Interface
         self.limit_switches = [1, 1, 0, 0]
+    #     self.placementSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.placementCallback)
+
+    # def placementCallback(self, msg):
+    #     print(msg)
 
     def limit_switch_callback(self, switches):
         limit_switches = switches.data
@@ -66,6 +71,18 @@ class roverMacros():
 
             time.sleep(4)
 
+    def interceptPoint(self, finalPoint):
+        currentPoint = np.array(self.interface.getCurrentTruckOdom())
+        print(currentPoint)
+        print(finalPoint)
+        d = ((currentPoint[0]-finalPoint[0][0])**2 +(currentPoint[1]-finalPoint[0][1])**2)**0.5
+        UV = np.array([(currentPoint[0]-finalPoint[0][0])/d , (currentPoint[1]-finalPoint[0][1])/d])
+        d2 = d
+        if(d >1):
+            d2 = d-1
+        TP = currentPoint - UV*d2
+        return TP
+
     def pickupOnePiLit(self):
         self.interface.pickup_client_goal("switch_right", 5)
 
@@ -76,7 +93,8 @@ class roverMacros():
             lists.reverse()
         for point in lists:
             print(f"POINT {point}")
-            convertedPoint = self.interface.CoordConversion_client_goal(point)
+            convertedPoint = [self.interface.CoordConversion_client_goal(point)]
+            target = self.interceptPoint(convertedPoint)
             # placementX = convertedPoint[0]
             # placementY = convertedPoint[1]
 
@@ -99,11 +117,10 @@ class roverMacros():
             # pickupDistanceX = distanceBeforePiLit * math.cos(angleToPlacement)
             # pickupDistanceY = distanceBeforePiLit * math.sin(angleToPlacement)
 
-            # convertedPoint = [pickupDistanceX, pickupDistanceY]
-            target = [convertedPoint]
+            # convertedPoint = [pickupDistanceX, pickupDistanceY
             print(target)
-            self.interface.PP_client_goal(target)
-            self.interface.pickup_client_goal(intakeSide, 5)
+            angle = self.interface.PP_client_goal([target])
+            self.interface.pickup_client_goal(intakeSide, angle)
 
             print("finished pickup")
 

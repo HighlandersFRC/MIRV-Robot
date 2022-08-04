@@ -8,6 +8,9 @@
     <param name="mirv_common_name" type="String" value="rover_69"/>
     <param name="api_username" type="String" value="rover_dev"/>
     <param name="api_password" type="String" value="1234"/>
+    <arg name="respawn_delay" default="5" />
+    <arg name="respawn" value="true"/>
+    <arg name="clear_params" default="true" />
     <!-- RTK GPS Start -->
     <remap from="/ublox_gps/fix" to="/gps/fix"/>
     <remap from="/ublox_gps/navpvt" to="/ublox/navpvt"/>
@@ -46,11 +49,15 @@
     <!-- <node name="camera" pkg="mirv_real" type="backCameraPublisher.py"/> -->
     <!-- <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/> -->
     <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
-    <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"/>
-    <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py"/>
+    <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"
+        respawn="$(arg respawn)" 
+        respawn_delay="$(arg respawn_delay)"/>
+    <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py" output = "screen"/>
     <!-- <node name="laneLineDetector" pkg="mirv_real" type="detectLaneLines.py"/> -->
     <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py"/>
-    <node name="EKF" pkg="mirv_control" type="EKF.py"/>
+    <node name="EKF" pkg="mirv_control" type="EKF.py"        
+        respawn="$(arg respawn)" 
+        respawn_delay="$(arg respawn_delay)"/>
     <node name="CloudAlServer" pkg="mirv_control" type="CloudAlServer.py"/>
     <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py"/>
     <node name="DatabaseController" pkg="mirv_control" type="DatabaseController.py"/>
