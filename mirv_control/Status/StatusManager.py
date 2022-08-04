@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import PIL
 import rospy
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import JointState, NavSatFix
@@ -47,7 +48,7 @@ def pilit_state_callback(state):
     rover_state.timers["pilit_table"].reset()
     rover_state.rover_state["pi_lits"]["pi_lits_stowed_right"] = state.right_count.data
     rover_state.rover_state["pi_lits"]["pi_lits_stowed_left"] = state.left_count.data
-    rover_state.rover_state["pi_lits"]["deployed_pi_lits"] = [{"lat": state.latitudes.data[i], "long": state.longitudes.data[i], "elev": state.altitudes.data[i]} for i in range(len(state.latitudes.data))]
+    rover_state.rover_state["pi_lits"]["deployed_pi_lits"] = [{"lat": state.latitudes.data[i], "long": state.longitudes.data[i], "elev": state.altitudes.data[i]} for i in range(len(zip(state.latitudes.data, state.longitudes.data, state.altitudes.data)))]
 
 def pilit_mode_callback(mode):
     rover_state.rover_state["pi_lits"]["state"] = mode.data
