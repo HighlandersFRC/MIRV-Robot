@@ -89,7 +89,10 @@ class RoverInterface():
             points[i] = self.CoordConversion_client_goal(points[i])
 
         return points
-            
+    
+    def getDriveClients(self):
+        return self.calibrationClient, self.PPclient, self.pickupClient, self.cloudControllerClient,
+        
     def sendCmdVel(self, linear, angular):
         pass
     def updateOdometry(self, data):
