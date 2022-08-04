@@ -12,7 +12,7 @@ from sensor_msgs.msg import NavSatFix
 # goal message and the result message.
 import mirv_control.msg
 
-from mirv_description.msg import pilit_db_msg
+from mirv_control.msg import pilit_db_msg
 
 from sensor_msgs.msg import NavSatFix
 

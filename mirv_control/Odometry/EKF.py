@@ -11,7 +11,7 @@ from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Float32
 from scipy import linalg
 
-import helpful_functions_lib as conversion_lib
+import mirv_control.helpful_functions_lib as conversion_lib
 
 class DDEkf:
 
@@ -150,7 +150,7 @@ class DDEkf:
         # State prediction
         fwd_vel = self.LeftWheelVel + self.RightWheelVel
         ang_vel = self.RightWheelVel - self.LeftWheelVel
-        print(f'fwd_vel: {fwd_vel}, ang_vel: {ang_vel}')
+        # print(f'fwd_vel: {fwd_vel}, ang_vel: {ang_vel}')
         self.xp[0] = self.xf[0] + self.r/2 * dt * fwd_vel * np.cos(self.xf[2])
         self.xp[1] = self.xf[1] + self.r/2 * dt * fwd_vel * np.sin(self.xf[2])
         self.xp[2] = self.xf[2] + self.r/2 * (dt/self.L) * ang_vel
@@ -178,7 +178,7 @@ class DDEkf:
             kal = np.dot(pp, np.dot(self.H.T, SI))
             self.xf = self.xp + np.dot(kal, y)
             self.P = pp - np.dot(kal, np.dot(self.H, pp))
-            print(f'R: {self.R}\n, Q: {self.Q}\n, P: {self.P}')
+            # print(f'R: {self.R}\n, Q: {self.Q}\n, P: {self.P}')
 
         # Wrap the angle between -pi, pi
         while self.xf[2] > np.pi:

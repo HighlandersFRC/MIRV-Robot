@@ -12,7 +12,7 @@ from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image, Imu
 from geometry_msgs.msg import Quaternion
-from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
 import sys
 import signal

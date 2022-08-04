@@ -3,8 +3,8 @@ import rospy
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import JointState, NavSatFix
 from nav_msgs.msg import Odometry
-from mirv_description.msg import depth_and_color_msg as Frames
-from mirv_description.msg import pilit_status_msg as PilitStatus
+from mirv_control.msg import depth_and_color_msg as Frames
+from mirv_control.msg import pilit_status_msg as PilitStatus
 import helpful_functions_lib as conversion
 from roverstate import RoverState
 import json

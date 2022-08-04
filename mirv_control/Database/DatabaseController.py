@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from tablemanager import TableManager
 import rospy
-from mirv_description.msg import pilit_db_msg, pilit_status_msg
+from mirv_control.msg import pilit_db_msg, pilit_status_msg
 from sensor_msgs.msg import NavSatFix
 import time
 import actionlib
