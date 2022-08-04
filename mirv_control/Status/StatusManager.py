@@ -17,6 +17,10 @@ rover_state = RoverState()
 def battery_voltage_callback(voltage):
     rover_state.rover_state["battery_voltage"] = int(voltage.data)
     rover_state.rover_state["battery_percent"] = int(((voltage.data - 10.5) / (12.6 - 10.5)) * 100)
+    if rover_state.rover_state["battery_percent"] > 100:
+        rover_state.rover_state["battery_percent"] = 100
+    elif rover_state.rover_state["battery_percent"] < 0:
+        rover_state.rover_state["battery_percent"] = 0
     if voltage.data < 5:
         rover_state.rover_state["health"]["drivetrain"] = "unavailable"
         rover_state.rover_state["health"]["intake"] = "unavailable"
