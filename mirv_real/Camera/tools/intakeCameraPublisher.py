@@ -5,14 +5,7 @@ import time
 import depthai
 import rospy
 from std_msgs.msg import Float64
-<<<<<<< HEAD
 from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
-=======
-from std_msgs.msg import Float64MultiArray
-from sensor_msgs.msg import Image, Imu
-from geometry_msgs.msg import Quaternion
-from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
->>>>>>> bdc0cd32c51a913d138e4e3ff7425ec650929067
 from cv_bridge import CvBridge
 import sys
 import signal
