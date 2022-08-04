@@ -66,7 +66,7 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
-from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 
 br = CvBridge()
 
@@ -179,118 +179,160 @@ def laneLineDetect(img, frame, depthFrame):
     except:
         print("COULD NOT FIND LANE LINES, TRYING AGAIN")
 
-    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask_resized, laneType)
+    leftLane = lines[mirvLeftLaneNum]
+    rightLane = lines[mirvRightLaneNum]
 
-    if(piLitLocations != None):
-        locations = Float64MultiArray()
-        locations.data = piLitLocations
-        placementPublisher.publish(locations)
+    generateLines(depthFrame, leftLane, rightLane)
 
-# based on which lane, and width of lane, determine locations pi lits should be placed
-def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
-    i = 0
-    laneLineDepthLeft = 0
-    laneLineDepthRight = 0
-    laneLineAngleInFrameLeft = 0
-    laneLineAngleInFrameRight = 0
-    for row in laneLineMask:
-        nonZero = np.nonzero(row)
-        for column in nonZero:
-            for pixel in column:
-                laneLineDepthLeft = (depthFrame[i][pixel])/1000
-                laneLineAngleInFrameLeft = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                # print("Left Depth: ", laneLineDepthLeft)
-                if(laneLineDepthLeft != 0):
-                    break
-            if(laneLineDepthLeft != 0):
-                break
-            for pixel in reversed(column):
-                laneLineDepthRight = (depthFrame[i][pixel])/1000
-                laneLineAngleInFrameRight = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                # print("Right Depth: ", laneLineDepthRight)
-                if(laneLineDepthRight != 0):
-                    break
-            if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
-                break
-        if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
-            break
-        i += 1
+    # piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask_resized, laneType)
 
-    if(laneLineDepthLeft != 0 or laneLineDepthRight != 0):    
-        laneOffsetFromCenterLeft = laneLineDepthLeft * math.sin(laneLineAngleInFrameLeft)
-        laneOffsetFromCenterRight = laneLineDepthRight * math.sin(laneLineAngleInFrameRight)
+    # if(piLitLocations != None):
+    #     locations = Float64MultiArray()
+    #     locations.data = piLitLocations
+    #     placementPublisher.publish(locations)
 
-        depthToFarthestPoint = 237.74
+def generateLines(depthFrame, leftLane, rightLane):
+    leftLineSlope = 0
+    rightLineSlope = 0
+    for x1,y1,x2,y2 in leftLane:
+        closeDepthLeft = depthFrame[y1][x1]
+        closeLeftX = closeDepthLeft * math.cos(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
+        closeLeftY = closeDepthLeft * math.sin(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
 
-        laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
-        piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
+        closeLeftX = (closeLeftX * math.cos(theta)) - (closeLeftY * math.sin(theta))
+        closeLeftY = (closeLeftX * math.sin(theta)) + (closeLeftY * math.cos(theta))
 
-        # print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
+        farDepthLeft = depthFrame[y2][x2]
+        farLeftX = farDepthLeft * math.cos(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
+        farLeftY = farDepthLeft * math.sin(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
 
-        piLitIntervalX = laneWidth/7
-        lineSlope = piLitPlacementLineLength/laneWidth
+        farLeftX = (farLeftX * math.cos(theta)) - (farLeftY * math.sin(theta))
+        farLeftY = (farLeftX * math.sin(theta)) + (farLeftY * math.cos(theta))
 
-        piLitPlacementList = []
+        leftLineSlope = (farLeftY - closeLeftY)/(farLeftX - closeLeftX)
 
-        yTruckOffset = 3.048 #meters, converts to 10 ft
+        leftYIntercept = (-(leftLineSlope) * closeLeftX) + closeleftY
 
-        if(laneType == "LEFT"):
-            # 8 loop throughs for each pi lit
-            for i in range(8):
-                piLitLocationX = laneWidth - (i * piLitIntervalX)
-                piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
+        leftSideLaneWidth = -leftYIntercept/leftLineSlope
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])        
-        elif(laneType == "RIGHT"):
-            # 8 loop throughs for each pi lit
-            for i in range(8):
-                piLitLocationX = i * piLitIntervalX
-                piLitLocationY = (lineSlope * (piLitLocationX))
+    for x1,y1,x2,y2 in rightLane:
+        closeDepthRight = depthFrame[y1][x1]
+        closeRightX = closeDepthRight * math.cos(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
+        closeRightY = closeDepthRight * math.sin(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-        elif(laneType == "CENTER"):
-            spearSidesDistance = depthToFarthestPoint/2
-            lineSlope = ((depthToFarthestPoint - spearSidesDistance)/laneWidth)
-            for i in range(4):
-                piLitLocationX = i * piLitIntervalX
-                piLitLocationY = (lineSlope * piLitLocationX) + spearSidesDistance
+        closeRightX = (closeRightX * math.cos(theta)) - (closeRightY * math.sin(theta))
+        closeRightY = (closeRightX * math.sin(theta)) + (closeRightY * math.cos(theta))
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            for i in range(4, 8):
-                piLitLocationX = i * piLitIntervalX
-                piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
-            
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-        theta = 0
+        farDepthRight = depthFrame[y2][x2]
+        farRightX = farDepthRight * math.cos(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
+        farRightY = farDepthRight * math.sin(math.radians((x1 - horizontalPixels/2) * degreesPerPixel))
 
-        for i in range(len(piLitPlacementList)):
-            location = piLitPlacementList[i]
-            x = (location[0] * math.cos(theta)) - (y * math.sin(theta))
-            y = (location[0] * math.sin(theta)) + (y * math.cos(theta))
-            piLitPlacementList[i] = [x - laneOffsetFromCenterLeft, y + yTruckOffset]
+        farRightX = (farRightX * math.cos(theta)) - (farRightY * math.sin(theta))
+        farRightY = (farRightX * math.sin(theta)) + (farRightY * math.cos(theta))
+
+        rightLineSlope = (farRightY - closeRightY)/(farRightX - closeRightX)
         
-        print(piLitPlacementList)
+        rightYIntercept = (-(rightLineSlope) * closeRightX) + closeRightY
 
-        return piLitPlacementList
-    else:
-        return None
+        rightSideLaneWidth = rightYIntercept/rightLineSlope
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--weights', nargs='+', type=str, default='mirv_real/Camera/weights/End-to-end.pth', help='model.pth path(s)')
-# parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
-# parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-# parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
-# parser.add_argument('--iou-thres', type=float, default=0.75, help='IOU threshold for NMS')
-# parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-# parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
-# parser.add_argument('--augment', action='store_true', help='augmented inference')
-# parser.add_argument('--update', action='store_true', help='update all models')
+    laneWidth = leftSideLaneWidth + rightSideLaneWidth
 
-# api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
+    boundingInformation = [leftLineSlope, leftYIntercept, rightLineSlope, rightYIntercept]
 
-# opt = parser.parse_args()
+    boundingMsg = Float64MultiArray()
+    boundingMsg.data = boundingInformation
 
-# mp.set_start_method('spawn', force=True)
+    laneBoundPublisher.publish(boundingMsg)
+
+# # based on which lane, and width of lane, determine locations pi lits should be placed
+# def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
+#     i = 0
+#     laneLineDepthLeft = 0
+#     laneLineDepthRight = 0
+#     laneLineAngleInFrameLeft = 0
+#     laneLineAngleInFrameRight = 0
+#     for row in laneLineMask:
+#         nonZero = np.nonzero(row)
+#         for column in nonZero:
+#             for pixel in column:
+#                 laneLineDepthLeft = (depthFrame[i][pixel])/1000
+#                 laneLineAngleInFrameLeft = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
+#                 # print("Left Depth: ", laneLineDepthLeft)
+#                 if(laneLineDepthLeft != 0):
+#                     break
+#             if(laneLineDepthLeft != 0):
+#                 break
+#             for pixel in reversed(column):
+#                 laneLineDepthRight = (depthFrame[i][pixel])/1000
+#                 laneLineAngleInFrameRight = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
+#                 # print("Right Depth: ", laneLineDepthRight)
+#                 if(laneLineDepthRight != 0):
+#                     break
+#             if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
+#                 break
+#         if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
+#             break
+#         i += 1
+
+#     if(laneLineDepthLeft != 0 or laneLineDepthRight != 0):    
+#         laneOffsetFromCenterLeft = laneLineDepthLeft * math.sin(laneLineAngleInFrameLeft)
+#         laneOffsetFromCenterRight = laneLineDepthRight * math.sin(laneLineAngleInFrameRight)
+
+#         depthToFarthestPoint = 237.74
+
+#         laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
+#         piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
+
+#         # print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
+
+#         piLitIntervalX = laneWidth/7
+#         lineSlope = piLitPlacementLineLength/laneWidth
+
+#         piLitPlacementList = []
+
+#         yTruckOffset = 3.048 #meters, converts to 10 ft
+
+#         if(laneType == "LEFT"):
+#             # 8 loop throughs for each pi lit
+#             for i in range(8):
+#                 piLitLocationX = laneWidth - (i * piLitIntervalX)
+#                 piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
+
+#                 piLitPlacementList.append([piLitLocationX, piLitLocationY])        
+#         elif(laneType == "RIGHT"):
+#             # 8 loop throughs for each pi lit
+#             for i in range(8):
+#                 piLitLocationX = i * piLitIntervalX
+#                 piLitLocationY = (lineSlope * (piLitLocationX))
+
+#                 piLitPlacementList.append([piLitLocationX, piLitLocationY])
+#         elif(laneType == "CENTER"):
+#             spearSidesDistance = depthToFarthestPoint/2
+#             lineSlope = ((depthToFarthestPoint - spearSidesDistance)/laneWidth)
+#             for i in range(4):
+#                 piLitLocationX = i * piLitIntervalX
+#                 piLitLocationY = (lineSlope * piLitLocationX) + spearSidesDistance
+
+#                 piLitPlacementList.append([piLitLocationX, piLitLocationY])
+#             for i in range(4, 8):
+#                 piLitLocationX = i * piLitIntervalX
+#                 piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
+            
+#                 piLitPlacementList.append([piLitLocationX, piLitLocationY])
+#         theta = 0
+
+#         for i in range(len(piLitPlacementList)):
+#             location = piLitPlacementList[i]
+#             x = (location[0] * math.cos(theta)) - (y * math.sin(theta))
+#             y = (location[0] * math.sin(theta)) + (y * math.cos(theta))
+#             piLitPlacementList[i] = [x - laneOffsetFromCenterLeft, y + yTruckOffset]
+        
+#         print(piLitPlacementList)
+
+#         return piLitPlacementList
+#     else:
+#         return None
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
@@ -300,10 +342,6 @@ half = device.type != 'cpu'  # half precision only supported on CUDA
 
 # Load model
 model = get_net(cfg)
-# model = torch.load(os.path.expanduser('~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/End-to-end.pth'))
-# checkpoint = torch.load('~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/End-to-end.pth', map_location= device)
-# model.load_state_dict(checkpoint['state_dict'])
-# model = model.to(device)
 
 model.eval()
 model.cuda()
@@ -314,6 +352,8 @@ rospy.init_node('laneLineDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 
 placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
+
+laneBoundPublisher = rospy.Publisher("laneBound", Float64MultiArray, queue_size = 1)
 rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
 try:

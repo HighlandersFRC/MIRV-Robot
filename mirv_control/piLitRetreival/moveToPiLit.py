@@ -43,14 +43,14 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.017
+        self.kP = 0.0175
         self.kI = 0
         self.kD = 2
         self.setPoint = 0
 
-        self.estimatekP = 0.01
+        self.estimatekP = 0.02
         self.estimatekI = 0
-        self.estimatekD = 0.03
+        self.estimatekD = 2
         self.estimateSetPoint = 0
 
         self.driveToPiLit = False
@@ -162,36 +162,37 @@ class piLitPickup:
             self.allowSearch = False
 
     def turnToPiLit(self):
-        self.allowSearch = True
         print("GOT PICKUP CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO PICKUP PI LIT!")
         # running = goal.runPID
         intakeSide = goal.intakeSide
         estimatedPiLitAngle = goal.estimatedPiLitAngle
-        estimatedPiLitAngle = estimatedPiLitAngle + 360
-        estimatedPiLitAngle = estimatedPiLitAngle%360
+        # estimatedPiLitAngle = 360 - goal.estimatedPiLitAngle
+        # # estimatedPiLitAngle = estimatedPiLitAngle + 360
+        # estimatedPiLitAngle = estimatedPiLitAngle%360
         estimatedPiLitAngle = estimatedPiLitAngle + self.imu
         estimatedPiLitAngle = estimatedPiLitAngle%360
         self.estimatePID.setSetPoint(estimatedPiLitAngle)
         self._result.finished = False
      
-        # while(self.reachedEstimate == False and self.piLitAngle == 0):
-        #     print("TRYING TO REACH ESTIMATE")
-        #     result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
-        #     print("SETPOINT: ", estimatedPiLitAngle, " CURRENT ANGLE: ", self.imu)
+        while(self.reachedEstimate == False and self.piLitAngle == 0):
+            # print("TRYING TO REACH ESTIMATE")
+            result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
+            # print("SETPOINT: ", estimatedPiLitAngle, " CURRENT ANGLE: ", self.imu)
 
-        #     self.velocityMsg.linear.x = 0
-        #     self.velocityMsg.angular.z = result
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = result
 
-        #     self.velocitydrive_pub.publish(self.velocityMsg)
+            self.velocitydrive_pub.publish(self.velocityMsg)
 
-        #     if(abs(self.imu - estimatedPiLitAngle) < 5):
-        #         print("GOT TO ESTIMATED TARGET!!!!")
-        #         self.reachedEstimate = True
-        #         self.velocityMsg.linear.x = 0
-        #         self.velocityMsg.angular.z = 0
-        #         self.velocitydrive_pub.publish(self.velocityMsg)
+            if(abs(self.imu - estimatedPiLitAngle) < 5):
+                # print("GOT TO ESTIMATED TARGET!!!!")
+                self.reachedEstimate = True
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = 0
+                self.velocitydrive_pub.publish(self.velocityMsg)
+        self.allowSearch = True
 
         intakeInitTime = time.time()
         self.allowSearch = False
@@ -207,7 +208,7 @@ class piLitPickup:
 
         searchStartTime = time.time()
         
-        while(abs(searchStartTime - time.time()) < 12):
+        while(abs(searchStartTime - time.time()) < 9):
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
@@ -246,7 +247,7 @@ class piLitPickup:
                 self._feedback.result = result
                 self._as.publish_feedback(self._feedback)
 
-                if(abs(self.imu - self.setPoint) < 6.5 and abs(result) < 0.05):
+                if(abs(self.imu - self.setPoint) < 8 and abs(result) < 0.05):
                     print("GOT TO TARGET!!!!")
                     self.driveToPiLit = True
                     self.runPID = False
@@ -260,7 +261,7 @@ class piLitPickup:
                 self.moveToPiLit()
             else:
                 storeInitTime = time.time()
-                while(time.time() < 3):
+                while(time.time() - storeInitTime < 3):
                     self.set_intake_state("store")
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0

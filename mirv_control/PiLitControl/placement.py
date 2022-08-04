@@ -111,7 +111,7 @@ def get_spear_pi_lit_locations(lat_long, heading, lane_width):
     pi_lit_distance = math.sqrt(
         LONGITUDINAL_DISTANCE_METERS**2 + LATERAL_DISTANCE_METERS**2)
 
-    pi_lit_locations = [(start_lat, start_long)]
+    pi_lit_locations = [[start_lat, start_long]]
     for i in range(1, NUMBER_PI_LIT_LEFT):
         location = getEndPoint(start_lat, start_long,
                                pi_lit_angle_start, pi_lit_distance * i)

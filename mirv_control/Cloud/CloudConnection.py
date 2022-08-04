@@ -18,7 +18,7 @@ from std_msgs.msg import String
 from aiohttp import web
 from av import VideoFrame
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
-from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from time import sleep
 from threading import Thread
 from signal import signal, SIGINT

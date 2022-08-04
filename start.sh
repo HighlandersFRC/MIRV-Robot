@@ -27,5 +27,6 @@ source set_envs.sh
 echo "set up enviornment variables"
 #roslaunch mirv_real mirv.launch
 
-export OPENBLAS_CORETYPE=ARMV8 python
-export OPENBLAS_CORETYPE=ARMV8 python3
+#export OPENBLAS_CORETYPE=ARMV8 python
+#export OPENBLAS_CORETYPE=ARMV8 python3
+export OPENBLAS_CORETYPE=ARMV8

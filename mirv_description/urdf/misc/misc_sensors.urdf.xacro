@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<robot name="misc_sensors" xmlns:xacro="http://ros.org/wiki/xacro">
-	<!-- ====================================================
-                         	Misc
-     ========================================================= -->
-	<xacro:include filename="$(find mirv_description)/urdf/misc/sonar.urdf.xacro" />
-	<xacro:include filename="$(find mirv_description)/urdf/misc/approximate_battery.urdf.xacro" />
-
-</robot>

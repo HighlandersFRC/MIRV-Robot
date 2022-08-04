@@ -7,18 +7,16 @@ import time
 from std_msgs.msg import Float64, Float64MultiArray, String
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
+from geometry_msgs.msg import Twist
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
 import mirv_control.msg
 
-from mirv_description.msg import pilit_db_msg
+from mirv_control.msg import pilit_db_msg
 
 from sensor_msgs.msg import NavSatFix
 
-def convertToOneD(TwoDArray):
-    for point in TwoDArray:
-        pass
 
 class RoverInterface():
     def __init__(self):
@@ -46,11 +44,15 @@ class RoverInterface():
 
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
+        self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
         self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg, queue_size=5)
+        self.simpleDrivePub = rospy.Publisher("/cmd_vel", Twist, queue_size = 5)
 
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
 
-        self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
+        # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
+
+        self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
 
         self.isJoystickControl = True
         self.isPurePursuitControl = False
@@ -61,16 +63,52 @@ class RoverInterface():
         self.longitude = 0
         self.altitude = 0
 
+        self.xPos = 0
+        self.yPos = 0
+
         self.placementPoints = []
 
     def updatePlacementPoints(self, data):
-        self.placementPoints = data.data
+        # print(data.data)
+        self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
 
+    def convertOneDimArrayToTwoDim(self, points):
+        pointList = []
+        # print((len(points))/2)
+        for i in range(int((len(points))/2)):
+            tempX = points[0]
+            points.pop(0)
+            tempY = points[0]
+            points.pop(0)
+            pointList.append([tempX, tempY])
+        return pointList
+                # print(pointList)
+
+    def getPlacementPoints(self):
+        return self.placementPoints
+
+    def convertPointsToTruckCoordinates(self, points):
+        for i in range(len(points)):
+            points[i] = self.CoordConversion_client_goal(points[i])
+
+        return points
+    
+    def getDriveClients(self):
+        return self.calibrationClient, self.PPclient, self.pickupClient, self.cloudControllerClient,
+        
+    def sendCmdVel(self, linear, angular):
+        pass
     def updateOdometry(self, data):
         self.latitude = data.latitude
         self.longitude = data.longitude
         self.altitude = data.altitude
 
+    def updateTruckOdom(self, data):
+        self.xPos = data.pose.pose.position.x
+        self.yPos = data.pose.pose.position.y
+
+    def getCurrentTruckOdom(self):
+        return ([self.xPos, self.yPos])
     def getCurrentLatitude(self):
         return self.latitude
 
@@ -119,9 +157,9 @@ class RoverInterface():
     def Calibrate_client_goal(self):
         mirv_control.msg.IMUCalibrationGoal.calibrate = True
         goal = mirv_control.msg.IMUCalibrationGoal
+        time.sleep(4)
         self.intake_command_pub.publish(String("reset"))
         self.calibrationClient.send_goal(goal)
-        # self.intake_command_pub.publish(String("reset"))
         self.calibrationClient.wait_for_result()
         return self.calibrationClient.get_result().succeeded
 
@@ -192,13 +230,13 @@ class RoverInterface():
         return ([truckPoint.truckCoordX, truckPoint.truckCoordY])
 
     def getLatestSqlPoints(self):
-        mirv_control.msg.DatabaseGoal.SendLatest = True
+        mirv_control.msg.DatabaseGoal.table = "pilits"
         self.goal = mirv_control.msg.DatabaseGoal
         self.databaseClient.send_goal(self.goal)
         self.databaseClient.wait_for_result()
         placedPiLitLocations = self.databaseClient.get_result()
         points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
-        print(points)
+        print("PICKUP POINTS: ", points)
         return points
 
     def feedback_callback(self, msg):
