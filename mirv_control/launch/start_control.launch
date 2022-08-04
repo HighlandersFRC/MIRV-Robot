@@ -1,8 +1,11 @@
 <launch>
     <!-- <node name="record" pkg="mirv_control" type="record.py"/> -->
     <node name="gps_to_local" pkg="mirv_control" type="globalToTruck.py"/>
-    <node name="pure_pursuit" pkg="mirv_control" type="purePursuit.py" output="screen"/>
+    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py" output="screen"/>
     <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/>
+<!--    <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"-->
+<!--        respawn="$(arg respawn)"-->
+<!--        respawn_delay="$(arg respawn_delay)"/>-->
     <node name="IMUFilter" pkg="mirv_control" type="imuFilter.py"/>
     <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py"/>
     <node name="ComputeStartHeading" pkg="mirv_control" type="HeadingFilter.py"/>
@@ -10,5 +13,5 @@
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_broadcaster"  args="0 0 0 0 0 0 /map /odom 1"/>
 
     <!-- Start RViz for visualization -->
-    <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mirv_control)/rviz/mirv_sensors.rviz" /> -->
+<!--     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mirv_control)/rviz/mirv_sensors.rviz" />-->
 </launch>
