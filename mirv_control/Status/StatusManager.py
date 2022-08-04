@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+import PIL
 import rospy
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import JointState, NavSatFix
 from nav_msgs.msg import Odometry
-from mirv_description.msg import depth_and_color_msg as Frames
-from mirv_description.msg import pilit_status_msg as PilitStatus
+from mirv_control.msg import depth_and_color_msg as Frames
+from mirv_control.msg import pilit_status_msg as PilitStatus
 import helpful_functions_lib as conversion
 from roverstate import RoverState
 import json
@@ -16,6 +17,10 @@ rover_state = RoverState()
 def battery_voltage_callback(voltage):
     rover_state.rover_state["battery_voltage"] = int(voltage.data)
     rover_state.rover_state["battery_percent"] = int(((voltage.data - 10.5) / (12.6 - 10.5)) * 100)
+    if rover_state.rover_state["battery_percent"] > 100:
+        rover_state.rover_state["battery_percent"] = 100
+    elif rover_state.rover_state["battery_percent"] < 0:
+        rover_state.rover_state["battery_percent"] = 0
     if voltage.data < 5:
         rover_state.rover_state["health"]["drivetrain"] = "unavailable"
         rover_state.rover_state["health"]["intake"] = "unavailable"
@@ -47,7 +52,7 @@ def pilit_state_callback(state):
     rover_state.timers["pilit_table"].reset()
     rover_state.rover_state["pi_lits"]["pi_lits_stowed_right"] = state.right_count.data
     rover_state.rover_state["pi_lits"]["pi_lits_stowed_left"] = state.left_count.data
-    rover_state.rover_state["pi_lits"]["deployed_pi_lits"] = [{"lat": state.latitudes.data[i], "long": state.longitudes.data[i], "elev": state.altitudes.data[i]} for i in range(len(state.latitudes.data))]
+    rover_state.rover_state["pi_lits"]["deployed_pi_lits"] = [{"lat": state.latitudes.data[i], "long": state.longitudes.data[i], "elev": state.altitudes.data[i]} for i in range(len(list(zip(state.latitudes.data, state.longitudes.data, state.altitudes.data))))]
 
 def pilit_mode_callback(mode):
     rover_state.rover_state["pi_lits"]["state"] = mode.data

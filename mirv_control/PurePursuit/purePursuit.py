@@ -9,9 +9,8 @@ import sys
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-import helpful_functions_lib as conversion_lib
 import mirv_control.msg as ASmsg
-
+import mirv_control.helpful_functions_lib as conversion_lib
 
 class PurePursuit():
     wheelBaseWidth = 0.483

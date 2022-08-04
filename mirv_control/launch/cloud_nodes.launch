@@ -1,0 +1,8 @@
+<launch>
+    <!-- Nodes to communicate with the cloud connection -->
+    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py"/>
+    <node name="DatabaseController" pkg="mirv_control" type="DatabaseController.py"/>
+    <node name="StatusManager" pkg="mirv_control" type="StatusManager.py"/>
+    <node name="CloudConnection" pkg="mirv_control" type="CloudConnection.py"/>
+    <node name="Cloud" pkg="mirv_control" type="roverClient.py"/>
+</launch>
