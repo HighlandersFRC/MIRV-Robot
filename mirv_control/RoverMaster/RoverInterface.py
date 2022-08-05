@@ -94,7 +94,7 @@ class RoverInterface():
         return points
     
     def getDriveClients(self):
-        return self.calibrationClient, self.PPclient, self.pickupClient, self.cloudControllerClient,
+        return self.calibrationClient, self.PPclient, self.pickupClient, self.cloudControllerClient
         
     def sendCmdVel(self, linear, angular):
         pass
