@@ -46,7 +46,7 @@ def state_callback(state):
     rover_state.rover_state["state"] = state.data
 
 def status_callback(status):
-    rover_state.rover_state["state"] = status.data
+    rover_state.rover_state["status"] = status.data
 
 def pilit_state_callback(state):
     rover_state.timers["pilit_table"].reset()
@@ -58,19 +58,19 @@ def pilit_mode_callback(mode):
     rover_state.rover_state["pi_lits"]["state"] = mode.data
 
 def update_general(timer_event):
-    if any(value in rover_state.rover_state["health"].values() for value in ("unhealthy", "degraded", "unavailable")):
-        rover_state.rover_state["health"]["general"] = "unhealthy"
+    if any(value in rover_state.rover_state["subsystems"].values() for value in ("unhealthy", "degraded", "unavailable")):
+        rover_state.rover_state["subsystems"]["general"] = {"health": "unhealthy"}
     else:
-        rover_state.rover_state["health"]["general"] = "healthy"
+        rover_state.rover_state["subsystems"]["general"] = {"health": "healthy"}
     if not "OpenMoko" in sp.getoutput("lsusb"):
         rospy.logwarn("CAN adapter is not connected")
-        rover_state.rover_state["health"]["drivetrain"] = "degraded"
-        rover_state.rover_state["health"]["intake"] = "degraded"
-        rover_state.rover_state["health"]["electronics"] = "degraded"
+        rover_state.rover_state["subsystems"]["drivetrain"] = {"health": "degraded"}
+        rover_state.rover_state["subsystems"]["intake"] = {"health": "degraded"}
+        rover_state.rover_state["subsystems"]["electronics"] = {"health": "degraded"}
     elif "DOWN" in sp.getoutput("ip link show can0"):
         rospy.logwarn("can0 network is DOWN")
-        rover_state.rover_state["health"]["drivetrain"] = "unavailable"
-        rover_state.rover_state["health"]["intake"] = "unavailable"
+        rover_state.rover_state["subsystems"]["drivetrain"] = {"health": "unavailable"}
+        rover_state.rover_state["subsystems"]["intake"] = {"health": "unavailable"}
 
 def publish_status(timer_event):
     rover_state.update_timestamp()
@@ -104,17 +104,17 @@ while not rospy.is_shutdown():
     for key in rover_state.timers:
         is_healthy = rover_state.timers[key].update()
         if is_healthy:
-            state = "healthy"
+            state = {"health": "healthy"}
         else:
-            state = "degraded"
+            state = {"health": "degraded"}
         if key == "battery_voltage":
-            rover_state.rover_state["health"]["power"] = state
+            rover_state.rover_state["subsystems"]["power"] = state
         elif key == "gps":
-            rover_state.rover_state["health"]["sensors"] = state
+            rover_state.rover_state["subsystems"]["sensors"] = state
         elif key == "camera_frames":
-            rover_state.rover_state["health"]["sensors"] = state
+            rover_state.rover_state["subsystems"]["sensors"] = state
         elif key == "heading":
-            rover_state.rover_state["health"]["sensors"] = state
+            rover_state.rover_state["subsystems"]["sensors"] = state
         elif key == "encoders":
-            rover_state.rover_state["health"]["drivetrain"] = state
+            rover_state.rover_state["subsystems"]["drivetrain"] = state
     time.sleep(0.1)

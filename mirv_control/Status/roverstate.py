@@ -25,19 +25,19 @@ class RoverState:
     def __init__(self):
         self.rover_state = {
             "timestamp": int(time.time() * 1000),
-            "rover_id": "rover_1",
-            "state": ROVER_STATES[2],
+            "rover_id": "rover_dory",
+            "state": ROVER_STATES[8],
             "status": ROVER_STATUSES[0],
             "battery_percent": 0,
             "battery_voltage": 0,
-            "health": {
-                "electronics": HEALTH_STATES[2],
-                "drivetrain": HEALTH_STATES[2],
-                "intake": HEALTH_STATES[2],
-                "sensors": HEALTH_STATES[2],
-                "garage": HEALTH_STATES[2],
-                "power": HEALTH_STATES[2],
-                "general": HEALTH_STATES[2]
+            "subsystems": {
+                "electronics": {"health": HEALTH_STATES[2]},
+                "drivetrain": {"health": HEALTH_STATES[2]},
+                "intake": {"health": HEALTH_STATES[2]},
+                "sensors": {"health": HEALTH_STATES[2]},
+                "garage": {"health": HEALTH_STATES[2]},
+                "power": {"health": HEALTH_STATES[2]},
+                "general": {"health": HEALTH_STATES[2]}
             },
             "telemetry": {
                 "location": {

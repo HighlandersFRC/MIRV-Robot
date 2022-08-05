@@ -78,7 +78,7 @@ DEFAULT_STATUS_MESSAGE = {
 token = ""
 
 # Setup webtrc connection components
-pcs = set()
+pcs = []
 channels = []
 
 #Cache incoming frames for sending
@@ -222,7 +222,7 @@ async def offer(request):
     channels.append(channel)
     pc.addTrack(RobotVideoStreamTrack())
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
-    pcs.add(pc)
+    pcs.append(pc)
     
 
     @pc.on("datachannel")
@@ -239,12 +239,14 @@ async def offer(request):
     async def on_connectionstatechange():
         if pc.connectionState == "failed":
             await pc.close()
-            pcs.discard(pc)
+            pcs.remove(pc)
         state = get_webrtc_state()
+        print("Connection Status Changed")
+        print(state)
         if state == "connected":
-            availability_pub.publish("Unavailable")
+            availability_pub.publish("unavailable")
         else:
-            availability_pub.publish("Available")
+            availability_pub.publish("available")
     # handle offer
     await pc.setRemoteDescription(offer)
 
@@ -311,7 +313,6 @@ async def update_status():
 
 def stop():
     connection_task.cancel()
-    status_task.cancel()
   
 
 @sio.on('connect')
@@ -361,8 +362,10 @@ def run_webserver():
 async def on_shutdown(app):
     # close peer connections
     coros = [pc.close() for pc in pcs]
+    for pc in pcs:
+        pcs.remove(pc)
     await asyncio.gather(*coros)
-    pcs.clear()
+    #pcs.clear()
     sio.disconnect()
     stop()
     exit()
