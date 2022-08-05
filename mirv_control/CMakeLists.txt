@@ -82,6 +82,8 @@ add_action_files(
   FILES NavSatToTruck.action
   DIRECTORY action
   FILES IMUCalibration.action
+  DIRECTORY action
+  FILES Garage.action
 )
 
 # Generate added messages and services with any dependencies listed here

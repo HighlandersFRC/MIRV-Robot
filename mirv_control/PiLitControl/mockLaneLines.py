@@ -9,9 +9,9 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import time
 import ros_numpy
-from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 
-from mirv_description.msg import laneInformation
+from mirv_control.msg import laneInformation
 
 # from placement import placement
 import placement

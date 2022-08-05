@@ -39,6 +39,9 @@ class RoverInterface():
         self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
 
+        self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
+        self.garageClient.wait_for_server()
+
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
         self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
@@ -91,7 +94,7 @@ class RoverInterface():
         return points
     
     def getDriveClients(self):
-        return self.calibrationClient, self.PPclient, self.pickupClient, self.cloudControllerClient,
+        return self.calibrationClient, self.PPclient, self.pickupClient, self.cloudControllerClient
         
     def sendCmdVel(self, linear, angular):
         pass
@@ -191,6 +194,17 @@ class RoverInterface():
         mirv_control.msg.MovementToPiLitGoal.estimatedPiLitAngle = angleToTarget
 
         goal = mirv_control.msg.MovementToPiLitGoal
+        self.pickupClient.send_goal(goal)
+
+        self.pickupClient.wait_for_result()
+
+        # print(self.pickupClient.get_result())
+
+    def garage_client_goal(self, angleToTarget):
+        mirv_control.msg.GarageGoal.runPID = True
+        mirv_control.msg.GarageGoal.estimatedPiLitAngle = angleToTarget
+
+        goal = mirv_control.msg.GarageGoal
         self.pickupClient.send_goal(goal)
 
         self.pickupClient.wait_for_result()

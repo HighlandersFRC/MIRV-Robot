@@ -5,7 +5,7 @@ import time
 import depthai
 import rospy
 from std_msgs.msg import Float64
-from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
 import sys
 import signal
