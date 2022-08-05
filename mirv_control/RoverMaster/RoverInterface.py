@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import print_function
 import rospy
+from PiLitControl import PiLitController
 # Brings in the SimpleActionClient
 import actionlib
 import time
@@ -38,9 +39,12 @@ class RoverInterface():
         print("connected to Pure Truck CordinateAS")
         self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
-
+        print("connected to Database Query Server")
         self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
         self.garageClient.wait_for_server()
+        print("connected to Garage Server")
+
+        self.pilit_controller = PiLitController()
 
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
@@ -67,6 +71,14 @@ class RoverInterface():
         self.yPos = 0
 
         self.placementPoints = []
+
+    def setPiLitSequence(self, is_wave: bool):
+        self.pilit_controller.patternType(is_wave)
+        self.pilit_controller.reset()
+
+    def setPiLitSequenceReversed(self, reversed: bool):
+        self.pilit_controller.reversePattern(reversed)
+        self.pilit_controller.reset()
 
     def updatePlacementPoints(self, data):
         # print(data.data)
@@ -109,6 +121,7 @@ class RoverInterface():
 
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
+
     def getCurrentLatitude(self):
         return self.latitude
 
