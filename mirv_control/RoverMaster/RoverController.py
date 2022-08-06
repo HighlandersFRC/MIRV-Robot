@@ -56,6 +56,7 @@ class RoverController():
         # # points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
 
         # self.macros.pickupAllPiLits(points, False)
+        self.macros.pickupPiLit()
 if __name__ == "__main__":
     controller = RoverController()
     time.sleep(4)
