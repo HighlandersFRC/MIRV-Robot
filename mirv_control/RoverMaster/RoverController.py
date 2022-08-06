@@ -5,6 +5,7 @@
 # managing hierarchy of systems
 # calling macros or subsystem calls
 
+import time
 import RoverInterface
 import mirv_control.msg
 import rospy
@@ -13,7 +14,7 @@ from RoverInterface import RoverInterface
 import threading
 from PiLitController import PiLitControl as PiLitController
 from RoverMacros import roverMacros as RoverMacros
-from FaultState import FaultStates
+#from FaultState import FaultStates
 
 class RoverController():
     def __init__(self):
@@ -21,7 +22,7 @@ class RoverController():
         self.rate = rospy.Rate(1)
         self.interface = RoverInterface()
         self.macros = RoverMacros(self.interface)
-        self.faults = FaultStates(self.interface)
+        #self.faults = FaultStates(self.interface)
 
         # rospy.init_node("DatabaseActionClient")
         self.client = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
@@ -34,7 +35,7 @@ class RoverController():
             self.rate.sleep()
 
     def main(self):
-        self.interface.garage_client_goal(0)
+        #self.interface.garage_client_goal(0)
         # self.macros.pickupOnePiLit()
         # print(self.interface.Calibrate_client_goal())
         # # point1 = self.interface.CoordConversion_client_goal([40.47418975564257, -104.96924959123135])
@@ -57,6 +58,7 @@ class RoverController():
         # self.macros.pickupAllPiLits(points, False)
 if __name__ == "__main__":
     controller = RoverController()
+    time.sleep(4)
     updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
     mainThread = threading.Thread(target = controller.main, name = "thread2")
 

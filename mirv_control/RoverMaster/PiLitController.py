@@ -15,7 +15,7 @@ class PiLitControl():
     def __init__(self):
         self.a_class_constant
         self.pub = rospy.Publisher("DOControl", String, queue_size=10)
-        self.sub = rospy.Subscriber("/DIO/DI1", bool, self.callback)
+        self.sub = rospy.Subscriber("/DIO/DI1", Bool, self.callback)
         rospy.init_node("Pi-LitController", anonymous=True)
         
     def reversePattern(self, isReversed):

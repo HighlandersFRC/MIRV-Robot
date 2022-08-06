@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import print_function
 import rospy
-from PiLitControl import PiLitController
+from PiLitController import PiLitControl
 # Brings in the SimpleActionClient
 import actionlib
 import time
@@ -40,12 +40,11 @@ class RoverInterface():
         self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
         print("connected to Database Query Server")
-        self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
-        self.garageClient.wait_for_server()
-        print("connected to Garage Server")
-        self.client = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
+        # self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
+        # self.garageClient.wait_for_server()
+        # print("connected to Garage Server")
 
-        self.pilit_controller = PiLitController()
+        #self.pilit_controller = PiLitControl()
 
         # SUBSCRIBERS
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
@@ -71,13 +70,13 @@ class RoverInterface():
         self.placementPoints = []
         self.storedPiLits = [4, 4]
 
-    def setPiLitSequence(self, is_wave: bool):
-        self.pilit_controller.patternType(is_wave)
-        self.pilit_controller.reset()
+    # def setPiLitSequence(self, is_wave: bool):
+    #     self.pilit_controller.patternType(is_wave)
+    #     self.pilit_controller.reset()
 
-    def setPiLitSequenceReversed(self, reversed: bool):
-        self.pilit_controller.reversePattern(reversed)
-        self.pilit_controller.reset()
+    # def setPiLitSequenceReversed(self, reversed: bool):
+    #     self.pilit_controller.reversePattern(reversed)
+    #     self.pilit_controller.reset()
 
     def updatePlacementPoints(self, data):
         self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
@@ -239,11 +238,12 @@ class RoverInterface():
     def getPiLitsStored(self):
         try:
             mirv_control.msg.DatabaseGoal.table = "pilits-stored"
-            self.goal = mirv_control.msg.DatabaseGoal
-            self.databaseClient.send_goal(self.goal)
+            goal = mirv_control.msg.DatabaseGoal
+            self.databaseClient.send_goal(goal)
             self.databaseClient.wait_for_result()
-            sides = self.databaseClient.get_result().altitude
-            rospy.loginfo(F"Pi-Lits stored left: {sides[0]} right: {sides[1]}")
+            sides = self.databaseClient.get_result()
+            sides = sides.altitude
+            rospy.loginfo(f"Pi-Lits stored left: {sides[0]} right: {sides[1]}")
             return sides
         except:
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")

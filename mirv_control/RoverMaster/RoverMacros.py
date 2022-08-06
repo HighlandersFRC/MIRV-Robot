@@ -26,8 +26,8 @@ class roverMacros():
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
-        self.intake_command_pub.publish(String("deposit"))
         self.intake_command_pub.publish(String(intakeSide))
+        self.intake_command_pub.publish(String("deposit"))
         while not self.limit_switches[3] and not self.limit_switches[2]:
             if time.time() - start_time > timeout:
                 print("Timed out - Deposit")
@@ -45,6 +45,9 @@ class roverMacros():
         else:
             side = "switch_left"
         self.placePiLitFromSide(6, side)
+        time.sleep(2)
+        self.intake_command_pub.publish(String("reset"))
+        self.interface.loadPointToSQL("deploy", side)
 
     def placeAllPiLits(self, points):
         intakeSide = "switch_right"
@@ -99,6 +102,7 @@ class roverMacros():
         else:
             side = "switch_left"
         self.interface.pickup_client_goal(side, 0)
+        self.interface.loadPointToSQL("retrieve", side)
 
     def pickupAllPiLits(self, lists, reverse):
         intakeSide = "switch_right"
