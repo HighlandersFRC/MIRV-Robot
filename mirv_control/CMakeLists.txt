@@ -84,6 +84,9 @@ add_action_files(
   FILES IMUCalibration.action
   DIRECTORY action
   FILES Garage.action
+  DIRECTORY action
+  FILES general.action
+
 )
 
 # Generate added messages and services with any dependencies listed here

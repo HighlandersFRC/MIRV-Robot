@@ -15,14 +15,16 @@ class TeleopDrive():
     maxStrafeVel = 1
     rosPubMsg = Twist()
     active = False
+    result = ASmsg.generalResult()
     def __init__(self):
         rospy.init_node('TeleopDrive', anonymous=True)
         self.cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_cb)
         self.drive_pub = rospy.Publisher("cmd_vel", Twist, queue_size=5)
 
         self._action_name = "TeleopDrive"
-        self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.NavSatToTruckAction, auto_start = False)
+        self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.generalAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
+        self._as.register_preempt_callback(self.preemptCallback)
         self._as.start()
 
     def scaleJoyInput(self, x, y):
@@ -34,13 +36,20 @@ class TeleopDrive():
         return linVel, angVel
         
 
+    def preemptCallback(self):
+        if(self._as.is_new_goal_available()):
+            self._as.set_preempted()
+            
+        else:
+            print("aborting teleop_drive")
+            self._as.set_aborted()
 
     def execute_cb(self):
         goal = self._as.accept_new_goal()
-        self.active = True
-        while goal.is_active():
-            time.sleep(0.1)
-        self._as.set_succeeded()
+        # self.active = True   dont need
+        # while goal.is_active():
+        #     time.sleep(0.1)
+        # self._as.set_succeeded()
 
 
     def cloud_cb(self, data):
@@ -50,18 +59,19 @@ class TeleopDrive():
         joystickX = msg.get("commandParameters", {}).get("x",0)
         joystickY = msg.get("commandParameters", {}).get("y",0)
 
-        if self.active:
+        if self._as.is_active:
             if command == "disable_remote_operation":
                 joystickX = 0
                 joystickY = 0
                 self.active = False
-                self._as.set_succeeded()
+                self.result.result = ""
+                self._as.set_succeeded(self.ASmsg.generalResult(self.result))
 
-            
-            linear, angular = self.scaleJoyInput(joystickX, joystickY)
-            self.rosPubMsg.linear.x = linear
-            self.rosPubMsg.angular.z = angular
-            self.drive_pub.publish(self.rosPubMsg)
+            else:
+                linear, angular = self.scaleJoyInput(joystickX, joystickY)
+                self.rosPubMsg.linear.x = linear
+                self.rosPubMsg.angular.z = angular
+                self.drive_pub.publish(self.rosPubMsg)
         
     def run(self):
         rospy.spin()
