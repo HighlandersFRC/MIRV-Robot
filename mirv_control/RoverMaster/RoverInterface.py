@@ -32,12 +32,17 @@ class RoverInterface():
         print("connected to PiLit pickup Server")
         self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
         self.cloudControllerClient.wait_for_server()
-        print("connected to Pure Cloud AL Server")
+        print("connected to Cloud AL Server")
         self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
         self.TruckCordClient.wait_for_server()
-        print("connected to Pure Truck CordinateAS")
+        print("connected to Truck CordinateAS")
         self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
+        print("connected to database server")
+        self.TeleopClient = actionlib.SimpleActionClient("TeleopDrive", mirv_control.msg.generalAction)
+        self.TeleopClient.wait_for_server()
+        print("connected to teleop drive")
+
 
         self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
         self.garageClient.wait_for_server()
@@ -134,6 +139,15 @@ class RoverInterface():
         msg.gps_pos = navSatFixMsg
 
         self.sqlPub.publish(msg)
+    
+    def enableTeleopDrive(self, Halt):
+        mirv_control.msg.generalGoal.goal = ""
+        self.TeleopClient.send_goal(mirv_control.msg.generalGoal.goal)
+        if Halt
+            self.TeleopClient.wait_for_result()
+
+    def disableTeleopDrive(self):
+        self.TeleopClient.cancel_all_goals()
 
     def convertToOneD(self,TwoDArray):
         temp = []

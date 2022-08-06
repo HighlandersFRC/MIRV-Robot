@@ -2,10 +2,21 @@
 bool runRequested
 ---
 #result definition
-bool finished
-bool purePursuit
-float64[] ppTarget
-bool pickup
+bool tabletConnected
+bool cloudFault
 ---
 #feedback
-bool joystick
+bool stow
+bool deploy
+bool teleopDrive
+bool EStop
+bool connectedEnabled
+bool cancelAutoDrive
+bool deployPiLit
+bool retrievePiLit
+bool deployAllPiLits
+float64[] placeLatLong
+string formationType
+float64[] driveToLatLong
+bool retrieveAllPiLits
+

@@ -35,8 +35,8 @@ class RoverStates():
             if (self.PPStat != self.PPclient.get_state()):
                 self.PPStat = self.PPclient.get_state()
                 self.PPTime = 0
-            if (self.CCStat != self.CloudControlClient.get_state())
-                self.CCStat = self.CloudControlClient.get_state()
+            if (self.CCStat != self.CloudControllerClient.get_state())
+                self.CCStat = self.CloudControllerClient.get_state()
                 self.CCTime = 0
             if (self.PUStat != self.pickupClient.get_state())
                 self.PUStat = self.pickupClient.get_state()
