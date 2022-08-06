@@ -43,6 +43,7 @@ class RoverInterface():
         self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
         self.garageClient.wait_for_server()
         print("connected to Garage Server")
+        self.client = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
 
         self.pilit_controller = PiLitController()
 
@@ -251,6 +252,21 @@ class RoverInterface():
         points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
         print("PICKUP POINTS: ", points)
         return points
+
+    def getPiLitsStored(self):
+        mirv_control.msg.DatabaseGoal.table = "pilits"
+        self.goal = mirv_control.msg.DatabaseGoal
+        self.databaseClient.send_goal(self.goal)
+        self.databaseClient.wait_for_result()
+        sides = self.databaseClient.get_result().altitude
+        return sides
+
+    def getLatestSqlPoints(self):
+        mirv_control.msg.DatabaseGoal.table = "pilits-stored"
+        self.goal = mirv_control.msg.DatabaseGoal
+        self.databaseClient.send_goal(self.goal)
+        self.databaseClient.wait_for_result()
+        placedPiLitLocations = self.databaseClient.get_result()
 
     def feedback_callback(self, msg):
         pass

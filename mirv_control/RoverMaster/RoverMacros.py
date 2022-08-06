@@ -83,8 +83,9 @@ class roverMacros():
         TP = currentPoint - UV*d2
         return TP
 
-    def pickupOnePiLit(self):
-        self.interface.pickup_client_goal("switch_right", 5)
+    def pickupPiLit(self):
+        
+        self.interface.pickup_client_goal(intake_side, angle)
 
     def pickupAllPiLits(self, lists, reverse):
         intakeSide = "switch_right"
