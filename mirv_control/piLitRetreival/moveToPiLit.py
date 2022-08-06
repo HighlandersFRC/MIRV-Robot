@@ -77,7 +77,7 @@ class piLitPickup:
 
     def limit_switch_callback(self, switches):
         self.limit_switches = switches.data
-        print(self.limit_switches)
+        # print(self.limit_switches)
 
     def setAllZeros(self):
         self.piLitDepth = 0
@@ -146,6 +146,8 @@ class piLitPickup:
         result = -result
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
+        print("1")
+        print(self.velocityMsg)
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > 2/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
             # print("WANTED ANGLE: ", self.setPoint)
@@ -191,6 +193,8 @@ class piLitPickup:
                 self.reachedEstimate = True
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = 0
+                print("2")
+                print(self.velocityMsg)
                 self.velocitydrive_pub.publish(self.velocityMsg)
         self.allowSearch = True
 
@@ -200,6 +204,8 @@ class piLitPickup:
             # print(time.time() - intakeInitTime)
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
+            # print("3")
+            print(self.velocityMsg)
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("intake")
             self.set_intake_state(intakeSide)
@@ -211,6 +217,8 @@ class piLitPickup:
         while(abs(searchStartTime - time.time()) < 9):
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
+            # print("4")
+            # print(self.velocityMsg)
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("intake")
             self.set_intake_state(intakeSide)
@@ -218,12 +226,15 @@ class piLitPickup:
             # print("HAVEN'T FOUND A PI LIT YET")
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
+            print(self.velocityMsg)
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.runPID = False
             self.moveToPiLit = False
         if(self.piLitAngle != 0):
+            # print("------------------------------------------------------------------------------------------------------------------------------")
             self.runPID = True
             self.allowSearch = False
+            self._result.finished = False
         else:
             print("TIMED OUT")
             self.set_intake_state("reset")
@@ -241,7 +252,8 @@ class piLitPickup:
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
-
+                # print("5")
+                # print(self.velocityMsg)
                 self.velocitydrive_pub.publish(self.velocityMsg)
 
                 self._feedback.result = result
@@ -253,8 +265,11 @@ class piLitPickup:
                     self.runPID = False
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
+                    # print("6")
+                    print(self.velocityMsg)
                     self.velocitydrive_pub.publish(self.velocityMsg)
-            if(self.driveToPiLit):
+            elif(self.driveToPiLit):
+                # print("DRIVING TO PI LIT")
                 if(self.moveToPiLitRunning == False):
                     self.movementInitTime = time.time()
                     self.moveToPiLitRunning = True
@@ -265,6 +280,8 @@ class piLitPickup:
                     self.set_intake_state("store")
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
+                    # print(self.piLitAngle)
+                    # print(self.velocityMsg)
                     self.velocitydrive_pub.publish(self.velocityMsg)
                     self._result.finished = True
         self.setAllZeros()
@@ -277,6 +294,8 @@ class piLitPickup:
         except KeyboardInterrupt:
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
+
+            print(self.velocityMsg)
             self.velocitydrive_pub.publish(self.velocityMsg)
         except:
             print("an error occurred in purePursuit.py")

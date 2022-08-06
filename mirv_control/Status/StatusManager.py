@@ -22,8 +22,8 @@ def battery_voltage_callback(voltage):
     elif rover_state.rover_state["battery_percent"] < 0:
         rover_state.rover_state["battery_percent"] = 0
     if voltage.data < 5:
-        rover_state.rover_state["health"]["drivetrain"] = "unavailable"
-        rover_state.rover_state["health"]["intake"] = "unavailable"
+        rover_state.rover_state["subsystems"]["drivetrain"] = {"health": "unavailable"}
+        rover_state.rover_state["subsystems"]["intake"] = {"health": "unavailable"}
     rover_state.timers["battery_voltage"].reset()
 
 def gps_callback(gps_pos):

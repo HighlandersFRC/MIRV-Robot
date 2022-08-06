@@ -170,7 +170,7 @@ try:
             rotationK = rVvalues.k
             rotationReal = rVvalues.real
             
-            rospy.loginfo(rVvalues)
+            # rospy.loginfo(rVvalues)
 
             pitch, yaw, roll = quat_2_radians(rotationI, rotationJ, rotationK, rotationReal)
 
@@ -186,7 +186,7 @@ try:
             pitch = pitch + 180
             pitch = pitch%360
 
-            print("PITCH: ", pitch)
+            # print("PITCH: ", pitch)
 
             if(i == len(imuPackets) - 1):
                 imuPub.publish(pitch)
@@ -197,6 +197,13 @@ try:
 
             # resize frame for neural nets
             resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
+
+            result=cv2.imwrite(r'src/cameraFrame.jpg', frame)
+            if result==True:
+                print("SAVED!")
+                firstLoop = False
+            else:
+                print("DIDN'T SAVE")
 
             # create custom frame message to publish
             framesMessage = depthAndColorFrame()

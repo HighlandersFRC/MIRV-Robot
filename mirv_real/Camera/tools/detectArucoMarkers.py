@@ -86,6 +86,12 @@ horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
+cameraMatrix = [[2.23565012e+04, 0.00000000e+00, 4.04270500e+02],
+ [0.00000000e+00, 2.18847665e+04, 3.03485851e+02],
+ [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]]
+
+distCoefficients = [[ 8.65525844e+01,  1.50757916e-02,  7.12760507e-02, -8.78542319e-02, 1.80785067e-06]]
+
 # callback function when receiving a frame
 def gotFrame(data):
     print("GOT A FRAME")
@@ -114,6 +120,8 @@ def detectArUcoMarkers(image, depthFrame):
             # extract the marker corners (which are always returned in
             # top-left, top-right, bottom-right, and bottom-left order)
             corners = markerCorner.reshape((4, 2))
+            ret = aruco.estimatePoseSingleMarkers(corners,marker_size,cameraMatrix=cameraMatrix,distCoeffs=distCoefficients)
+            (rvec, tvec) = (ret[0][0, 0, :], ret[1][0, 0, :])
             (topLeft, topRight, bottomRight, bottomLeft) = corners
             # convert each of the (x, y)-coordinate pairs to integers
             topRight = (int(topRight[0]), int(topRight[1]))
@@ -126,6 +134,8 @@ def detectArUcoMarkers(image, depthFrame):
 
             angle = (cX - horizontalPixels/2) * degreesPerPixel
             depth = (depthFrame[cY][cX])/1000
+
+            print("ANGLE: ", rvec, " DEPTH: ", tvec)
 
             if(depth != 0):
                 location = [depth, angle]

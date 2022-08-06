@@ -11,14 +11,14 @@ import actionlib
 import mirv_control.msg as msg
 import asyncio
 
-rospy.init_node("piLitPickup")
+rospy.init_node("garageDocking")
 
-class piLitPickup:
+class moveToGarage:
     def __init__(self):
         self._feedback = msg.MovementToPiLitFeedback()
         self._result = msg.MovementToPiLitResult()
 
-        self._action_name = "PickupAS"
+        self._action_name = "Docking"
         self._as = actionlib.SimpleActionServer(self._action_name, msg.GarageAction, auto_start = False)
         self._as.register_goal_callback(self.turnToPiLit)
         self._as.register_preempt_callback(self.preemptedPickup)
@@ -43,7 +43,7 @@ class piLitPickup:
 
         self.imu = 0
 
-        self.kP = 0.0175
+        self.kP = 0.02
         self.kI = 0
         self.kD = 2
         self.setPoint = 0
@@ -77,7 +77,7 @@ class piLitPickup:
 
     def limit_switch_callback(self, switches):
         self.limit_switches = switches.data
-        print(self.limit_switches)
+        # print(self.limit_switches)
 
     def setAllZeros(self):
         self.piLitDepth = 0
@@ -109,6 +109,7 @@ class piLitPickup:
 
     def updatePiLitLocation(self, location):
         piLitLocation = location.data
+        print(piLitLocation)
         # if(self.runPID == False and self.driveToPiLit == False):
         # if(self.allowSearch == True):
         self.piLitDepth = piLitLocation[0]
@@ -119,7 +120,7 @@ class piLitPickup:
         self.piLitPID.setSetPoint(self.setPoint)
         self.updatedLocation = True
         self.prevPiLitAngle = self.piLitAngle
-        print("SETPOINT: ", self.setPoint)
+        # print("SETPOINT: ", self.setPoint)
 
     def updateIMU(self, data):
         self.imu = data.data
@@ -147,26 +148,26 @@ class piLitPickup:
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > 2/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
-            # print("WANTED ANGLE: ", self.setPoint)
-            # print("CURRENT ANGLE: ", self.imu)
-            self.driveToPiLit = False
-            self.moveToPiLitRunning = False
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = 0
-            self.velocitydrive_pub.publish(self.velocityMsg)
-            self._result.finished = True
-            # self._as.set_succeeded(self._result)
-            self.movementInitTime = 0
-            self.finished = True
-            self.allowSearch = False
+        # if(time.time() - self.movementInitTime > 2/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
+            # # print("WANTED ANGLE: ", self.setPoint)
+            # # print("CURRENT ANGLE: ", self.imu)
+            # self.driveToPiLit = False
+            # self.moveToPiLitRunning = False
+            # self.velocityMsg.linear.x = 0
+            # self.velocityMsg.angular.z = 0
+            # self.velocitydrive_pub.publish(self.velocityMsg)
+            # self._result.finished = True
+            # # self._as.set_succeeded(self._result)
+            # self.movementInitTime = 0
+            # self.finished = True
+            # self.allowSearch = False
 
     def turnToPiLit(self):
         print("GOT PICKUP CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO PICKUP PI LIT!")
         # running = goal.runPID
-        estimatedPiLitAngle = goal.estimatedPiLitAngle
+        estimatedPiLitAngle = goal.estimatedGarageAngle
         # estimatedPiLitAngle = 360 - goal.estimatedPiLitAngle
         # # estimatedPiLitAngle = estimatedPiLitAngle + 360
         # estimatedPiLitAngle = estimatedPiLitAngle%360
@@ -175,23 +176,25 @@ class piLitPickup:
         self.estimatePID.setSetPoint(estimatedPiLitAngle)
         self._result.finished = False
      
-        while(self.reachedEstimate == False and self.piLitAngle == 0):
-            # print("TRYING TO REACH ESTIMATE")
-            result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
-            # print("SETPOINT: ", estimatedPiLitAngle, " CURRENT ANGLE: ", self.imu)
+        # while(self.reachedEstimate == False and self.piLitAngle == 0):
+        #     # print("TRYING TO REACH ESTIMATE")
+        #     result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
+        #     print("SETPOINT: ", estimatedPiLitAngle, " CURRENT ANGLE: ", self.imu)
 
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = result
+        #     self.velocityMsg.linear.x = 0
+        #     self.velocityMsg.angular.z = result
 
-            self.velocitydrive_pub.publish(self.velocityMsg)
+        #     self.velocitydrive_pub.publish(self.velocityMsg)
 
-            if(abs(self.imu - estimatedPiLitAngle) < 5):
-                # print("GOT TO ESTIMATED TARGET!!!!")
-                self.reachedEstimate = True
-                self.velocityMsg.linear.x = 0
-                self.velocityMsg.angular.z = 0
-                self.velocitydrive_pub.publish(self.velocityMsg)
+        #     if(abs(self.imu - estimatedPiLitAngle) < 5):
+        #         print("GOT TO ESTIMATED TARGET!!!!")
+        #         self.reachedEstimate = True
+        #         self.velocityMsg.linear.x = 0
+        #         self.velocityMsg.angular.z = 0
+        #         self.velocitydrive_pub.publish(self.velocityMsg)
         self.allowSearch = True
+
+        self.runPID = True
 
         while(self._result.finished == False):
             # print("RUNNING CALLBACK")
@@ -199,7 +202,7 @@ class piLitPickup:
             if(self.runPID):
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result
-                # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
+                # print("Turning - " , " SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
@@ -209,18 +212,18 @@ class piLitPickup:
                 self._feedback.result = result
                 self._as.publish_feedback(self._feedback)
 
-                if(abs(self.imu - self.setPoint) < 8 and abs(result) < 0.05):
+                if(abs(self.imu - self.setPoint) < 7 and abs(result) < 0.05):
                     print("GOT TO TARGET!!!!")
                     self.driveToPiLit = True
                     self.runPID = False
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
                     self.velocitydrive_pub.publish(self.velocityMsg)
-            # if(self.driveToPiLit):
-            #     if(self.moveToPiLitRunning == False):
-            #         self.movementInitTime = time.time()
-            #         self.moveToPiLitRunning = True
-            #     self.moveToPiLit()
+            if(self.driveToPiLit):
+                if(self.moveToPiLitRunning == False):
+                    self.movementInitTime = time.time()
+                    self.moveToPiLitRunning = True
+                self.moveToPiLit()
             # else:
             #     storeInitTime = time.time()
             #     while(time.time() - storeInitTime < 3):
@@ -244,5 +247,5 @@ class piLitPickup:
 
 if __name__ == '__main__':
     print("RUNNING")
-    pickup = piLitPickup()
+    pickup = moveToGarage()
     pickup.run()

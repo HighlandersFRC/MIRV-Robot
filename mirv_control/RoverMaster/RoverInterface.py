@@ -39,8 +39,9 @@ class RoverInterface():
         self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
 
-        self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
+        self.garageClient = actionlib.SimpleActionClient("Docking", mirv_control.msg.GarageAction)
         self.garageClient.wait_for_server()
+        print("connected to Garage AL Server")
 
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
@@ -202,12 +203,13 @@ class RoverInterface():
 
     def garage_client_goal(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
-        mirv_control.msg.GarageGoal.estimatedPiLitAngle = angleToTarget
+        print(type(angleToTarget))
+        mirv_control.msg.GarageGoal.estimatedGarageAngle = angleToTarget
 
-        goal = mirv_control.msg.GarageGoal
-        self.pickupClient.send_goal(goal)
+        garageGoal = mirv_control.msg.GarageGoal
+        self.garageClient.send_goal(garageGoal)
 
-        self.pickupClient.wait_for_result()
+        self.garageClient.wait_for_result()
 
         # print(self.pickupClient.get_result())
 
