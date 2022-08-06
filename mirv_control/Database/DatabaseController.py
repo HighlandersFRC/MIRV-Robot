@@ -162,7 +162,7 @@ def query_callback():
         result.latitude = data[1]
         result.longitude = data[2]
         result.altitude = data[3]
-    elif goal.table == "pilits-store":
+    elif goal.table == "pilits-stored":
         data = t.get_last_row("pilits")
         result.altitude = [data[1], data[2]]
     t.close()

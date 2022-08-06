@@ -20,16 +20,11 @@ class roverMacros():
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
         self.interface = Interface
         self.limit_switches = [1, 1, 0, 0]
-    #     self.placementSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.placementCallback)
-
-    # def placementCallback(self, msg):
-    #     print(msg)
 
     def limit_switch_callback(self, switches):
         limit_switches = switches.data
-        # print(limit_switches)
 
-    def placePiLit(self, timeout, intakeSide):
+    def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
         self.intake_command_pub.publish(String("deposit"))
         self.intake_command_pub.publish(String(intakeSide))
@@ -40,12 +35,23 @@ class roverMacros():
         time.sleep(1)
         return True
 
+    def placePiLit(self):
+        stored = self.interface.getPiLitsStored()
+        if not stored or len(stored) != 2:
+            rospy.logerr("Invalid number of stored Pi-Lits")
+            return
+        if stored[0] > stored[1]:
+            side = "switch_right"
+        else:
+            side = "switch_left"
+        self.placePiLitFromSide(6, side)
+
     def placeAllPiLits(self, points):
         intakeSide = "switch_right"
         for point in points:
             target = [point]
             self.interface.PP_client_goal(target)
-            self.placePiLit(6, intakeSide)
+            self.placePiLitFromSide(6, intakeSide)
             self.intake_command_pub.publish(String("reset"))
 
             self.interface.loadPointToSQL("deploy", intakeSide)
@@ -60,7 +66,7 @@ class roverMacros():
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"
         for i in range(0, count):
-            self.placePiLit(4, intakeSide)
+            self.placePiLitFromSide(4, intakeSide)
 
             self.intake_command_pub.publish(String("reset"))
 
@@ -84,8 +90,15 @@ class roverMacros():
         return TP
 
     def pickupPiLit(self):
-        
-        self.interface.pickup_client_goal(intake_side, angle)
+        stored = self.interface.getPiLitsStored()
+        if not stored or len(stored) != 2:
+            rospy.logerr("Invalid number of stored Pi-Lits")
+            return
+        if stored[0] < stored[1]:
+            side = "switch_right"
+        else:
+            side = "switch_left"
+        self.interface.pickup_client_goal(side, 0)
 
     def pickupAllPiLits(self, lists, reverse):
         intakeSide = "switch_right"
