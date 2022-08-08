@@ -14,11 +14,12 @@ import ros_numpy
 import numpy as np
 import math
 import json
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from aiohttp import web
 from av import VideoFrame
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import garage_state_msg as garage_state
 from time import sleep
 from threading import Thread
 from signal import signal, SIGINT
@@ -29,6 +30,7 @@ CLOUD_PORT = os.getenv('API_PORT')
 ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
 USERNAME = os.getenv('API_USERNAME')
 PASSWORD = os.getenv('API_PASSWORD')
+GARAGE = os.getenv('GARAGE_ID')
 
 rospy.init_node("CloudConnection")
 
@@ -37,6 +39,7 @@ CLOUD_PORT = rospy.get_param('api_port', CLOUD_PORT)
 ROVER_COMMON_NAME = rospy.get_param('mirv_common_name', ROVER_COMMON_NAME)
 USERNAME = rospy.get_param('api_username', USERNAME)
 PASSWORD = rospy.get_param('api_password', PASSWORD)
+GARAGE = rospy.get_param('garage_id', GARAGE)
 
 if CLOUD_HOST is None:
     rospy.logerr("Please set the API_HOST Environment Variable to the IP of the cloud server")
@@ -172,6 +175,7 @@ rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
 rospy.Subscriber("RoverStatus", String, statusSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 availability_pub = rospy.Publisher('RoverAvailable', String, queue_size=1)
+garage_pub = rospy.Publisher('GarageStatus', garage_state, queue_size=1)
 
 
 # Class Describing how to send VideoStreams to the Cloud
@@ -283,6 +287,30 @@ def get_token():
     except requests.exceptions.ConnectionError as e:
         print("Unable to Acquire Token", e)
 
+def get_garage_state(token):
+    try:
+        headers= {'Authorization': f'Bearer {token}'}
+        response = requests.get(f"http://{CLOUD_HOST}:{CLOUD_PORT}/garages/{GARAGE_ID}",headers=headers)
+
+        print(response.status_code)
+        if response.status_code ==200:
+            contents = json.loads(response.content.decode('utf-8'))
+            state = garage_state()
+
+            state.garage_id = contents.get("garage_id","unavailable")
+            state.linked_rover_id = contents.get("linked_rover_id", "unavailable")
+            state.state = contents.get("state","unavailable")
+            state.lights_on = contents.get("lights_on", False)
+            state.health = contents.get("health","unavailable")
+            state.health_details = contents.get("health_description","unavailable")
+
+            print(state)
+            garage_pub.publish(state)
+
+        else:
+            print(f"Received Status Code: {response.status_code}, Details: {response.text}")
+    except Exception as e:
+        print("Garage Update failed with error",e )
     
 
 # Periodically tries to connect to the cloud if the system is not connected
@@ -293,6 +321,13 @@ async def update_connection():
             get_token()
         if not api_connected: 
             connect_to_api()
+        await asyncio.sleep(5)
+
+
+async def update_garage(token):
+    while True:
+        print("Update Garage")
+        get_garage_state(token)
         await asyncio.sleep(5)
 '''
 async def update_status(): 
@@ -379,11 +414,10 @@ connect_to_api()
 
 loop = asyncio.get_event_loop()
 
-#status_task = loop.create_task(update_status())
+garage_task = loop.create_task(update_garage(token))
 connection_task = loop.create_task(update_connection())
 
-
-#loop.run_in_executor(None, status_task)
+loop.run_in_executor(None, garage_task)
 loop.run_in_executor(None, connection_task)
 
 run_webserver()

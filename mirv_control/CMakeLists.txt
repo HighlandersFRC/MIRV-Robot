@@ -57,6 +57,7 @@ add_message_files(
    pilit_db_msg.msg
    pilit_status_msg.msg
    laneInformation.msg
+   garage_state_msg.msg
  )
 
 ## Generate services in the 'srv' folder
