@@ -8,6 +8,7 @@ from std_msgs.msg import Float64, Float64MultiArray, String
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import Twist
+import os
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -20,33 +21,33 @@ from sensor_msgs.msg import NavSatFix
 
 class RoverInterface():
     def __init__(self):
-        print("setting up server connections")
-        self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
-        self.calibrationClient.wait_for_server()
-        print("connected to starting heading AS")
-        self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
-        self.PPclient.wait_for_server()
-        print("connected to Pure Pursuit Server")
-        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
-        self.pickupClient.wait_for_server()
-        print("connected to PiLit pickup Server")
+        # print("setting up server connections")
+        # self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
+        # self.calibrationClient.wait_for_server()
+        # print("connected to starting heading AS")
+        # self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+        # self.PPclient.wait_for_server()
+        # print("connected to Pure Pursuit Server")
+        # self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
+        # self.pickupClient.wait_for_server()
+        # print("connected to PiLit pickup Server")
         self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
         self.cloudControllerClient.wait_for_server()
         print("connected to Cloud AL Server")
-        self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
-        self.TruckCordClient.wait_for_server()
-        print("connected to Truck CordinateAS")
-        self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
-        self.databaseClient.wait_for_server()
-        print("connected to database server")
-        self.TeleopClient = actionlib.SimpleActionClient("TeleopDrive", mirv_control.msg.generalAction)
-        self.TeleopClient.wait_for_server()
-        print("connected to teleop drive")
+        # self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
+        # self.TruckCordClient.wait_for_server()
+        # print("connected to Truck CordinateAS")
+        # self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
+        # self.databaseClient.wait_for_server()
+        # print("connected to database server")
+        # self.TeleopClient = actionlib.SimpleActionClient("TeleopDrive", mirv_control.msg.generalAction)
+        # self.TeleopClient.wait_for_server()
+        # print("connected to teleop drive")
 
 
-        self.garageClient = actionlib.SimpleActionClient("Docking", mirv_control.msg.GarageAction)
-        self.garageClient.wait_for_server()
-        print("connected to Garage AL Server")
+        # self.garageClient = actionlib.SimpleActionClient("Docking", mirv_control.msg.GarageAction)
+        # self.garageClient.wait_for_server()
+        # print("connected to Garage AL Server")
 
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
@@ -73,6 +74,7 @@ class RoverInterface():
         self.yPos = 0
 
         self.placementPoints = []
+        print("finished interface setup")
 
     def updatePlacementPoints(self, data):
         # print(data.data)
@@ -144,7 +146,7 @@ class RoverInterface():
     def enableTeleopDrive(self, Halt):
         mirv_control.msg.generalGoal.goal = ""
         self.TeleopClient.send_goal(mirv_control.msg.generalGoal.goal)
-        if Halt
+        if Halt:
             self.TeleopClient.wait_for_result()
 
     def disableTeleopDrive(self):
@@ -201,7 +203,7 @@ class RoverInterface():
         goal = mirv_control.msg.ControllerGoal
         self.cloudControllerClient.send_goal(goal, feedback_cb = self.cloud_feedback_callback)
         self.cloudControllerClient.wait_for_result()
-        # print(self.cloudControllerClient.get_result())
+        print(self.cloudControllerClient.get_result())
 
     def pickup_client_goal(self, intakeSide, angleToTarget):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
@@ -259,21 +261,16 @@ class RoverInterface():
         pass
         # print(msg)
     def cloud_feedback_callback(self, msg):
-        # print(msg)
+        print(rospy.get_time())
+        print(msg)
+        if msg.EStop:
+            os.system("rosnode kill --all")
+        if msg.teleopDrive:
+            pass
+            # self.PP_client_cancels
+            # self.enableTeleopDrive
+            # self.pickup_client_cancel
 
-        self.isJoystickControl = msg.joystick
-        self.isPurePursuitControl = msg.purePursuit
-        self.purePursuitTarget = msg.ppTarget
-        self.isPickupControl = msg.pickup
-
-        # print(self.cloudController_client.get_state())
-    # def run(self):
-    #     # self.PP_client([[10,0], [10,5]])
-    #     rate = rospy.Rate(1)
-    #     while not rospy.is_shutdown():
-    #         print("looping")
-    #         self.cloudController_client_goal()
-    #         rate.sleep()
 
 if __name__ == '__main__':
     try:
