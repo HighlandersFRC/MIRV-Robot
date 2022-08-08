@@ -471,7 +471,7 @@ class Intake {
 	void setMode(std::string cmd){
 
 		//check if command is valid before setting
-		if (cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch_left" || cmd == "switch_right"){
+		if (cmd == "mag_in" || cmd == "mag_out" || cmd == "down" || cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch_left" || cmd == "switch_right"){
 			if (cmd == "deposit"){
 				startTime = time(NULL);
 			}
@@ -483,7 +483,9 @@ class Intake {
 				mode = cmd;
 			}
 		}
-		//cout << mode;
+		// cout << "Set mode to: '";
+		// cout << mode;
+		// cout << "' ";
 	}
 };
 
