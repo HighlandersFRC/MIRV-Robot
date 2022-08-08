@@ -18,11 +18,27 @@ class roverMacros():
     def __init__(self, Interface):
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.garage_pub = rospy.Subscriber("GarageCommands", String, queue_size = 10)
+        self.garage_sub = rospy.Subscriber("GarageStatus", String, self.garage_state_callback)
         self.interface = Interface
         self.limit_switches = [1, 1, 0, 0]
+        self.garage_state = "retracted_latched"
+
+    def garage_state_callback(self, msg):
+        self.garage_state = msg.data        
 
     def limit_switch_callback(self, switches):
         limit_switches = switches.data
+
+    def deployGarage(self):
+        self.garage_pub.publish(String("deploy"))
+        while self.garage_state != "deployed":
+            time.sleep(0.1)
+
+    def retractGarage(self):
+        self.garage_pub.publish(String("retract"))
+        while self.garage_state != "retracted_latched":
+            time.sleep(0.1)
 
     def intakeDown(self):
         self.intake_command_pub.publish(String("down"))
