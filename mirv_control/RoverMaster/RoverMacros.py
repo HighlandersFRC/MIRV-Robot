@@ -39,6 +39,8 @@ class roverMacros():
         self.garage_pub.publish(String("retract"))
         while self.garage_state != "retracted_latched":
             time.sleep(0.1)
+    def stopIntakeAndMagazine(self):
+        self.intake_command_pub.publish(String("disable"))
 
     def intakeDown(self):
         self.intake_command_pub.publish(String("down"))
@@ -49,8 +51,8 @@ class roverMacros():
     def magazineIn(self):
         self.intake_command_pub.publish(String("mag_in"))
 
-    def magazineIn(self):
-        self.intake_command_pub.publish(String("mag_in"))
+    def magazineOut(self):
+        self.intake_command_pub.publish(String("mag_out"))
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
