@@ -24,6 +24,18 @@ class roverMacros():
     def limit_switch_callback(self, switches):
         limit_switches = switches.data
 
+    def intakeDown(self):
+        self.intake_command_pub.publish(String("down"))
+
+    def intakeUp(self):
+        self.intake_command_pub.publish(String("reset"))
+
+    def magazineIn(self):
+        self.intake_command_pub.publish(String("mag_in"))
+
+    def magazineIn(self):
+        self.intake_command_pub.publish(String("mag_in"))
+
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
         self.intake_command_pub.publish(String(intakeSide))

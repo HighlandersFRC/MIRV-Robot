@@ -159,7 +159,6 @@ class RoverInterface():
     def Calibrate_client_goal(self):
         mirv_control.msg.IMUCalibrationGoal.calibrate = True
         goal = mirv_control.msg.IMUCalibrationGoal
-        time.sleep(4)
         self.intake_command_pub.publish(String("reset"))
         self.calibrationClient.send_goal(goal)
         self.calibrationClient.wait_for_result()
