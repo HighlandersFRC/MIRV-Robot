@@ -57,6 +57,7 @@ add_message_files(
    pilit_db_msg.msg
    pilit_status_msg.msg
    laneInformation.msg
+   garage_state_msg.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -84,6 +85,9 @@ add_action_files(
   FILES IMUCalibration.action
   DIRECTORY action
   FILES Garage.action
+  DIRECTORY action
+  FILES general.action
+
 )
 
 # Generate added messages and services with any dependencies listed here

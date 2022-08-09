@@ -306,14 +306,21 @@ class Intake {
 	//intake: run wheels and move to downwards position
 	//store: move to upwards position then reverse wheels
 
+	double intakeUpPercent = 0.8;
+	double wheelIntakePercent = 0.6;
+
 	//limit switches: fwd - up, rev - down
 
 	void update(){
 
-		// cout << " Fwd: ";
+		// cout << " FwdB:";
 		// cout << intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
-		// cout << " Rev: ";
+		// cout << " RevB:";
 		// cout << intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed();
+		// cout << " FwdS:";
+		// cout << intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
+		// cout << " RevS:";
+		// cout << intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed();
 
 		//not moving at all
 		if (mode == "disable"){
@@ -331,7 +338,7 @@ class Intake {
 			if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 				intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 			} else {
-				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
+				intakeArmMotor.Set(ControlMode::PercentOutput, intakeUpPercent);
 			}
 		}
 
@@ -346,13 +353,13 @@ class Intake {
 				if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
-					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.6 * side);
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -wheelIntakePercent * side);
 				}
 			} else {
 				if (intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
 					intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				} else {
-					intakeWheelMotor.Set(ControlMode::PercentOutput, -0.6 * side);
+					intakeWheelMotor.Set(ControlMode::PercentOutput, -wheelIntakePercent * side);
 				}
 			}
 			if (intakeArmMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
@@ -375,7 +382,7 @@ class Intake {
 					mode = "reset";
 				}
 			} else {
-				intakeArmMotor.Set(ControlMode::PercentOutput, 0.7);
+				intakeArmMotor.Set(ControlMode::PercentOutput, intakeUpPercent);
 				intakeWheelMotor.Set(ControlMode::PercentOutput, 0.0);
 				rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
@@ -596,7 +603,7 @@ int main(int argc, char **argv) {
 	initializeDriveMotors();
 	initializeIntakeMotors();
 
-	ros::Rate rate(10);
+	ros::Rate rate(100);
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(500);
 

@@ -9,6 +9,8 @@ from std_msgs.msg import Float64, Float64MultiArray, String
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import Twist
+import os
+import sys
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -21,16 +23,16 @@ from sensor_msgs.msg import NavSatFix
 
 class RoverInterface():
     def __init__(self):
-        print("setting up server connections")
-        self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
-        self.calibrationClient.wait_for_server()
-        print("connected to starting heading AS")
-        self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
-        self.PPclient.wait_for_server()
-        print("connected to Pure Pursuit Server")
-        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
-        self.pickupClient.wait_for_server()
-        print("connected to PiLit pickup Server")
+        # print("setting up server connections")
+        # self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
+        # self.calibrationClient.wait_for_server()
+        # print("connected to starting heading AS")
+        # self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+        # self.PPclient.wait_for_server()
+        # print("connected to Pure Pursuit Server")
+        # self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
+        # self.pickupClient.wait_for_server()
+        # print("connected to PiLit pickup Server")
         self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
         self.cloudControllerClient.wait_for_server()
         print("connected to Pure Cloud AL Server")
@@ -136,6 +138,15 @@ class RoverInterface():
         navSatFixMsg.altitude = self.altitude
         msg.gps_pos = navSatFixMsg
         self.sqlPub.publish(msg)
+    
+    def enableTeleopDrive(self, Halt):
+        mirv_control.msg.generalGoal.goal = ""
+        self.TeleopClient.send_goal(mirv_control.msg.generalGoal.goal)
+        if Halt:
+            self.TeleopClient.wait_for_result()
+
+    def disableTeleopDrive(self):
+        self.TeleopClient.cancel_all_goals()
 
     def convertToOneD(self,TwoDArray):
         temp = []
@@ -248,18 +259,16 @@ class RoverInterface():
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
 
     def cloud_feedback_callback(self, msg):
-        self.isJoystickControl = msg.joystick
-        self.isPurePursuitControl = msg.purePursuit
-        self.purePursuitTarget = msg.ppTarget
-        self.isPickupControl = msg.pickup
+        print(rospy.get_time())
+        print(msg)
+        if msg.EStop:
+            os.system("rosnode kill --all")
+        if msg.teleopDrive:
+            pass
+            # self.PP_client_cancels
+            # self.enableTeleopDrive
+            # self.pickup_client_cancel
 
-    # def run(self):
-    #     # self.PP_client([[10,0], [10,5]])
-    #     rate = rospy.Rate(1)
-    #     while not rospy.is_shutdown():
-    #         print("looping")
-    #         self.cloudController_client_goal()
-    #         rate.sleep()
 
 if __name__ == '__main__':
     try:
