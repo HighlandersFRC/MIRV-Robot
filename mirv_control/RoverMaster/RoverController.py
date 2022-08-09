@@ -66,7 +66,24 @@ class RoverController():
         # # placedPiLitLocations = self.client.get_result()
         # # points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
 
-        # self.macros.pickupAllPiLits(points, False)
+        points = self.interface.getLatestSqlPoints()
+    
+        
+        print(points)
+        self.macros.pickupAllPiLits(points, False)
+        # point1 = self.interface.CoordConversion_client_goal([40.4741954, -104.9692536])
+        # target = [point1]
+        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
+        # self.macros.placePiLit(4)
+        # self.interface.pickup_client_goal("switch_right", 5)
+        # target = [point2, point3, point4]
+        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
+        # self.interface.pickup_client_goal("switch_left", 5)
+        # target = [point5]
+        # self.interface.PP_client_goal(target)
+        # self.interface.pickup_client_goal("switch_right", 5)
+
+        # self.interface.pickup_client_goal("switch_right", 0)
 if __name__ == "__main__":
     controller = RoverController()
     updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
