@@ -6,17 +6,20 @@ bool tabletConnected
 bool cloudFault
 ---
 #feedback
+bool connected
 bool stow
 bool deploy
 bool teleopDrive
 bool EStop
+bool placePiLit
+bool pickupPiLit
 bool connectedEnabled
 bool cancelAutoDrive
-bool deployPiLit
-bool retrievePiLit
 bool deployAllPiLits
+bool retrieveAllPiLits
 float64[] placeLatLong
 string formationType
+bool driveToWaypoint
 float64[] driveToLatLong
-bool retrieveAllPiLits
+
 
