@@ -41,6 +41,10 @@ USERNAME = rospy.get_param('api_username', USERNAME)
 PASSWORD = rospy.get_param('api_password', PASSWORD)
 GARAGE = rospy.get_param('garage_id', GARAGE)
 
+
+
+
+
 if CLOUD_HOST is None:
     rospy.logerr("Please set the API_HOST Environment Variable to the IP of the cloud server")
     exit()
@@ -150,6 +154,19 @@ def statusSubscriber(data):
     else:
         print("Received Data with Type None", data)
 
+def garageSubscriber(data):
+    if data is not None and len(str(data.data)) > 0:
+        cmd = str(data.data)
+        print(cmd)
+        headers= {'Authorization': f'Bearer {token}'}
+        body = {"command": cmd}
+        print("Sending Command")
+        response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/garages/{GARAGE_ID}/command",json = body, headers=headers)
+        print(response.status_code, response.text)
+
+
+    
+
 def update_remote():
     while True:
         global socket_connection
@@ -173,6 +190,7 @@ api_connected = False
 # Activate ROS Nodes
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
 rospy.Subscriber("RoverStatus", String, statusSubscriber)
+rospy.Subscriber("GarageCommands", String, garageSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 availability_pub = rospy.Publisher('RoverAvailable', String, queue_size=1)
 garage_pub = rospy.Publisher('GarageStatus', garage_state, queue_size=1)
@@ -292,7 +310,6 @@ def get_garage_state(token):
         headers= {'Authorization': f'Bearer {token}'}
         response = requests.get(f"http://{CLOUD_HOST}:{CLOUD_PORT}/garages/{GARAGE_ID}",headers=headers)
 
-        print(response.status_code)
         if response.status_code ==200:
             contents = json.loads(response.content.decode('utf-8'))
             state = garage_state()
@@ -303,8 +320,6 @@ def get_garage_state(token):
             state.lights_on = contents.get("lights_on", False)
             state.health = contents.get("health","unavailable")
             state.health_details = contents.get("health_description","unavailable")
-
-            print(state)
             garage_pub.publish(state)
 
         else:
@@ -326,7 +341,6 @@ async def update_connection():
 
 async def update_garage(token):
     while True:
-        print("Update Garage")
         get_garage_state(token)
         await asyncio.sleep(5)
 '''

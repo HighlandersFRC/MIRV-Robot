@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-import PIL
+#!/usr/bin/env python3 
 import rospy
 from std_msgs.msg import Float64, String
 from sensor_msgs.msg import JointState, NavSatFix
@@ -57,8 +56,12 @@ def pilit_state_callback(state):
 def pilit_mode_callback(mode):
     rover_state.rover_state["pi_lits"]["state"] = mode.data
 
+def garage_callback(pos: NavSatFix):
+    rover_state.rover_state["garage"]["location"]["lat"] = pos.latitude
+    rover_state.rover_state["garage"]["location"]["long"] = pos.longitude
+
 def update_general(timer_event):
-    if any(value in rover_state.rover_state["subsystems"].values() for value in ("unhealthy", "degraded", "unavailable")):
+    if len([key for key in rover_state.rover_state["subsystems"] if rover_state.rover_state["subsystems"][key]["health"] in ("unhealthy", "degraded", "unavailable")]) > 0:
         rover_state.rover_state["subsystems"]["general"] = {"health": "unhealthy"}
     else:
         rover_state.rover_state["subsystems"]["general"] = {"health": "healthy"}
@@ -89,6 +92,7 @@ heading_sub = rospy.Subscriber("EKF/Odometry", Odometry, heading_callback)
 pilit_state_sub = rospy.Subscriber("pilit/status", PilitStatus, pilit_state_callback)
 pilit_mode_sub = rospy.Subscriber("pilit/mode", String, pilit_mode_callback)
 status_sub = rospy.Subscriber("RoverAvailable", String, status_callback)
+garage_sub = rospy.Subscriber("garage/location_status", NavSatFix, garage_callback)
 
 
 
