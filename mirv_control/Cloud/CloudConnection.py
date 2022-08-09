@@ -30,7 +30,7 @@ CLOUD_PORT = os.getenv('API_PORT')
 ROVER_COMMON_NAME = os.getenv('MIRV_COMMON_NAME')
 USERNAME = os.getenv('API_USERNAME')
 PASSWORD = os.getenv('API_PASSWORD')
-GARAGE = os.getenv('GARAGE_ID')
+GARAGE_ID = os.getenv('GARAGE_ID')
 
 rospy.init_node("CloudConnection")
 
@@ -39,7 +39,7 @@ CLOUD_PORT = rospy.get_param('api_port', CLOUD_PORT)
 ROVER_COMMON_NAME = rospy.get_param('mirv_common_name', ROVER_COMMON_NAME)
 USERNAME = rospy.get_param('api_username', USERNAME)
 PASSWORD = rospy.get_param('api_password', PASSWORD)
-GARAGE = rospy.get_param('garage_id', GARAGE)
+GARAGE_ID = rospy.get_param('garage_id', GARAGE_ID)
 
 
 
@@ -147,7 +147,7 @@ def statusSubscriber(data):
         rospy.loginfo(status)
         if api_connected:
             send_to_api(status)
-        
+            get_garage_state(token)        
         if get_webrtc_state == "connected":
             send_to_webrtc(status)
 
@@ -340,8 +340,11 @@ async def update_connection():
 
 
 async def update_garage(token):
+    print("Started Garage")
     while True:
         get_garage_state(token)
+
+        print("test")
         await asyncio.sleep(5)
 '''
 async def update_status(): 

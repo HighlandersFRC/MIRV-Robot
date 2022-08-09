@@ -163,9 +163,9 @@ class moveToGarage:
             # self.allowSearch = False
 
     def turnToPiLit(self):
-        print("GOT PICKUP CALLBACK")
+        print("GOT GARAGE CALLBACK")
         goal = self._as.accept_new_goal()
-        print("ACCEPTED GOAL TO PICKUP PI LIT!")
+        print("ACCEPTED GOAL TO GO TO GARAGE")
         # running = goal.runPID
         estimatedPiLitAngle = goal.estimatedGarageAngle
         # estimatedPiLitAngle = 360 - goal.estimatedPiLitAngle
@@ -192,7 +192,6 @@ class moveToGarage:
         #         self.velocityMsg.linear.x = 0
         #         self.velocityMsg.angular.z = 0
         #         self.velocitydrive_pub.publish(self.velocityMsg)
-        self.allowSearch = True
 
         self.runPID = True
 
@@ -219,19 +218,11 @@ class moveToGarage:
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
                     self.velocitydrive_pub.publish(self.velocityMsg)
-            if(self.driveToPiLit):
+            elif(self.driveToPiLit):
                 if(self.moveToPiLitRunning == False):
                     self.movementInitTime = time.time()
                     self.moveToPiLitRunning = True
                 self.moveToPiLit()
-            # else:
-            #     storeInitTime = time.time()
-            #     while(time.time() - storeInitTime < 3):
-            #         self.set_intake_state("store")
-            #         self.velocityMsg.linear.x = 0
-            #         self.velocityMsg.angular.z = 0
-            #         self.velocitydrive_pub.publish(self.velocityMsg)
-            #         self._result.finished = True
         self.setAllZeros()
         self._as.set_succeeded(self._result)
 
