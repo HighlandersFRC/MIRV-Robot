@@ -29,6 +29,8 @@ class RoverState:
             "state": ROVER_STATES[8],
             "docked": False,
             "status": ROVER_STATUSES[0],
+            "docked": False,
+            "active_command": "",
             "battery_percent": 0,
             "battery_voltage": 0,
             "subsystems": {
@@ -53,6 +55,13 @@ class RoverState:
                 "pi_lits_stowed_left": 4,
                 "pi_lits_stowed_right": 4,
                 "deployed_pi_lits": []
+            },
+            "garage": {
+                "garage_id": "garage_1",
+                "location": {
+                    "lat": 0,
+                    "long": 0
+                }
             }
         }
         self.timers = {

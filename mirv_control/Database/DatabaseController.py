@@ -128,6 +128,19 @@ def garage_callback(gps_pos: NavSatFix):
     t.append_row("garage", garage_table_columns, (time.time(), gps_pos.latitude, gps_pos.longitude, gps_pos.altitude))
     t.close()
 
+def publish_garage_location(time):
+    t = TableManager()
+    t.connect(r"/mnt/SSD/mirv.db")
+    data = t.get_last_row("garage")
+    t.close()
+    if None in data:
+        return
+    pos = NavSatFix
+    pos.latitude = data[1]
+    pos.longitude = data[2]
+    pos.altitude = data[3]
+    garage_pub.publish(pos)
+
 def query_callback():
     goal = action_server.accept_new_goal()
     feedback = msg.DatabaseFeedback()
@@ -149,6 +162,9 @@ def query_callback():
         result.latitude = data[1]
         result.longitude = data[2]
         result.altitude = data[3]
+    elif goal.table == "pilits-stored":
+        data = t.get_last_row("pilits")
+        result.altitude = [data[1], data[2]]
     t.close()
     action_server.set_succeeded(result)
 
@@ -175,6 +191,10 @@ rospy.init_node("DatabaseController")
 pilit_sub = rospy.Subscriber("pilit/events", pilit_db_msg, pilit_callback)
 pilit_pub = rospy.Publisher("pilit/status", pilit_status_msg, queue_size = 10)
 pilit_pub_timer = rospy.Timer(rospy.Duration(1), publish_pilit_info)
+
+garage_sub = rospy.Subscriber("garage/locations", NavSatFix, garage_callback)
+garage_pub = rospy.Subscriber("garage/location_status", NavSatFix, queue_size = 10)
+garage_pub_timer = rospy.Timer(rospy.Duration(1), publish_garage_location)
 
 action_server = actionlib.SimpleActionServer("Database", msg.DatabaseAction, auto_start = False)
 action_server.register_goal_callback(query_callback)
