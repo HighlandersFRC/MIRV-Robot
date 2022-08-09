@@ -1,6 +1,6 @@
-
-import signal
-import sys
+#!/usr/bin/env python3
+# import signal
+# import sys
 import json
 import time
 import rospy
@@ -10,7 +10,7 @@ rospy.init_node("CloudConnection")
 
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 availability_pub = rospy.Publisher('RoverAvailable', String, queue_size=1)
-
+print("Here")
 
 #pi_lit_msg = json.dumps({"subsystem": "pi_lit", "command": "sequential"})
 
@@ -20,7 +20,7 @@ availability_pub = rospy.Publisher('RoverAvailable', String, queue_size=1)
 
 cancel = json.dumps({"command":"cancel","subsystem":"general","runtimeType":"generalCommand"})
 
-deploy_pi_lits = json.dumps({"command":"deploy_pi_lits","subsystem":"general","runtimeType":"generalCommand"})
+# deploy_pi_lits = json.dumps({"command":"deploy_pi_lits","subsystem":"general","runtimeType":"generalCommand"})
 
 retrieve_pi_lits = json.dumps({"command":"retrieve_pi_lits","subsystem":"general","runtimeType":"generalCommand"})
 
@@ -39,7 +39,7 @@ drive_rover = json.dumps({"command":"arcade","commandParameters":{"x":0.0,"y":0.
 
 disable_remote = json.dumps({"command":"disable_remote_operation","subsystem":"general","runtimeType":"generalCommand"})
 
-goto_point = json.dumps({"command":"to_location","commandParameters":{"lat":39.0,"long":-105.0,"runtimeType":"movement"},"subsystem":"movement","runtimeType":"movementCommand"})
+goto_point = json.dumps({"command":"deploy_pi_lits","commandParameters":{"location":{"long":-103.5,"lat":39.0},"formation":"taper_left_3","runtimeType":"piLitPlacement"},"subsystem":"general","runtimeType":"generalCommand"})
 
 
 disable = json.dumps({"command":"disable","subsystem":"general","runtimeType":"generalCommand"})
@@ -54,7 +54,6 @@ running = True
 
 sequence = [
     cancel,
-    deploy_pi_lits,
     retrieve_pi_lits,
     deploy,
     enable,
@@ -65,8 +64,7 @@ sequence = [
     drive_rover,
     disable_remote,
     goto_point,
-    disable,
-    e_stop
+    disable
 ]
 
 
@@ -77,9 +75,10 @@ while not rospy.is_shutdown():
 
 
     print("Press Enter to send an input, type q to quit")
-    step = input()
-    if step == 'q':
-        exit()
+    # step = input()
+    # if step == 'q':
+    #     exit()
+    time.sleep(1)
     command_pub.publish(sequence[index])
     print("Sending Message:", sequence[index])
 
