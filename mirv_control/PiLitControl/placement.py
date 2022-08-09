@@ -67,13 +67,13 @@ def getEndPoint(lat1, lon1, bearing, d):
 
 def generate_pi_lit_formation(lat_long, heading, lane_width, formation_type):
     if formation_type == "taper_right_3":
-        return spear_7(lat_long, heading, lane_width)
+        return taper_3(lat_long, heading, lane_width)
     elif formation_type == "taper_left_3":
-        return spear_7(lat_long, heading, lane_width, left_side=True)
+        return taper_3(lat_long, heading, lane_width, left_side=True)
     elif formation_type == "taper_right_5":
-        return spear_7(lat_long, heading, lane_width)
+        return taper_5(lat_long, heading, lane_width)
     elif formation_type == "taper_left_5":
-        return spear_7(lat_long, heading, lane_width, left_side=True)
+        return taper_5(lat_long, heading, lane_width, left_side=True)
     elif formation_type == "spear_7":
         return spear_7(lat_long, heading, lane_width)
 

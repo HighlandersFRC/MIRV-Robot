@@ -164,7 +164,7 @@ class CloudAlServer():
                 rospy.logwarn("lost Connection to Cloud")
                 if (self._as.is_active()):
                     self._as.set_aborted()
-            time.sleep(0.1)
+            time.sleep(0.5)
 
 
 if __name__ == '__main__':

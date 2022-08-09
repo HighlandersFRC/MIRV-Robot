@@ -304,10 +304,31 @@ class RoverInterface():
         if msg.EStop:
             os.system("rosnode kill --all")
         if msg.teleopDrive:
+            self.PP_client_cancels
+            self.enableTeleopDrive
+            self.pickup_client_cancel
+        if msg.stow
             pass
-            # self.PP_client_cancels
-            # self.enableTeleopDrive
-            # self.pickup_client_cancel
+        if msg.deploy:
+            pass
+        if msg.teleopDrive:
+            pass
+        if msg.connected:
+            pass
+        if msg.placePiLit:
+            pass
+        if msg.pickupPiLit
+            pass
+        if msg.connectedEnabled:
+            pass
+        if msg.cancelAutoDrive:
+            pass
+        if msg.deployAllPiLits:
+            pass
+        if msg.retrieveAllPiLits:
+            pass
+        if msg.driveToWaypoint:
+            pass
 
 
 if __name__ == '__main__':
