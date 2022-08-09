@@ -9,16 +9,26 @@ LANE_TYPES = ["general", "right-shoulder",
               "left-shoulder", "right-lane", "left-lane"]
 
 
-# Taper: Taper consisting of 5 pucks spaced at 10 feet longitudinally, equally spaced in the lane or shoulder laterally
+# 3 Taper: Taper consisting of 3 pucks spaced at 10, 100, and 200 feet longitudinally, at the outside, center, and center of the lane, respectively
+# Source: https://schneiderjobs.com/blog/how-to-place-emergency-triangles, Divided highways and one-way roads
+# | 200 feet | ---------              100 feet | ---------          10 feet | --------- | lane width
+#                                                                           >           |
+#                                                                                       |
+#            >                                 >                                        |
+#                                                                                       |
+#                                                                                       |
+
+
+# 5 Taper: Taper consisting of 5 pucks spaced at 10 feet longitudinally, equally spaced in the lane or shoulder laterally
 # | --------- | 10 feet                            | lane width
-# >                                                |
-#             >                                    |
-#                         >                        |
-#                                     >            |
 #                                                 >|
+#                                     >            |
+#                         >                        |
+#             >                                    |
+# >                                                |
 
 
-# Spear: Spear consisting of 7 pucks spaced at 10 feet longitudinally, equally spaced in the lane or shoulder laterally
+# 7 Spear: Spear consisting of 7 pucks spaced at 10 feet longitudinally, equally spaced in the lane or shoulder laterally
 # | --------- | 10 feet
 # >                                                | lane width
 #             >                                    |
@@ -53,16 +63,66 @@ def getEndPoint(lat1, lon1, bearing, d):
     return lat2, lon2
 
 
-def generate_pi_lit_formation(lat_long, heading, lane_width, lane_type):
-    if lane_type == "general":
-        return get_spear_pi_lit_locations(lat_long, heading, lane_width)
-    elif lane_type == "right-lane":
-        return get_taper_pi_lit_locations(lat_long, heading, lane_width)
-    elif lane_type == "left-lane":
-        return get_taper_pi_lit_locations(lat_long, heading, lane_width, left_side=True)
+# taper_right_3, taper_left_3, taper_right_5, taper_left_5, spear_7
+
+def generate_pi_lit_formation(lat_long, heading, lane_width, formation_type):
+    if formation_type == "taper_right_3":
+        return spear_7(lat_long, heading, lane_width)
+    elif formation_type == "taper_left_3":
+        return spear_7(lat_long, heading, lane_width, left_side=True)
+    elif formation_type == "taper_right_5":
+        return spear_7(lat_long, heading, lane_width)
+    elif formation_type == "taper_left_5":
+        return spear_7(lat_long, heading, lane_width, left_side=True)
+    elif formation_type == "spear_7":
+        return spear_7(lat_long, heading, lane_width)
 
 
-def get_taper_pi_lit_locations(lat_long, heading, lane_width, left_side=False):
+def taper_3(lat_long, heading, lane_width, left_side=False):
+
+    lat, long = lat_long
+
+    # Start location: Left hand side, at start of formation
+    start_lat = lat
+    start_long = long
+
+    # Positive for to the right of start, negative for to the left of start
+    sign = -1 if left_side else -1
+
+    # longitudinal_dist: longitudal distance from start point to pi-lit, in feet
+    # lateral_dist: lateral (sideways) distance from the edge of the lane, in lane widths
+    PI_LIT_LOCATIONS = [
+        {'longitudinal_dist': 10, 'lateral_dist': 0.128},
+        {'longitudinal_dist': 100, 'lateral_dist': 0.5},
+        {'longitudinal_dist': 200, 'lateral_dist': 0.5},
+    ]
+
+    pi_lit_locations = []
+    for loc in PI_LIT_LOCATIONS:
+        # Convert units
+        longitudinal_dist_meters = loc['longitudinal_dist'] * FEET_TO_METERS
+        lateral_dist_meters = loc['lateral_dist'] * \
+            lane_width * FEET_TO_METERS * sign
+
+        # Generate angle and hypotenuse
+        pi_lit_angle_relative = math.atan2(lateral_dist_meters,
+                                           longitudinal_dist_meters) * RADIANS_TO_DEGREES
+        pi_lit_angle = heading + pi_lit_angle_relative
+        pi_lit_distance = math.sqrt(
+            longitudinal_dist_meters**2 + lateral_dist_meters**2)
+
+        # Get end of vector
+        location = getEndPoint(start_lat, start_long,
+                               pi_lit_angle, pi_lit_distance)
+
+        # Save value to array
+        loc_rev = [location[0], location[1]]
+        pi_lit_locations.append(loc_rev)
+
+    return pi_lit_locations
+
+
+def taper_5(lat_long, heading, lane_width, left_side=False):
     NUMBER_PI_LITS = 5
     LONGITUDINAL_DISTANCE_METERS = 10 * FEET_TO_METERS
     LATERAL_DISTANCE_METERS = lane_width / (NUMBER_PI_LITS - 1)
@@ -91,7 +151,7 @@ def get_taper_pi_lit_locations(lat_long, heading, lane_width, left_side=False):
     return pi_lit_locations
 
 
-def get_spear_pi_lit_locations(lat_long, heading, lane_width):
+def spear_7(lat_long, heading, lane_width):
     NUMBER_PI_LITS = 7
     NUMBER_PI_LIT_LEFT = int((NUMBER_PI_LITS - 1) / 2 + 1)
     NUMBER_PI_LIT_RIGHT = int((NUMBER_PI_LITS - 1) / 2 + 1)
@@ -127,15 +187,6 @@ def get_spear_pi_lit_locations(lat_long, heading, lane_width):
         pi_lit_locations.append(location)
 
     return pi_lit_locations
-
-    #   [
-    #     -104.9694299697876,
-    #     40.47414792840873
-    #   ],
-    #   [
-    #     -104.9693588912487,
-    #     40.474197917051015
-    #   ]
 
 
 def test():
