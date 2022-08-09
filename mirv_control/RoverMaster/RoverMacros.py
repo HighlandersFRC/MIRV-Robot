@@ -17,28 +17,8 @@ from sensor_msgs.msg import NavSatFix
 
 class roverMacros():
     def __init__(self, Interface: RoverInterface):
-        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
-        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
         self.interface = Interface
         self.limit_switches = [1, 1, 0, 0]
-
-    def limit_switch_callback(self, switches):
-        limit_switches = switches.data
-
-    def stopIntakeAndMagazine(self):
-        self.intake_command_pub.publish(String("disable"))
-
-    def intakeDown(self):
-        self.intake_command_pub.publish(String("down"))
-
-    def intakeUp(self):
-        self.intake_command_pub.publish(String("reset"))
-
-    def magazineIn(self):
-        self.intake_command_pub.publish(String("mag_in"))
-
-    def magazineOut(self):
-        self.intake_command_pub.publish(String("mag_out"))
 
     def undock(self):
         self.interface.deployGarage()
@@ -47,8 +27,8 @@ class roverMacros():
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
-        self.intake_command_pub.publish(String(intakeSide))
-        self.intake_command_pub.publish(String("deposit"))
+        self.interface.intake_command_pub.publish(String(intakeSide))
+        self.interface.intake_command_pub.publish(String("deposit"))
         while not self.limit_switches[3] and not self.limit_switches[2]:
             if time.time() - start_time > timeout:
                 print("Timed out - Deposit")
@@ -67,7 +47,7 @@ class roverMacros():
             side = "switch_left"
         self.placePiLitFromSide(6, side)
         time.sleep(2)
-        self.intake_command_pub.publish(String("reset"))
+        self.interface.intake_command_pub.publish(String("reset"))
         self.interface.loadPointToSQL("deploy", side)
 
     def placeAllPiLits(self, points):
@@ -76,7 +56,7 @@ class roverMacros():
             target = [point]
             self.interface.PP_client_goal(target)
             self.placePiLitFromSide(6, intakeSide)
-            self.intake_command_pub.publish(String("reset"))
+            self.interface.intake_command_pub.publish(String("reset"))
 
             self.interface.loadPointToSQL("deploy", intakeSide)
 
@@ -92,7 +72,7 @@ class roverMacros():
         for i in range(0, count):
             self.placePiLitFromSide(4, intakeSide)
 
-            self.intake_command_pub.publish(String("reset"))
+            self.interface.intake_command_pub.publish(String("reset"))
 
             if(intakeSide == "switch_right"):
                 intakeSide = "switch_left"

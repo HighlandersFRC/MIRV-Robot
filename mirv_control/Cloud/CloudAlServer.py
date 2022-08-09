@@ -63,7 +63,6 @@ class CloudAlServer():
         self._feedback.driveToLatLong = []
 
     def resetControlState(self):
-        self._feedback.cancelAutoDrive = True
         self._feedback.teleopDrive = False
         self._feedback.placePiLit = False
         self._feedback.pickupPiLit = False
@@ -77,8 +76,11 @@ class CloudAlServer():
     def cloud_cb(self, message):
         self.heartBeatTime = 0
         self.cloudConnected = True
+        sendRequired = True
         self._feedback.connected = self.cloudConnected
         msg = json.loads(message.data)
+        self._feedback.pickupPiLit = False
+        self._feedback.placePiLit = False
         subsystem = msg.get("subsystem",{})
         if subsystem == "general":
             command = msg.get("command", {})
@@ -106,8 +108,10 @@ class CloudAlServer():
                 self.resetControlState()
                 self._feedback.retrieveAllPiLits = True
             elif command == "enable_remote_operation":
+                self.resetControlState()
                 self._feedback.teleopDrive = True
             elif command == "disable_remote_operation":
+                self.resetControlState()
                 self._feedback.teleopDrive = False
             else:
                 rospy.logerr("Unknown command in general subsystem")
@@ -115,6 +119,7 @@ class CloudAlServer():
         elif subsystem == "heartbeat":
             command = msg.get("command", {})
             if command == "heartbeat":
+                sendRequired = False
                 print("recived heartbeat Command")
             else:
                 rospy.logerr("Unknown command in general subsystem")
@@ -122,11 +127,11 @@ class CloudAlServer():
         elif subsystem == "intake":
             command = msg.get("command", {})
             if command == "pickup_1_pi_lit":
-                self.resetControlState()
                 self._feedback.pickupPiLit = True
+                self._feedback.placePiLit = False
             elif command == "place_1_pi_lit":
-                self.resetControlState()
                 self._feedback.placePiLit = True
+                self._feedback.pickupPiLit = False
             else:
                 rospy.logerr("Unknown command in intake subsystem")
         elif subsystem == "drivetrain":
@@ -146,7 +151,7 @@ class CloudAlServer():
             rospy.logerr("Unknown subsystem")
         print("looping")
         
-        if (self._as.is_active()):
+        if (self._as.is_active() and sendRequired):
             print("sending message")
             self._as.publish_feedback(self._feedback)
 

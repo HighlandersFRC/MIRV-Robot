@@ -22,6 +22,7 @@ class RoverController():
         self.rate = rospy.Rate(1)
         self.interface = RoverInterface()
         self.macros = RoverMacros(self.interface)
+        self.interface.loadRoverMacro(self.macros)
         #self.faults = FaultStates(self.interface)
 
         # rospy.init_node("DatabaseActionClient")
@@ -31,6 +32,7 @@ class RoverController():
     def updateStatus(self):
         while not rospy.is_shutdown():
             print("looping")
+            self.interface.stateWatchdog()
             self.interface.cloudController_client_goal()
             self.rate.sleep()
 
