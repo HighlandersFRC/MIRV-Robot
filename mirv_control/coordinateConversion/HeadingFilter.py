@@ -9,8 +9,8 @@ import actionlib
 
 class ComputeHeading():
     relativeHeadingChange = 0
-    calibrationLength = 40
-    failCount = 60
+    calibrationLength = 100
+    failCount = 150
     currentHeading = 0
     sampleCountGPS = 0
     sampleCountIMU = 0

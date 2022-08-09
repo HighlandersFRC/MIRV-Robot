@@ -52,7 +52,7 @@
         respawn="$(arg respawn)" 
         respawn_delay="$(arg respawn_delay)"/>
     <!-- <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py" output = "screen"/> -->
-    <node name="arUcoDetector" pkg="mirv_real" type="detectArucoMarkers.py" output="screen"/>
+    <node name="arUcoDetector" pkg="mirv_real" type="detectArucoMarkers.py"/>
     <!-- <node name="laneLineDetector" pkg="mirv_real" type="detectLaneLines.py"/> -->
     <!-- <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py"/> -->
     <node name="garageDocking" pkg="mirv_control" type="moveToGarage.py" output="screen"/>

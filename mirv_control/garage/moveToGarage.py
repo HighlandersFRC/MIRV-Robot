@@ -218,7 +218,7 @@ class moveToGarage:
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
                     self.velocitydrive_pub.publish(self.velocityMsg)
-            else if(self.driveToPiLit):
+            elif(self.driveToPiLit):
                 if(self.moveToPiLitRunning == False):
                     self.movementInitTime = time.time()
                     self.moveToPiLitRunning = True
