@@ -18,21 +18,46 @@ class roverMacros():
     def __init__(self, Interface):
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.garage_pub = rospy.Subscriber("GarageCommands", String, queue_size = 10)
+        self.garage_sub = rospy.Subscriber("GarageStatus", String, self.garage_state_callback)
         self.interface = Interface
         self.limit_switches = [1, 1, 0, 0]
-    #     self.placementSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.placementCallback)
+        self.garage_state = "retracted_latched"
 
-    # def placementCallback(self, msg):
-    #     print(msg)
+    def garage_state_callback(self, msg):
+        self.garage_state = msg.data        
 
     def limit_switch_callback(self, switches):
         limit_switches = switches.data
-        # print(limit_switches)
 
-    def placePiLit(self, timeout, intakeSide):
+    def deployGarage(self):
+        self.garage_pub.publish(String("deploy"))
+        while self.garage_state != "deployed":
+            time.sleep(0.1)
+
+    def retractGarage(self):
+        self.garage_pub.publish(String("retract"))
+        while self.garage_state != "retracted_latched":
+            time.sleep(0.1)
+    def stopIntakeAndMagazine(self):
+        self.intake_command_pub.publish(String("disable"))
+
+    def intakeDown(self):
+        self.intake_command_pub.publish(String("down"))
+
+    def intakeUp(self):
+        self.intake_command_pub.publish(String("reset"))
+
+    def magazineIn(self):
+        self.intake_command_pub.publish(String("mag_in"))
+
+    def magazineOut(self):
+        self.intake_command_pub.publish(String("mag_out"))
+
+    def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
-        self.intake_command_pub.publish(String("deposit"))
         self.intake_command_pub.publish(String(intakeSide))
+        self.intake_command_pub.publish(String("deposit"))
         while not self.limit_switches[3] and not self.limit_switches[2]:
             if time.time() - start_time > timeout:
                 print("Timed out - Deposit")
@@ -40,12 +65,26 @@ class roverMacros():
         time.sleep(1)
         return True
 
+    def placePiLit(self):
+        stored = self.interface.getPiLitsStored()
+        if not stored or len(stored) != 2:
+            rospy.logerr("Invalid number of stored Pi-Lits")
+            return
+        if stored[0] > stored[1]:
+            side = "switch_right"
+        else:
+            side = "switch_left"
+        self.placePiLitFromSide(6, side)
+        time.sleep(2)
+        self.intake_command_pub.publish(String("reset"))
+        self.interface.loadPointToSQL("deploy", side)
+
     def placeAllPiLits(self, points):
         intakeSide = "switch_right"
         for point in points:
             target = [point]
             self.interface.PP_client_goal(target)
-            self.placePiLit(6, intakeSide)
+            self.placePiLitFromSide(6, intakeSide)
             self.intake_command_pub.publish(String("reset"))
 
             self.interface.loadPointToSQL("deploy", intakeSide)
@@ -60,7 +99,7 @@ class roverMacros():
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"
         for i in range(0, count):
-            self.placePiLit(4, intakeSide)
+            self.placePiLitFromSide(4, intakeSide)
 
             self.intake_command_pub.publish(String("reset"))
 
@@ -83,8 +122,17 @@ class roverMacros():
         TP = currentPoint - UV*d2
         return TP
 
-    def pickupOnePiLit(self):
-        self.interface.pickup_client_goal("switch_right", 5)
+    def pickupPiLit(self):
+        stored = self.interface.getPiLitsStored()
+        if not stored or len(stored) != 2:
+            rospy.logerr("Invalid number of stored Pi-Lits")
+            return
+        if stored[0] < stored[1]:
+            side = "switch_right"
+        else:
+            side = "switch_left"
+        self.interface.pickup_client_goal(side, 0)
+        self.interface.loadPointToSQL("retrieve", side)
 
     def pickupAllPiLits(self, lists, reverse):
         intakeSide = "switch_right"

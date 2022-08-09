@@ -5,6 +5,7 @@
 # managing hierarchy of systems
 # calling macros or subsystem calls
 
+import time
 import RoverInterface
 import mirv_control.msg
 import rospy
@@ -21,8 +22,7 @@ class RoverController():
         self.rate = rospy.Rate(1)
         self.interface = RoverInterface()
         self.macros = RoverMacros(self.interface)
-        print("set up rover controller")
-        # self.faults = FaultStates(self.interface)
+        #self.faults = FaultStates(self.interface)
 
         # rospy.init_node("DatabaseActionClient")
         # self.client = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
@@ -35,9 +35,8 @@ class RoverController():
             self.rate.sleep()
 
     def main(self):
-        print("test")
-        # # self.interface.garage_client_goal(0.0)
-        # # self.macros.pickupOnePiLit()
+        #self.interface.garage_client_goal(0)
+        # self.macros.pickupOnePiLit()
         # print(self.interface.Calibrate_client_goal())
         # point1 = self.interface.CoordConversion_client_goal([40.4739166, -104.9697508])
         # point2 = self.interface.CoordConversion_client_goal([40.4739969, -104.9696509])
@@ -67,31 +66,11 @@ class RoverController():
         # # # self.client.wait_for_result()
         # # # placedPiLitLocations = self.client.get_result()
         # # # points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
+        pass
 
-<<<<<<< HEAD
-        points = self.interface.getLatestSqlPoints()
-    
-        
-        print(points)
-        self.macros.pickupAllPiLits(points, False)
-        # point1 = self.interface.CoordConversion_client_goal([40.4741954, -104.9692536])
-        # target = [point1]
-        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
-        # self.macros.placePiLit(4)
-        # self.interface.pickup_client_goal("switch_right", 5)
-        # target = [point2, point3, point4]
-        # estimatedPiLitAngle = self.interface.PP_client_goal(target)
-        # self.interface.pickup_client_goal("switch_left", 5)
-        # target = [point5]
-        # self.interface.PP_client_goal(target)
-        # self.interface.pickup_client_goal("switch_right", 5)
-
-        # self.interface.pickup_client_goal("switch_right", 0)
-=======
-        # # self.macros.pickupAllPiLits(points, False)
->>>>>>> 8e59ebb114af6ca4758ad5c2799ff6a406253e46
 if __name__ == "__main__":
     controller = RoverController()
+    time.sleep(4)
     updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
     mainThread = threading.Thread(target = controller.main, name = "thread2")
     print("starting threads")

@@ -7,7 +7,7 @@ class DatabaseClient:
         rospy.init_node("DatabaseActionClient")
         self.client = actionlib.SimpleActionClient("Database", msg.DatabaseAction)
         self.client.wait_for_server()
-        msg.DatabaseGoal.table = "pilits"
+        msg.DatabaseGoal.table = "pilits-stored"
         self.goal = msg.DatabaseGoal
         self.client.send_goal(self.goal)
         self.client.wait_for_result()

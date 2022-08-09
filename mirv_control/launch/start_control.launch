@@ -7,7 +7,7 @@
 <!--        respawn="$(arg respawn)"-->
 <!--        respawn_delay="$(arg respawn_delay)"/>-->
     <node name="IMUFilter" pkg="mirv_control" type="imuFilter.py"/>
-    <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py"/>
+    <!-- <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py"/> -->
     <node name="ComputeStartHeading" pkg="mirv_control" type="HeadingFilter.py"/>
 
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_broadcaster"  args="0 0 0 0 0 0 /map /odom 1"/>
