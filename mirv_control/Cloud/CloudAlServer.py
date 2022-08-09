@@ -87,7 +87,7 @@ class CloudAlServer():
             elif command == "disable":
                 self._feedback.teleopDrive = False
                 self._feedback.connectedEnabled = False
-                self._feedback.cancelAutoDrive = True
+                self._feedback.cancelCommand = True
             elif command == "enable":
                 self._feedback.connectedEnabled = True
             elif command == "deploy":
@@ -95,7 +95,7 @@ class CloudAlServer():
             elif command == "stow":
                 self._feedback.stow = True
             elif command == "cancel":
-                self._feedback.cancelAutoDrive = True
+                self._feedback.cancelCommand = True
             elif command == "deploy_pi_lits":
                 print(msg)
                 self.resetControlState()
