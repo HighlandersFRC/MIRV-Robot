@@ -42,7 +42,7 @@ class roverMacros():
 
     def undock(self):
         self.interface.deployGarage()
-        self.interface.drive(-0.2, 3)
+        self.interface.drive(-0.2, 6)
         self.interface.turn(math.pi, 4)
 
     def placePiLitFromSide(self, timeout, intakeSide):
@@ -122,7 +122,7 @@ class roverMacros():
             side = "switch_right"
         else:
             side = "switch_left"
-        self.interface.pickup_client_goal(side, 0)
+        self.interface.pickup_client_goal(side, 0.1)
         self.interface.loadPointToSQL("retrieve", side)
 
     def pickupAllPiLits(self, lists, reverse):
