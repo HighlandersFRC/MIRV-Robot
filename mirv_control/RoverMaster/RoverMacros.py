@@ -39,6 +39,7 @@ class roverMacros():
         self.garage_pub.publish(String("retract"))
         while self.garage_state != "retracted_latched":
             time.sleep(0.1)
+            
     def stopIntakeAndMagazine(self):
         self.intake_command_pub.publish(String("disable"))
 
