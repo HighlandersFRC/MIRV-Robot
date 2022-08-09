@@ -139,7 +139,7 @@ def detectArUcoMarkers(image, depthFrame):
 
             tvec[2] = tvec[2] * DEPTH_SCALING_FACTOR
 
-            print("ANGLE: ", rvec, " DEPTH: ", tvec)
+            print("ANGLE: ", angle, " DEPTH: ", depth)
 
             if(depth != 0):
                 location = [depth, angle]

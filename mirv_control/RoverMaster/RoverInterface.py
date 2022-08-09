@@ -267,7 +267,7 @@ class RoverInterface():
             self.PP_client_cancels
             self.enableTeleopDrive
             self.pickup_client_cancel
-        if msg.stow
+        if msg.stow:
             pass
         if msg.deploy:
             pass
@@ -277,7 +277,7 @@ class RoverInterface():
             pass
         if msg.placePiLit:
             pass
-        if msg.pickupPiLit
+        if msg.pickupPiLit:
             pass
         if msg.connectedEnabled:
             pass
