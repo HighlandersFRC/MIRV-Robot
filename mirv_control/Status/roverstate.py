@@ -25,8 +25,9 @@ class RoverState:
     def __init__(self):
         self.rover_state = {
             "timestamp": int(time.time() * 1000),
-            "rover_id": "rover_dory",
+            "rover_id": "rover_44",
             "state": ROVER_STATES[8],
+            "docked": False,
             "status": ROVER_STATUSES[0],
             "docked": False,
             "active_command": "",
@@ -50,7 +51,7 @@ class RoverState:
                 "speed": 0
             },
             "pi_lits": {
-                "state": "sequential_1",
+                "state": "wave",
                 "pi_lits_stowed_left": 4,
                 "pi_lits_stowed_right": 4,
                 "deployed_pi_lits": []

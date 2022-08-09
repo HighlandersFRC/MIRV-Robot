@@ -161,10 +161,10 @@ class CloudAlServer():
             if (self.heartBeatTime >= 1.5):
                 self.cloudConnected = False
                 self.resetToDefault()
-                rospy.logwarn("lost Connection to Cloud")
+                # rospy.logwarn("lost Connection to Cloud")
                 if (self._as.is_active()):
                     self._as.set_aborted()
-            time.sleep(0.1)
+            time.sleep(0.5)
 
 
 if __name__ == '__main__':

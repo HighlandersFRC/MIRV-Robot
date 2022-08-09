@@ -83,7 +83,7 @@ detections = 0
 
 runningNeuralNetwork = True
 
-hFOV = 52
+hFOV = 63
 horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels

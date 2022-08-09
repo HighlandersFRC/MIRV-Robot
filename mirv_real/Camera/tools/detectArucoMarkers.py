@@ -81,13 +81,13 @@ transform=transforms.Compose([
 
 detections = 0
 
-hFOV = 52
+hFOV = 63
 horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
-cameraMatrix = np.array([[345.8860714,    0,         302.95331804],
- [  0,         341.3646748,  283.84150363],
+cameraMatrix = np.array([[402.62901912,   0,         312.7377781],
+ [  0,         415.62202789, 225.59830764],
  [  0,           0,           1        ]])
 
 DEPTH_SCALING_FACTOR = 1.27/0.829
@@ -139,7 +139,7 @@ def detectArUcoMarkers(image, depthFrame):
 
             tvec[2] = tvec[2] * DEPTH_SCALING_FACTOR
 
-            print("ANGLE: ", rvec, " DEPTH: ", tvec)
+            print("ANGLE: ", angle, " DEPTH: ", depth)
 
             if(depth != 0):
                 location = [depth, angle]

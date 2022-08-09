@@ -54,11 +54,13 @@ class RoverInterface():
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
         self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
         self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
+        self.garage_sub = rospy.Subscriber("GarageStatus", String, self.garage_state_callback)
 
         # PUBLISHERS
         self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg, queue_size=5)
         self.simpleDrivePub = rospy.Publisher("/cmd_vel", Twist, queue_size = 5)
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
+        self.garage_pub = rospy.Publisher("GarageCommands", String, queue_size = 10)
         # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
 
         self.isJoystickControl = True
@@ -72,6 +74,7 @@ class RoverInterface():
         self.yPos = 0
         self.placementPoints = []
         self.storedPiLits = [4, 4]
+        self.garage_state = "retracted_latched"
 
     # def setPiLitSequence(self, is_wave: bool):
     #     self.pilit_controller.patternType(is_wave)
@@ -80,6 +83,43 @@ class RoverInterface():
     # def setPiLitSequenceReversed(self, reversed: bool):
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
+
+    def garage_state_callback(self, msg):
+        self.garage_state = msg.data
+
+    def deployGarage(self):
+        self.garage_pub.publish(String("deploy"))
+        while self.garage_state != "deployed":
+            time.sleep(0.1)
+
+    def retractGarage(self):
+        self.garage_pub.publish(String("retract"))
+        while self.garage_state != "retracted_latched":
+            time.sleep(0.1)
+
+    def drive(self, vel, seconds):
+        twist = Twist()
+        twist.linear.x = vel
+        startTime = time.time()
+        self.simpleDrivePub.publish(twist)
+        while startTime - time.time() < seconds:
+            pass
+        stop = Twist()
+        stop.linear.x = 0
+        self.simpleDrivePub.publish(stop)
+
+    def turn(self, radians, seconds):
+        if seconds == 0:
+            return False
+        twist = Twist()
+        twist.angular.z = radians / seconds
+        startTime = time.time()
+        self.simpleDrivePub.publish(twist)
+        while startTime - time.time() < seconds:
+            pass
+        stop = Twist()
+        stop.angular.z = 0
+        self.simpleDrivePub.publish(stop)
 
     def updatePlacementPoints(self, data):
         self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
