@@ -21,6 +21,12 @@ class CloudAlServer():
     cloudConnected = False
     lastCommandStatus = _feedback
     heartBeatTime = 0
+    TELEOP_DRIVE = "remote_operation"
+    TELEOP_DRIVE_AUTONOMOUS = "remote_operation_autonomous"
+    DISABLED = "disabled"
+    CONNECTED_DISABLED = "connected_disabled"
+    CONNECTED_ENABLED = "connected_idle"
+    AUTONOMOUS = "autonomous"
     def __init__(self):
         rospy.init_node("CloudAlServer")
 
