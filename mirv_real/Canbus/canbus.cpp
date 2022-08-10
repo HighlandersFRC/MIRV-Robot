@@ -126,6 +126,8 @@ void initializeIntakeMotors(){
 	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
 
 	intakeWheelMotor.OverrideLimitSwitchesEnable(false);
+	rightConvMotor.OverrideLimitSwitchesEnable(false);
+	leftConvMotor.OverrideLimitSwitchesEnable(false);
 }
 
 //maximum rpm of drive motors
@@ -245,6 +247,7 @@ class Publisher {
 	ros::Publisher encoderOdometryPub;
 	ros::Publisher encoderVelocityPub;
 	ros::Publisher intakeLSPub;
+	ros::Publisher touchSensorPub;
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -289,6 +292,13 @@ class Publisher {
 		limitSwitches.data.push_back(intakeWheelMotor.GetSensorCollection().IsRevLimitSwitchClosed());
 		intakeLSPub.publish(limitSwitches);
 	}
+
+	void publishTouchSensor(){
+		std_msgs::Float64MultiArray touchSensors;
+		touchSensors.data.push_back(rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed());
+		touchSensors.data.push_back(leftConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed());
+		touchSensorPub.publish(touchSensors);
+	};
 };
 
 Publisher publisher;
@@ -598,7 +608,10 @@ int main(int argc, char **argv) {
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
 	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
-	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));	
+	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
+
+	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 10);
+	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishTouchSensor, publisher));
 
 	initializeDriveMotors();
 	initializeIntakeMotors();
