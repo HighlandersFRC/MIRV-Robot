@@ -182,7 +182,7 @@ def get_frame_transform(from_frame, to_frame):
     quat[3] = from_frame.orientation.w
     t1 = position
     r1 = R.from_quat(quat)
-    R1 = r1.as_dcm()
+    R1 = r1.as_matrix()
 
     position = [0, 0, 0]
     position[0] = to_frame.position.x
@@ -195,11 +195,12 @@ def get_frame_transform(from_frame, to_frame):
     quat[3] = to_frame.orientation.w
     t2 = position
     r2 = R.from_quat(quat)
-    R2 = r2.as_dcm()
+    R2 = r2.as_matrix()
 
     tz = (np.transpose(R1).dot(t2) - np.transpose(R1).dot(t1))
     Rz = np.transpose(R1).dot(R2)
-    rz = R.from_dcm(Rz)
+    rz = R.from_matrix(Rz)
+    tmp = rz.as_euler(constants.EULER_ORDER)
     rz = rz.as_quat()
 
     result = Pose()
