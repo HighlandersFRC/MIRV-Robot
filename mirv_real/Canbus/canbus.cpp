@@ -296,7 +296,7 @@ class Publisher {
 	void publishTouchSensor(){
 		std_msgs::Float64MultiArray touchSensors;
 		touchSensors.data.push_back(rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed());
-		touchSensors.data.push_back(leftConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed());
+		touchSensors.data.push_back(rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed());
 		touchSensorPub.publish(touchSensors);
 	};
 };
