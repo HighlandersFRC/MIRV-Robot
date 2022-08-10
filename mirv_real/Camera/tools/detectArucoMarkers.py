@@ -25,6 +25,7 @@ from std_msgs.msg import Float64MultiArray
 from cv_bridge import CvBridge
 import ros_numpy
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
+from std_msgs.msg import Float64MultiArray, String
 
 br = CvBridge()
 
@@ -44,6 +45,8 @@ horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
+runningDetection = True
+
 cameraMatrix = np.array([[402.62901912,   0,         312.7377781],
  [  0,         415.62202789, 225.59830764],
  [  0,           0,           1        ]])
@@ -52,17 +55,22 @@ DEPTH_SCALING_FACTOR = 1.27/0.829
 
 distCoefficients = np.array([[-0.02239511,  0.03570026, -0.00733071, -0.00355913,  0.00224717]])
 
+def allowNeuralNetRun(msg):
+    cmd = msg.data
+    global runningDetection
+    if(cmd == "aruco"):
+        runningDetection = True
+    else:
+        runningDetection = False
+
 # callback function when receiving a frame
 def gotFrame(data):
     # print("GOT A FRAME")
-    initTime = time.time()
-    frame = ros_numpy.numpify(data.color_frame)
-    depthFrame = ros_numpy.numpify(data.depth_frame)
-    detections = detectArUcoMarkers(frame, depthFrame)
-    # cv2.imshow("detections", detections)
-    # cv2.waitKey(1)
-    # print("TIMEDIFF: ", time.time() - initTime)
-    # cv2.destroyAllWindows()
+    if(runningDetection):
+        initTime = time.time()
+        frame = ros_numpy.numpify(data.color_frame)
+        depthFrame = ros_numpy.numpify(data.depth_frame)
+        detections = detectArUcoMarkers(frame, depthFrame)
 
 def detectArUcoMarkers(image, depthFrame):
     arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_50)
@@ -71,7 +79,6 @@ def detectArUcoMarkers(image, depthFrame):
 
     distance = 0
     angle = 0
-
     if len(corners) > 0:
         # flatten the ArUco IDs list
         ids = ids.flatten()
@@ -111,6 +118,7 @@ rospy.init_node('arUcoDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 
 garageLocationPub = rospy.Publisher('garageLocation', Float64MultiArray, queue_size=1)
+rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
 try:
     rospy.spin()

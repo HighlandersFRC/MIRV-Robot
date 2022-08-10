@@ -72,7 +72,7 @@ def intakeCommandCallback(msg):
 def allowNeuralNetRun(msg):
     cmd = msg.data
     global runningNeuralNetwork
-    if(cmd == "piLit" or cmd == "both"):
+    if(cmd == "piLit" or cmd == "piLitAndLanes"):
         runningNeuralNetwork = True
     else:
         runningNeuralNetwork = False
@@ -131,20 +131,6 @@ def piLitDetect(img, frame, depthFrame):
             else:
                 angleToPiLitFromIntake = math.degrees(angleToPiLit)
             print("DEPTH: ", depth, " ORIGINAL ANGLE: ", math.degrees(angleToPiLit), "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
-
-
-            # if(depth < 3 and depth != 0):
-            #     # angleToPiLitFromIntake = math.degrees(angleToPiLit)
-
-            #     print("VALID: ", " DEPTH: ", depth, "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
-
-            #     piLitLocation = [depth, angleToPiLitFromIntake]
-
-            #     locations = Float64MultiArray()
-            #     locations.data = piLitLocation
-
-            #     piLitLocationPub.publish(locations)
-    # return frame
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)

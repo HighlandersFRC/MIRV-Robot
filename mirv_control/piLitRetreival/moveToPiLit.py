@@ -141,24 +141,19 @@ class piLitPickup:
             self.cancelCallback()
          
     def moveToPiLit(self):
-        # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
         result = -result
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
-        print("1")
         print(self.velocityMsg)
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > 2/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
-            # print("WANTED ANGLE: ", self.setPoint)
-            # print("CURRENT ANGLE: ", self.imu)
             self.driveToPiLit = False
             self.moveToPiLitRunning = False
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
             self._result.finished = True
-            # self._as.set_succeeded(self._result)
             self.movementInitTime = 0
             self.finished = True
             self.allowSearch = False
@@ -167,21 +162,15 @@ class piLitPickup:
         print("GOT PICKUP CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO PICKUP PI LIT!")
-        # running = goal.runPID
         intakeSide = goal.intakeSide
         estimatedPiLitAngle = goal.estimatedPiLitAngle
-        # estimatedPiLitAngle = 360 - goal.estimatedPiLitAngle
-        # # estimatedPiLitAngle = estimatedPiLitAngle + 360
-        # estimatedPiLitAngle = estimatedPiLitAngle%360
         estimatedPiLitAngle = estimatedPiLitAngle + self.imu
         estimatedPiLitAngle = estimatedPiLitAngle%360
         self.estimatePID.setSetPoint(estimatedPiLitAngle)
         self._result.finished = False
      
         while(self.reachedEstimate == False and self.piLitAngle == 0):
-            # print("TRYING TO REACH ESTIMATE")
             result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
-            # print("SETPOINT: ", estimatedPiLitAngle, " CURRENT ANGLE: ", self.imu)
 
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = result
@@ -189,23 +178,17 @@ class piLitPickup:
             self.velocitydrive_pub.publish(self.velocityMsg)
 
             if(abs(self.imu - estimatedPiLitAngle) < 5):
-                # print("GOT TO ESTIMATED TARGET!!!!")
                 self.reachedEstimate = True
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = 0
-                print("2")
-                print(self.velocityMsg)
                 self.velocitydrive_pub.publish(self.velocityMsg)
         self.allowSearch = True
 
         intakeInitTime = time.time()
         self.allowSearch = False
         while(time.time() - intakeInitTime < 3):
-            # print(time.time() - intakeInitTime)
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
-            # print("3")
-            print(self.velocityMsg)
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("intake")
             self.set_intake_state(intakeSide)
@@ -217,43 +200,32 @@ class piLitPickup:
         while(abs(searchStartTime - time.time()) < 9):
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
-            # print("4")
-            # print(self.velocityMsg)
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.set_intake_state("intake")
             self.set_intake_state(intakeSide)
         while(time.time() - searchStartTime < 15 and self.piLitAngle == 0):
-            # print("HAVEN'T FOUND A PI LIT YET")
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
-            print(self.velocityMsg)
             self.velocitydrive_pub.publish(self.velocityMsg)
             self.runPID = False
             self.moveToPiLit = False
         if(self.piLitAngle != 0):
-            # print("------------------------------------------------------------------------------------------------------------------------------")
             self.runPID = True
             self.allowSearch = False
             self._result.finished = False
         else:
-            print("TIMED OUT")
             self.set_intake_state("reset")
             self.allowSearch = False
             self._as.set_succeeded(self._result)
             self.finished = True
 
         while(self._result.finished == False):
-            # print("RUNNING CALLBACK")
-            # print("RUN PID:, ", self.runPID)
             if(self.runPID):
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result
-                # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
-                # print("5")
-                # print(self.velocityMsg)
                 self.velocitydrive_pub.publish(self.velocityMsg)
 
                 self._feedback.result = result
@@ -265,11 +237,8 @@ class piLitPickup:
                     self.runPID = False
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
-                    # print("6")
-                    print(self.velocityMsg)
                     self.velocitydrive_pub.publish(self.velocityMsg)
             elif(self.driveToPiLit):
-                # print("DRIVING TO PI LIT")
                 if(self.moveToPiLitRunning == False):
                     self.movementInitTime = time.time()
                     self.moveToPiLitRunning = True
@@ -280,8 +249,6 @@ class piLitPickup:
                     self.set_intake_state("store")
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
-                    # print(self.piLitAngle)
-                    # print(self.velocityMsg)
                     self.velocitydrive_pub.publish(self.velocityMsg)
                     self._result.finished = True
         self.setAllZeros()
