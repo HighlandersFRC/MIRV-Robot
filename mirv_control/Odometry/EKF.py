@@ -21,7 +21,7 @@ class DDEkf:
         self.update_frequency = rospy.get_param('~frequency', 10)
         self.sensor_timeout = 1 / self.update_frequency
         # Define vehicle dimensions - wheel radius
-        self.r = rospy.get_param('~wheel_radius', 0.09229)
+        self.r = rospy.get_param('~wheel_radius', 0.09460)
         # self.enc_ticks = rospy.get_param('~encoder_ticks_per_rotation', 24576)
         # Distance between axels
         self.L = rospy.get_param('~wheel_base_width', 0.4358)

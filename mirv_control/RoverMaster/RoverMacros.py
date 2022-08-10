@@ -21,7 +21,7 @@ class roverMacros():
 
     def undock(self):
         self.interface.deployGarage()
-        self.interface.drive(-0.2, 6)
+        self.interface.Calibrate_client_goal()
         self.interface.turn(math.pi, 4)
 
     def placePiLitFromSide(self, timeout, intakeSide):

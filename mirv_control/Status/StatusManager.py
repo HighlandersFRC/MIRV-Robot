@@ -93,7 +93,7 @@ pilit_state_sub = rospy.Subscriber("pilit/status", PilitStatus, pilit_state_call
 pilit_mode_sub = rospy.Subscriber("pilit/mode", String, pilit_mode_callback)
 status_sub = rospy.Subscriber("RoverAvailable", String, status_callback)
 garage_sub = rospy.Subscriber("garage/location_status", NavSatFix, garage_callback)
-state_sub = rospy.Subscriber("RoverState", String, status_callback)
+state_sub = rospy.Subscriber("RoverState", String, state_callback)
 
 
 
