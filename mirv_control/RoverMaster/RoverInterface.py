@@ -88,6 +88,7 @@ class RoverInterface():
         self.placementPoints = []
         self.storedPiLits = [4, 4]
         self.garage_state = "invalid"
+        self.limit_switches = [1, 1, 0, 0]
 
     # def setPiLitSequence(self, is_wave: bool):
     #     self.pilit_controller.patternType(is_wave)
@@ -96,13 +97,15 @@ class RoverInterface():
     # def setPiLitSequenceReversed(self, reversed: bool):
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
+
     def loadRoverMacro(self, macro):
         self.RoverMacro = macro
+
     def garage_state_callback(self, msg):
         self.garage_state = msg.data
 
     def limit_switch_callback(self, switches):
-        limit_switches = switches.data
+        self.limit_switches = switches.data
 
     def stopIntakeAndMagazine(self):
         self.intake_command_pub.publish(String("disable"))
