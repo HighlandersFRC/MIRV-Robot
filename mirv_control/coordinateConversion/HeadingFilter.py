@@ -36,7 +36,7 @@ class ComputeHeading():
         goal = self._as.accept_new_goal()
         self.sampleCountGPS = 0
         self.sampleCountIMU = 0
-        self.rosPubMsg.linear.x = 0.2
+        self.rosPubMsg.linear.x = -0.2
         self.rosPubMsg.angular.z = 0
         self.drivePub.publish(self.rosPubMsg)
         startHead = self.run()
@@ -68,7 +68,7 @@ class ComputeHeading():
         while not rospy.is_shutdown():
             print("gps {}, IMU, {}".format(self.sampleCountGPS, self.sampleCountIMU))
             if( self.sampleCountGPS >= self.calibrationLength and self.sampleCountIMU >= self.calibrationLength ):
-                startingHeading = self.currentHeading - self.relativeHeadingChange
+                startingHeading = (self.currentHeading - self.relativeHeadingChange + 180)%360
                 print(startingHeading)
                 self.succeeded = True
                 return startingHeading

@@ -40,9 +40,9 @@ class roverMacros():
     def magazineOut(self):
         self.intake_command_pub.publish(String("mag_out"))
 
-    def undock(self):
+    def undockAndCalibrate(self):
         self.interface.deployGarage()
-        self.interface.drive(-0.2, 6)
+        self.interface.Calibrate_client_goal()
         self.interface.turn(math.pi, 4)
 
     def placePiLitFromSide(self, timeout, intakeSide):
