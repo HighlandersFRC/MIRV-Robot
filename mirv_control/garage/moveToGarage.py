@@ -70,7 +70,7 @@ class moveToGarage:
         self.estimatePID = PID(self.estimatekP, self.estimatekI, self.estimatekD, self.estimateSetPoint)
         self.piLitPID.setMaxMinOutput(0.5)
         self.estimatePID.setMaxMinOutput(0.3)
-        self.allowSearch = False
+        self.allowSearch = True
 
         # in order: Left button, Right Button, Bottom Switch, Top Switch
         self.limit_switches = [0, 0, 1, 1]
@@ -102,7 +102,7 @@ class moveToGarage:
         self.finished = False
 
         self.reachedEstimate = False
-        self.allowSearch = False
+        self.allowSearch = True
 
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
@@ -111,15 +111,15 @@ class moveToGarage:
         piLitLocation = location.data
         print(piLitLocation)
         # if(self.runPID == False and self.driveToPiLit == False):
-        # if(self.allowSearch == True):
-        self.piLitDepth = piLitLocation[0]
-        self.piLitAngle = piLitLocation[1]
-        self.setPoint = self.imu + self.piLitAngle
-        self.setPoint = self.setPoint + 360
-        self.setPoint = self.setPoint%360
-        self.piLitPID.setSetPoint(self.setPoint)
-        self.updatedLocation = True
-        self.prevPiLitAngle = self.piLitAngle
+        if(self.allowSearch == True):
+            self.piLitDepth = piLitLocation[0]
+            self.piLitAngle = piLitLocation[1]
+            self.setPoint = self.imu + self.piLitAngle
+            self.setPoint = self.setPoint + 360
+            self.setPoint = self.setPoint%360
+            self.piLitPID.setSetPoint(self.setPoint)
+            self.updatedLocation = True
+            self.prevPiLitAngle = self.piLitAngle
         # print("SETPOINT: ", self.setPoint)
 
     def updateIMU(self, data):
@@ -148,19 +148,19 @@ class moveToGarage:
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        # if(time.time() - self.movementInitTime > 2/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
-            # # print("WANTED ANGLE: ", self.setPoint)
-            # # print("CURRENT ANGLE: ", self.imu)
-            # self.driveToPiLit = False
-            # self.moveToPiLitRunning = False
-            # self.velocityMsg.linear.x = 0
-            # self.velocityMsg.angular.z = 0
-            # self.velocitydrive_pub.publish(self.velocityMsg)
-            # self._result.finished = True
-            # # self._as.set_succeeded(self._result)
-            # self.movementInitTime = 0
-            # self.finished = True
-            # self.allowSearch = False
+        if(time.time() - self.movementInitTime > self.piLitDepth/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
+            # print("WANTED ANGLE: ", self.setPoint)
+            # print("CURRENT ANGLE: ", self.imu)
+            self.driveToPiLit = False
+            self.moveToPiLitRunning = False
+            self.velocityMsg.linear.x = 0
+            self.velocityMsg.angular.z = 0
+            self.velocitydrive_pub.publish(self.velocityMsg)
+            self._result.finished = True
+            # self._as.set_succeeded(self._result)
+            self.movementInitTime = 0
+            self.finished = True
+            self.allowSearch = False
 
     def turnToPiLit(self):
         print("GOT GARAGE CALLBACK")
@@ -175,6 +175,8 @@ class moveToGarage:
         estimatedPiLitAngle = estimatedPiLitAngle%360
         self.estimatePID.setSetPoint(estimatedPiLitAngle)
         self._result.finished = False
+
+        searchInitTime = time.time()
      
         # while(self.reachedEstimate == False and self.piLitAngle == 0):
         #     # print("TRYING TO REACH ESTIMATE")
@@ -193,15 +195,20 @@ class moveToGarage:
         #         self.velocityMsg.angular.z = 0
         #         self.velocitydrive_pub.publish(self.velocityMsg)
 
-        self.runPID = True
+        while(time.time() - searchInitTime < 4):
+            print(time.time() - searchInitTime)
+
+        if(self.piLitAngle != 0):
+            self.runPID = True
 
         while(self._result.finished == False):
             # print("RUNNING CALLBACK")
             # print("RUN PID:, ", self.runPID)
             if(self.runPID):
+                self.allowSearch = False
                 result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result
-                # print("Turning - " , " SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
+                print("Turning - " , " SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
@@ -211,7 +218,7 @@ class moveToGarage:
                 self._feedback.result = result
                 self._as.publish_feedback(self._feedback)
 
-                if(abs(self.imu - self.setPoint) < 7 and abs(result) < 0.05):
+                if(abs(self.imu - self.setPoint) < 7):
                     print("GOT TO TARGET!!!!")
                     self.driveToPiLit = True
                     self.runPID = False

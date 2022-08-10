@@ -54,7 +54,7 @@ distCoefficients = np.array([[-0.02239511,  0.03570026, -0.00733071, -0.00355913
 
 # callback function when receiving a frame
 def gotFrame(data):
-    print("GOT A FRAME")
+    # print("GOT A FRAME")
     initTime = time.time()
     frame = ros_numpy.numpify(data.color_frame)
     depthFrame = ros_numpy.numpify(data.depth_frame)

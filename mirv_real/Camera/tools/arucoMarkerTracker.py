@@ -9,6 +9,7 @@ def detectArUcoMarkers(image, depthFrame):
     (corners, ids, rejected) = cv2.aruco.detectMarkers(image, arucoDict, parameters=arucoParams)
 
     if len(corners) > 0:
+        print("")
         # flatten the ArUco IDs list
         ids = ids.flatten()
         # loop over the detected ArUCo corners
@@ -43,51 +44,57 @@ def detectArUcoMarkers(image, depthFrame):
 
     return image
 
-# Create pipeline
-pipeline = dai.Pipeline()
+# # Create pipeline
+# pipeline = dai.Pipeline()
 
-# Define source and output
-camRgb = pipeline.create(dai.node.ColorCamera)
-xoutRgb = pipeline.create(dai.node.XLinkOut)
+# # Define source and output
+# camRgb = pipeline.create(dai.node.ColorCamera)
+# xoutRgb = pipeline.create(dai.node.XLinkOut)
 
-xoutRgb.setStreamName("rgb")
+# xoutRgb.setStreamName("rgb")
 
-controlIn = pipeline.create(dai.node.XLinkIn)
-controlIn.setStreamName('control')
-controlIn.out.link(camRgb.inputControl)
+# controlIn = pipeline.create(dai.node.XLinkIn)
+# controlIn.setStreamName('control')
+# controlIn.out.link(camRgb.inputControl)
 
-# Properties
-camRgb.setPreviewSize(640, 480)
-camRgb.setInterleaved(False)
-camRgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.RGB)
+# # Properties
+# camRgb.setPreviewSize(640, 480)
+# camRgb.setInterleaved(False)
+# camRgb.setColorOrder(dai.ColorCameraProperties.ColorOrder.RGB)
 
-# Linking
-camRgb.preview.link(xoutRgb.input)
+# # Linking
+# camRgb.preview.link(xoutRgb.input)
 
-# Connect to device and start pipeline
-with dai.Device(pipeline) as device:
+# # Connect to device and start pipeline
+# with dai.Device(pipeline) as device:
 
-    controlQueue = device.getInputQueue('control')
-    ctrl = dai.CameraControl()
-    ctrl.setAutoFocusMode(dai.CameraControl.AutoFocusMode.AUTO)
-    ctrl.setAutoWhiteBalanceMode(dai.CameraControl.AutoWhiteBalanceMode.WARM_FLUORESCENT)
-    controlQueue.send(ctrl)
+#     controlQueue = device.getInputQueue('control')
+#     ctrl = dai.CameraControl()
+#     ctrl.setAutoFocusMode(dai.CameraControl.AutoFocusMode.AUTO)
+#     ctrl.setAutoWhiteBalanceMode(dai.CameraControl.AutoWhiteBalanceMode.WARM_FLUORESCENT)
+#     controlQueue.send(ctrl)
 
-    print('Connected cameras: ', device.getConnectedCameras())
-    # Print out usb speed
-    print('Usb speed: ', device.getUsbSpeed().name)
+#     print('Connected cameras: ', device.getConnectedCameras())
+#     # Print out usb speed
+#     print('Usb speed: ', device.getUsbSpeed().name)
 
-    # Output queue will be used to get the rgb frames from the output defined above
-    qRgb = device.getOutputQueue(name="rgb", maxSize=4, blocking=False)
+#     # Output queue will be used to get the rgb frames from the output defined above
+#     qRgb = device.getOutputQueue(name="rgb", maxSize=4, blocking=False)
 
-    while True:
-        inRgb = qRgb.get()  # blocking call, will wait until a new data has arrived
+#     while True:
+#         inRgb = qRgb.get()  # blocking call, will wait until a new data has arrived
 
-        image = inRgb.getCvFrame()
+#         image = inRgb.getCvFrame()
 
-        detected = detectArUcoMarkers(image, image)
+#         detected = detectArUcoMarkers(image, image)
 
-        cv2.imshow("detected", detected)
+#         cv2.imshow("detected", detected)
 
-        if cv2.waitKey(1) == ord('q'):
-            break
+#         if cv2.waitKey(1) == ord('q'):
+#             break
+
+img = cv2.imread("src/cameraFrame.jpg")
+
+detected = detectArUcoMarkers(img, img)
+
+cv2.imwrite("src/detected.jpg", img)

@@ -198,12 +198,12 @@ try:
             # resize frame for neural nets
             resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
 
-            result=cv2.imwrite(r'src/cameraFrame.jpg', resizedFrame)
-            if result==True:
-                print("SAVED!")
-                firstLoop = False
-            else:
-                print("DIDN'T SAVE")
+            # result=cv2.imwrite(r'src/cameraFrame.jpg', resizedFrame)
+            # if result==True:
+            #     print("SAVED!")
+            #     firstLoop = False
+            # else:
+            #     print("DIDN'T SAVE")
 
             # create custom frame message to publish
             framesMessage = depthAndColorFrame()

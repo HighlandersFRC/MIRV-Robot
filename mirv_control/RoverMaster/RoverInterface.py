@@ -44,9 +44,9 @@ class RoverInterface():
         self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
         print("connected to Database Query Server")
-        # self.garageClient = actionlib.SimpleActionClient("", mirv_control.msg.GarageAction)
-        # self.garageClient.wait_for_server()
-        # print("connected to Garage Server")
+        self.garageClient = actionlib.SimpleActionClient("Docking", mirv_control.msg.GarageAction)
+        self.garageClient.wait_for_server()
+        print("connected to Garage Server")
 
         #self.pilit_controller = PiLitControl()
 
@@ -253,10 +253,10 @@ class RoverInterface():
 
     def garage_client_goal(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
-        mirv_control.msg.GarageGoal.estimatedPiLitAngle = angleToTarget
+        mirv_control.msg.GarageGoal.estimatedGarageAngle = angleToTarget
         goal = mirv_control.msg.GarageGoal
-        self.pickupClient.send_goal(goal)
-        self.pickupClient.wait_for_result()
+        self.garageClient.send_goal(goal)
+        self.garageClient.wait_for_result()
 
     def pickup_client_cancel(self, intakeSide):
         print("Cancelling pickup goal")
