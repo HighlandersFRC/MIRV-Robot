@@ -18,7 +18,6 @@ from sensor_msgs.msg import NavSatFix
 class roverMacros():
     def __init__(self, Interface: RoverInterface):
         self.interface = Interface
-        self.limit_switches = [1, 1, 0, 0]
 
     def undock(self):
         self.interface.deployGarage()
@@ -29,7 +28,7 @@ class roverMacros():
         start_time = time.time()
         self.interface.intake_command_pub.publish(String(intakeSide))
         self.interface.intake_command_pub.publish(String("deposit"))
-        while not self.limit_switches[3] and not self.limit_switches[2]:
+        while not self.interface.limit_switches[3] and not self.interface.limit_switches[2]:
             if time.time() - start_time > timeout:
                 print("Timed out - Deposit")
                 return False
