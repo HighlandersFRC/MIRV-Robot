@@ -60,6 +60,8 @@ int * currentsFilledPtr = &pdpCurrentsFilled;
 double wheelBaseWidth = 0.0;
 double wheelRadius = 0.0;
 
+bool isDocked = false;
+
 void initializeDriveMotors(){
 	//PID config
 	float kF = 0.025;
@@ -124,6 +126,9 @@ void initializeIntakeMotors(){
 
 	intakeWheelMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
 	intakeWheelMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
+
+	rightConvMotor.ConfigForwardLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
+	rightConvMotor.ConfigReverseLimitSwitchSource(LimitSwitchSource_FeedbackConnector, LimitSwitchNormal_NormallyOpen);
 
 	intakeWheelMotor.OverrideLimitSwitchesEnable(false);
 	rightConvMotor.OverrideLimitSwitchesEnable(false);
@@ -315,6 +320,9 @@ class Intake {
 	//reset: move to upright position
 	//intake: run wheels and move to downwards position
 	//store: move to upwards position then reverse wheels
+	//down: move intake to downwards position
+	//mag_in: move magazine inwards
+	//mag_out: move magazine outwards
 
 	double intakeUpPercent = 0.8;
 	double wheelIntakePercent = 0.6;
@@ -322,6 +330,11 @@ class Intake {
 	//limit switches: fwd - up, rev - down
 
 	void update(){
+
+		//Disable if docked
+		if (isDocked){
+			mode = "disable";
+		}
 
 		// cout << " FwdB:";
 		// cout << intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed();
@@ -487,17 +500,19 @@ class Intake {
 
 	void setMode(std::string cmd){
 
-		//check if command is valid before setting
-		if (cmd == "mag_in" || cmd == "mag_out" || cmd == "down" || cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch_left" || cmd == "switch_right"){
-			if (cmd == "deposit"){
-				startTime = time(NULL);
-			}
-			if (cmd == "switch_left"){
-				side = -1;
-			} else if (cmd == "switch_right"){
-				side = 1;
-			} else {
-				mode = cmd;
+		//check if command is valid and the rover is not docked before setting
+		if (!isDocked){
+			if (cmd == "mag_in" || cmd == "mag_out" || cmd == "down" || cmd == "disable" || cmd == "reset" || cmd == "intake" || cmd == "store" || cmd == "deposit" || cmd == "switch_left" || cmd == "switch_right"){
+				if (cmd == "deposit"){
+					startTime = time(NULL);
+				}
+				if (cmd == "switch_left"){
+					side = -1;
+				} else if (cmd == "switch_right"){
+					side = 1;
+				} else {
+					mode = cmd;
+				}
 			}
 		}
 		// cout << "Set mode to: '";
@@ -550,16 +565,27 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 
 	//double leftVelocity = msg->data[0];
 	//double rightVelocity = msg->data[1];
+	
 
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
 	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
-	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
+	if (rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
+		frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+		backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
+	} else {
+		frontRightDrive.Set(ControlMode::Velocity, 0.0);
+		backRightDrive.Set(ControlMode::Velocity, 0.0);
+	}
 
-	//mutiply back for slightly larger radius
-	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
+		//mutiply back for slightly larger radius
+	if (rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
+		frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+		backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
+	} else {
+		frontLeftDrive.Set(ControlMode::Velocity, 0.0);
+		backLeftDrive.Set(ControlMode::Velocity, 0.0);
+	}
 
 	// frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
 	// backRightDrive.Set(ControlMode::PercentOutput, 0.0);
@@ -585,6 +611,14 @@ void intakeCommandCallback(const std_msgs::String::ConstPtr& cmd){
 	//cout << "Received intake command";
 	intake.setMode(cmd->data);
 	//cout << cmd->data;
+}
+
+void updateDockedState(){
+	if (rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1 || rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
+		isDocked = true;
+	} else {
+		isDocked = false;
+	}
 }
 
 int main(int argc, char **argv) {
@@ -619,6 +653,8 @@ int main(int argc, char **argv) {
 	ros::Rate rate(100);
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(500);
+
+		updateDockedState();
 
 		intake.update();
 
