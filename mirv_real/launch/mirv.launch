@@ -1,6 +1,6 @@
 <launch>
-    <arg name="wheel_base_width" default="0.483"/>
-    <arg name="wheel_radius" default="0.1905"/>
+    <arg name="wheel_base_width" default="0.42037"/>
+    <arg name="wheel_radius" default="0.09460"/>
     <arg name="param_file_name" default="mirv"/>
     <arg name="param_file_dir" default="$(find mirv_real)/GPS/config"/>
     <param name="api_host" type="String" value="20.237.58.76"/>
