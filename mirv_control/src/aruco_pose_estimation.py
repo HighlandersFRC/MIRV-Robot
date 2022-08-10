@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 from __future__ import print_function
 import os
 import roslib
@@ -14,32 +14,37 @@ import time
 from sensor_msgs.msg import Image
 from tf2_geometry_msgs import PoseStamped
 from geometry_msgs.msg import Pose
-from dse_msgs.msg import PoseMarkers
+# from dse_msgs.msg import PoseMarkers
 from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation as R
+
+import mirv_control.helpful_functions_lib as conversion_lib
 
 
 class aruco_pose:
 
     def __init__(self):
 
-        # # Get parameters from launch file
-        # self.ros_prefix = 'tb3_0'
-        # if len(self.ros_prefix) != 0 and self.ros_prefix[0] != '/':
-        #     self.ros_prefix = '/' + self.ros_prefix
-        # # side length of tag in meters
-        # self.markerLength = 0.1
-        # self.cal_file = 'calibrationSave_gazebo.p'
-
         # Get parameters from launch file
-        self.ros_prefix = rospy.get_param('~prefix', '')
+        self.ros_prefix = ''
         if len(self.ros_prefix) != 0 and self.ros_prefix[0] != '/':
             self.ros_prefix = '/' + self.ros_prefix
         # side length of tag in meters
-        self.markerLength = rospy.get_param('~marker_length', 0.22884)
-        self.cal_file = rospy.get_param('~calibration_file', 'calibrationSave_2.p')
-        self.data_skip = rospy.get_param('~data_skip', 0)
+        self.markerLength = 0.1
+        # self.cal_file = 'calibrationSave_gazebo.p'
+        self.cal_file = 'calibrationSave.p'
+        self.data_skip = 0
         self.data_skip_count = 0
+
+        # Get parameters from launch file
+        # self.ros_prefix = rospy.get_param('~prefix', '')
+        # if len(self.ros_prefix) != 0 and self.ros_prefix[0] != '/':
+        #     self.ros_prefix = '/' + self.ros_prefix
+        # # side length of tag in meters
+        # self.markerLength = rospy.get_param('~marker_length', 0.22884)
+        # self.cal_file = rospy.get_param('~calibration_file', 'calibrationSave.p')
+        # self.data_skip = rospy.get_param('~data_skip', 0)
+        # self.data_skip_count = 0
 
         # import saved calibration information
         # calibrationSave.p should be correct for laptop webcam
@@ -67,9 +72,19 @@ class aruco_pose:
         n_stored_max = 10
         n_points_plotting = 100
 
+        self.poseZero = PoseStamped()
+        self.poseZero.pose.position.x = 0
+        self.poseZero.pose.position.y = 0
+        self.poseZero.pose.position.z = 0
+        self.poseZero.pose.orientation.x = 0
+        self.poseZero.pose.orientation.y = 0
+        self.poseZero.pose.orientation.z = 0
+        self.poseZero.pose.orientation.w = 1
+
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber(self.ros_prefix + "/camera/rgb/image_raw", Image, self.callback)
-        self.pose_pub = rospy.Publisher(self.ros_prefix + "/dse/pose_markers", PoseMarkers, queue_size=1)
+        self.pose_pub = rospy.Publisher(self.ros_prefix + "/aruco/garage_tag", PoseStamped, queue_size=1)
+        self.debug_pub = rospy.Publisher(self.ros_prefix + "/aruco/tag0_in_camera_frame", PoseStamped, queue_size=1)
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
@@ -111,13 +126,15 @@ class aruco_pose:
                 frame = aruco.drawAxis(frame, self.cameraMatrix, self.distCoeffs, rvecs[i], tvecs[i],
                                        self.markerLength / 2)
 
-            marker_pose = PoseMarkers()
-            marker_pose.ids = list(ids.flatten())
+            # marker_pose = PoseMarkers()
+            # marker_pose.ids = list(ids.flatten())
             pose_array = []
             for i in range(len(rvecs)):
+                # If you get a bunch of other detections and only want id 0, put it all in this if
+                # if ids[i] == 0:
                 pose = PoseStamped()
                 pose.header.stamp = rospy.Time.now()
-                pose.header.frame_id = self.ros_prefix[1:] + '/camera_rgb_frame'
+                pose.header.frame_id = 'camera_rgb_frame'
 
                 # Apply linear bias to the translation estimates
                 # x = tvecs[0][0][2]/1.184 + 0.110
@@ -134,12 +151,12 @@ class aruco_pose:
                 # Swap the angles around to correctly represent our coordinate system
                 # Aruco puts zero at the tag, with z facing out...
                 # We want x forward, y left, z up, euler order zyx = ypr
-                rvecs_reordered = [rvecs[0][0][2], rvecs[0][0][0], rvecs[0][0][1]]
+                rvecs_reordered = [rvecs[0][0][2], -rvecs[0][0][0], -rvecs[0][0][1]]
                 r = R.from_rotvec(rvecs_reordered)
                 est_ypr = r.as_euler('zyx')
-                quat = dse_lib.eul2quat(est_ypr[:, None])
+                quat = conversion_lib.eul2quat(est_ypr[:, None])
                 # r = R.from_euler('zyx', est_ypr + [np.pi, 0, np.pi])
-                # quat = r.as_quat
+                # quat = r.as_quat()
                 # print(quat[:])
                 # print(pose.pose.orientation)
                 pose.pose.orientation.x = quat[0]
@@ -147,14 +164,21 @@ class aruco_pose:
                 pose.pose.orientation.z = quat[2]
                 pose.pose.orientation.w = quat[3]
 
-                pose = self.tfBuffer.transform(pose, self.ros_prefix[1:] + '/base_link')
-                pose_array.append(pose)
-            marker_pose.pose_array = pose_array
-            self.pose_pub.publish(marker_pose)
+                camera_in_tag_frame = PoseStamped()
+                camera_in_tag_frame.header.stamp = rospy.Time.now()
+                # NOTE - THIS IS NOT ACTUALLY IN THE MAP FRAME. IT IS IN THE GARAGE FRAME, but that doesn't exist yet...
+                camera_in_tag_frame.header.frame_id = 'map'
+                camera_in_tag_frame.pose = conversion_lib.get_frame_transform(pose.pose, self.poseZero.pose)
+                self.pose_pub.publish(camera_in_tag_frame)
+                self.debug_pub.publish(pose)
+
+            # print(pose_array)
+            # marker_pose.pose_array = pose_array
+            # self.pose_pub.publish(marker_pose)
 
 
-        # cv2.imshow("Image window", frame)
-        # cv2.waitKey(3)
+        cv2.imshow("Image window", frame)
+        cv2.waitKey(3)
 
 
 def main(args):
