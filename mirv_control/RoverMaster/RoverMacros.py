@@ -20,9 +20,16 @@ class roverMacros():
         self.interface = Interface
 
     def undock(self):
+        self.interface.changeNeuralNetworkSelected("none")
         self.interface.deployGarage()
         self.interface.Calibrate_client_goal()
         self.interface.turn(math.pi, 4)
+
+    def dock(self, estimatedAngleToGarage):
+        self.interface.changeNeuralNetworkSelected("aruco")
+        self.interface.deployGarage()
+        self.interface.garage_client_goal()
+        self.interface.retractGarage(estimatedAngleToGarage)
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
@@ -50,6 +57,7 @@ class roverMacros():
         self.interface.loadPointToSQL("deploy", side)
 
     def placeAllPiLits(self, points):
+        self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
         for point in points:
             target = [point]
@@ -101,10 +109,11 @@ class roverMacros():
             side = "switch_right"
         else:
             side = "switch_left"
-        self.interface.pickup_client_goal(side, 0.1)
+        self.interface.pickup_client_goal(side, 0)
         self.interface.loadPointToSQL("retrieve", side)
 
     def pickupAllPiLits(self, lists, reverse):
+        self.interface.changeNeuralNetworkSelected("piLit")
         intakeSide = "switch_right"
         # points = [[lists.latitude[i], lists.longitude[i]] for i in range(len(lists.latitude))]
         if(reverse):

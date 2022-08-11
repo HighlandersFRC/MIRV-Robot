@@ -64,7 +64,7 @@ class RoverController():
 
         # self.interface.PP_client_goal(target2)
 
-        # self.interface.garage_client_goal(0.0)
+        self.macros.dock(0.0)
 
         # # # mirv_control.msg.DatabaseGoal.SendLatest = True
         # # # self.goal = mirv_control.msg.DatabaseGoal

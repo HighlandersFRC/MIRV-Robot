@@ -18,59 +18,20 @@ from geometry_msgs.msg import Pose
 from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation as R
 
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
+
 import mirv_control.helpful_functions_lib as conversion_lib
 
+import ros_numpy
 
 class aruco_pose:
 
     def __init__(self):
+        self.cameraMatrix = np.array([[402.62901912,   0,         312.7377781],
+                                    [  0,         415.62202789, 225.59830764],
+                                    [  0,           0,           1        ]])
 
-        # Get parameters from launch file
-        self.ros_prefix = ''
-        if len(self.ros_prefix) != 0 and self.ros_prefix[0] != '/':
-            self.ros_prefix = '/' + self.ros_prefix
-        # side length of tag in meters
-        self.markerLength = 0.1
-        # self.cal_file = 'calibrationSave_gazebo.p'
-        self.cal_file = 'calibrationSave.p'
-        self.data_skip = 0
-        self.data_skip_count = 0
-
-        # Get parameters from launch file
-        # self.ros_prefix = rospy.get_param('~prefix', '')
-        # if len(self.ros_prefix) != 0 and self.ros_prefix[0] != '/':
-        #     self.ros_prefix = '/' + self.ros_prefix
-        # # side length of tag in meters
-        # self.markerLength = rospy.get_param('~marker_length', 0.22884)
-        # self.cal_file = rospy.get_param('~calibration_file', 'calibrationSave.p')
-        # self.data_skip = rospy.get_param('~data_skip', 0)
-        # self.data_skip_count = 0
-
-        # import saved calibration information
-        # calibrationSave.p should be correct for laptop webcam
-        cal = pickle.load(open(os.path.join(sys.path[0], self.cal_file), "rb"))
-        self.retval, self.cameraMatrix, self.distCoeffs, self.rvecsUnused, self.tvecsUnused = cal
-        print(self.distCoeffs)
-        para = aruco.DetectorParameters_create()
-        para.cornerRefinementMethod = aruco.CORNER_REFINE_SUBPIX
-
-        # # import saved calibration information
-        # # calibrationSave.p should be correct for laptop webcam
-        # cal2 = pickle.load(open(os.path.join(sys.path[0], 'calibration_1080p.p'), "rb"))
-        # self.retval2, self.cameraMatrix2, self.distCoeffs2, self.rvecsUnused2, self.tvecsUnused2 = cal2
-        # print(self.distCoeffs2)
-
-        # cap = cv2.VideoCapture(0)
-        #
-        # fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        # out = cv2.VideoWriter('output.avi', fourcc, 12.0, (640, 480), False)
-        # font = cv2.FONT_HERSHEY_SIMPLEX
-
-        prev_time = datetime.datetime.now()
-        times = [0]
-        n_stored = 0
-        n_stored_max = 10
-        n_points_plotting = 100
+        self.distCoeffs = np.array([[-0.02239511,  0.03570026, -0.00733071, -0.00355913,  0.00224717]])
 
         self.poseZero = PoseStamped()
         self.poseZero.pose.position.x = 0
@@ -82,25 +43,16 @@ class aruco_pose:
         self.poseZero.pose.orientation.w = 1
 
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber(self.ros_prefix + "/camera/rgb/image_raw", Image, self.callback)
+        self.image_sub = rospy.Subscriber(self.ros_prefix + "IntakeCameraFrames", depthAndColorFrame, self.callback)
         self.pose_pub = rospy.Publisher(self.ros_prefix + "/aruco/garage_tag", PoseStamped, queue_size=1)
         self.debug_pub = rospy.Publisher(self.ros_prefix + "/aruco/tag0_in_camera_frame", PoseStamped, queue_size=1)
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
     def callback(self, data):
-        # Lowering the camera image rate
-        if self.data_skip_count < self.data_skip:
-            self.data_skip_count += 1
-            return
-        self.data_skip_count = 0
-
-        try:
-            frame = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        except CvBridgeError as e:
-            print(e)
-
-        (rows, cols, channels) = frame.shape
+        frame = ros_numpy.numpify(data.color_frame)
+        depthFrame = ros_numpy.numpify(data.depth_frame)
+        
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # This is where you set what type pf tag to use: aruco.DICT_NXN_250
@@ -122,9 +74,9 @@ class aruco_pose:
             # print('rotation vectors')
             # print(rvecs)
             # print()
-            for i in range(len(rvecs)):
-                frame = aruco.drawAxis(frame, self.cameraMatrix, self.distCoeffs, rvecs[i], tvecs[i],
-                                       self.markerLength / 2)
+            # for i in range(len(rvecs)):
+            #     frame = aruco.drawAxis(frame, self.cameraMatrix, self.distCoeffs, rvecs[i], tvecs[i],
+            #                            self.markerLength / 2)
 
             # marker_pose = PoseMarkers()
             # marker_pose.ids = list(ids.flatten())
@@ -177,8 +129,8 @@ class aruco_pose:
             # self.pose_pub.publish(marker_pose)
 
 
-        cv2.imshow("Image window", frame)
-        cv2.waitKey(3)
+        # cv2.imshow("Image window", frame)
+        # cv2.waitKey(3)
 
 
 def main(args):

@@ -15,26 +15,27 @@ rospy.init_node("garageDocking")
 
 class moveToGarage:
     def __init__(self):
-        self._feedback = msg.MovementToPiLitFeedback()
-        self._result = msg.MovementToPiLitResult()
+        self._feedback = msg.GarageFeedback()
+        self._result = msg.GarageResult()
 
         self._action_name = "Docking"
         self._as = actionlib.SimpleActionServer(self._action_name, msg.GarageAction, auto_start = False)
-        self._as.register_goal_callback(self.turnToPiLit)
+        self._as.register_goal_callback(self.turnToGarage)
         self._as.register_preempt_callback(self.preemptedPickup)
         self._as.start()
 
         self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
-        self.pilit_location_sub = rospy.Subscriber("garageLocation", Float64MultiArray, self.updatePiLitLocation)
+        self.Garage_location_sub = rospy.Subscriber("garageLocation", Float64MultiArray, self.updateGarageLocation)
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.touch_sensor_sub = rospy.Subscriber("TouchSensors", Float64MultiArray, self.updateTouchSensorVals)
 
         self.velocityMsg = Twist()
 
-        self.piLitDepth = 0
-        self.piLitAngle = 0
+        self.GarageDepth = 0
+        self.GarageAngle = 0
 
         self.updatedLocation = False
         self.running = False
@@ -53,11 +54,11 @@ class moveToGarage:
         self.estimatekD = 2
         self.estimateSetPoint = 0
 
-        self.driveToPiLit = False
+        self.driveToGarage = False
 
         self.runPID = False
 
-        self.moveToPiLitRunning = False
+        self.moveToGarageRunning = False
         self.movementInitTime = 0
         
         self.finished = False
@@ -66,22 +67,17 @@ class moveToGarage:
 
         self.setAllZeros()
 
-        self.piLitPID = PID(self.kP, self.kI, self.kD, self.setPoint)
+        self.GaragePID = PID(self.kP, self.kI, self.kD, self.setPoint)
         self.estimatePID = PID(self.estimatekP, self.estimatekI, self.estimatekD, self.estimateSetPoint)
-        self.piLitPID.setMaxMinOutput(0.5)
+        self.GaragePID.setMaxMinOutput(0.5)
         self.estimatePID.setMaxMinOutput(0.3)
         self.allowSearch = True
 
-        # in order: Left button, Right Button, Bottom Switch, Top Switch
-        self.limit_switches = [0, 0, 1, 1]
-
-    def limit_switch_callback(self, switches):
-        self.limit_switches = switches.data
-        # print(self.limit_switches)
+        self.touchSensorVals = [0, 0]
 
     def setAllZeros(self):
-        self.piLitDepth = 0
-        self.piLitAngle = 0
+        self.GarageDepth = 0
+        self.GarageAngle = 0
 
         self.updatedLocation = False
         self.running = False
@@ -91,12 +87,12 @@ class moveToGarage:
         self.imu = 0
 
 
-        self.driveToPiLit = False
-        self.prevPiLitAngle = 0
+        self.driveToGarage = False
+        self.prevGarageAngle = 0
 
         self.runPID = False
 
-        self.moveToPiLitRunning = False
+        self.moveToGarageRunning = False
         self.movementInitTime = 0
         
         self.finished = False
@@ -107,19 +103,22 @@ class moveToGarage:
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
 
-    def updatePiLitLocation(self, location):
-        piLitLocation = location.data
-        print(piLitLocation)
-        # if(self.runPID == False and self.driveToPiLit == False):
+    def updateTouchSensorVals(self, touchSensors):
+        self.touchSensorVals = touchSensors.data
+
+    def updateGarageLocation(self, location):
+        GarageLocation = location.data
+        print(GarageLocation)
+        # if(self.runPID == False and self.driveToGarage == False):
         if(self.allowSearch == True):
-            self.piLitDepth = piLitLocation[0]
-            self.piLitAngle = piLitLocation[1]
-            self.setPoint = self.imu + self.piLitAngle
+            self.GarageDepth = GarageLocation[0]
+            self.GarageAngle = GarageLocation[1]
+            self.setPoint = self.imu + self.GarageAngle
             self.setPoint = self.setPoint + 360
             self.setPoint = self.setPoint%360
-            self.piLitPID.setSetPoint(self.setPoint)
+            self.GaragePID.setSetPoint(self.setPoint)
             self.updatedLocation = True
-            self.prevPiLitAngle = self.piLitAngle
+            self.prevGarageAngle = self.GarageAngle
         # print("SETPOINT: ", self.setPoint)
 
     def updateIMU(self, data):
@@ -141,54 +140,49 @@ class moveToGarage:
             print("aborting pickup")
             self.cancelCallback()
          
-    def moveToPiLit(self):
+    def moveToGarage(self):
         # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
-        result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+        result = self.GaragePID.updatePID(self.imu) # this returns in radians/sec
         result = -result
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > self.piLitDepth/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
+        if(time.time() - self.movementInitTime > self.GarageDepth/0.25 or self.touchSensorVals[0] != 0 or self.touchSensorVals[1] != 0):
             # print("WANTED ANGLE: ", self.setPoint)
             # print("CURRENT ANGLE: ", self.imu)
-            self.driveToPiLit = False
-            self.moveToPiLitRunning = False
+            self.driveToGarage = False
+            self.moveToGarageRunning = False
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
             self._result.finished = True
-            # self._as.set_succeeded(self._result)
             self.movementInitTime = 0
             self.finished = True
             self.allowSearch = False
 
-    def turnToPiLit(self):
+    def turnToGarage(self):
         print("GOT GARAGE CALLBACK")
         goal = self._as.accept_new_goal()
-        print("ACCEPTED GOAL TO GO TO GARAGE")
-        # running = goal.runPID
-        estimatedPiLitAngle = goal.estimatedGarageAngle
-        # estimatedPiLitAngle = 360 - goal.estimatedPiLitAngle
-        # # estimatedPiLitAngle = estimatedPiLitAngle + 360
-        # estimatedPiLitAngle = estimatedPiLitAngle%360
-        estimatedPiLitAngle = estimatedPiLitAngle + self.imu
-        estimatedPiLitAngle = estimatedPiLitAngle%360
-        self.estimatePID.setSetPoint(estimatedPiLitAngle)
+        print("ACCEPTED GOAL TO DOCK")
+        estimatedGarageAngle = goal.estimatedGarageAngle
+        estimatedGarageAngle = estimatedGarageAngle + self.imu
+        estimatedGarageAngle = estimatedGarageAngle%360
+        self.estimatePID.setSetPoint(estimatedGarageAngle)
         self._result.finished = False
 
         searchInitTime = time.time()
      
-        # while(self.reachedEstimate == False and self.piLitAngle == 0):
+        # while(self.reachedEstimate == False and self.GarageAngle == 0):
         #     # print("TRYING TO REACH ESTIMATE")
         #     result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
-        #     print("SETPOINT: ", estimatedPiLitAngle, " CURRENT ANGLE: ", self.imu)
+        #     print("SETPOINT: ", estimatedGarageAngle, " CURRENT ANGLE: ", self.imu)
 
         #     self.velocityMsg.linear.x = 0
         #     self.velocityMsg.angular.z = result
 
         #     self.velocitydrive_pub.publish(self.velocityMsg)
 
-        #     if(abs(self.imu - estimatedPiLitAngle) < 5):
+        #     if(abs(self.imu - estimatedGarageAngle) < 5):
         #         print("GOT TO ESTIMATED TARGET!!!!")
         #         self.reachedEstimate = True
         #         self.velocityMsg.linear.x = 0
@@ -198,15 +192,17 @@ class moveToGarage:
         while(time.time() - searchInitTime < 4):
             print(time.time() - searchInitTime)
 
-        if(self.piLitAngle != 0):
+        if(self.GarageAngle != 0):
             self.runPID = True
+        else:
+            self._result.finished = False
+            self.setAllZeros()
+            self._as.set_succeeded(self._result)
 
         while(self._result.finished == False):
-            # print("RUNNING CALLBACK")
-            # print("RUN PID:, ", self.runPID)
             if(self.runPID):
                 self.allowSearch = False
-                result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+                result = self.GaragePID.updatePID(self.imu) # pid returns in radians/sec
                 result = -result
                 print("Turning - " , " SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
 
@@ -220,16 +216,16 @@ class moveToGarage:
 
                 if(abs(self.imu - self.setPoint) < 7):
                     print("GOT TO TARGET!!!!")
-                    self.driveToPiLit = True
+                    self.driveToGarage = True
                     self.runPID = False
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
                     self.velocitydrive_pub.publish(self.velocityMsg)
-            elif(self.driveToPiLit):
-                if(self.moveToPiLitRunning == False):
+            elif(self.driveToGarage):
+                if(self.moveToGarageRunning == False):
                     self.movementInitTime = time.time()
-                    self.moveToPiLitRunning = True
-                self.moveToPiLit()
+                    self.moveToGarageRunning = True
+                self.moveToGarage()
         self.setAllZeros()
         self._as.set_succeeded(self._result)
 

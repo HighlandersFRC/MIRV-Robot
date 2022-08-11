@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import print_function
+import queue
 import rospy
 from PiLitController import PiLitControl
 # Brings in the SimpleActionClient
@@ -75,6 +76,7 @@ class RoverInterface():
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 5)
         self.garage_pub = rospy.Publisher("GarageCommands", String, queue_size = 5)
         self.statePublisher = rospy.Publisher("RoverState", String, queue_size = 5)
+        self.neuralNetworkSelector = rospy.Publisher("neuralNetworkSelector", String, queue_size=1)
         # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
 
         self.isJoystickControl = True
@@ -99,10 +101,17 @@ class RoverInterface():
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
 
+<<<<<<< HEAD
 
     def garage_state_callback(self, data):
         self.garage_state = data.state
         
+=======
+    # options are piLit, lanes, piLitAndLanes, aruco, and none
+    def changeNeuralNetworkSelected(self, selectedNetwork):
+        self.neuralNetworkSelector.publish(selectedNetwork)
+
+>>>>>>> 6b6a3467173600db2cd3b110194fb28d6400e655
     def loadRoverMacro(self, macro):
         self.RoverMacro = macro
 
