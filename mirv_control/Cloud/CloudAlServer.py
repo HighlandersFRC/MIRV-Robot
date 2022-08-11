@@ -68,8 +68,10 @@ class CloudAlServer():
         self._feedback.formationType = ""
         self._feedback.driveToWaypoint = False
         self._feedback.driveToLatLong = []
+        self._feedback.heartbeat = False
 
     def resetControlState(self):
+        self._feedback.heartbeat = False
         self._feedback.teleopDrive = False
         self._feedback.placePiLit = False
         self._feedback.pickupPiLit = False
@@ -132,7 +134,7 @@ class CloudAlServer():
         elif subsystem == "heartbeat":
             command = msg.get("command", {})
             if command == "heartbeat":
-                sendRequired = False
+                self._feedback.heartbeat = True
                 print("recived heartbeat Command")
             else:
                 rospy.logerr("Unknown command in general subsystem")
@@ -164,7 +166,8 @@ class CloudAlServer():
             rospy.logerr("Unknown subsystem")
         print("looping")
         
-        if ((self._as.is_active() and sendRequired) or sendFirst):
+        # if ((self._as.is_active()) and (sendRequired or sendFirst)):
+        if (self._as.is_active()):
             print("sending message")
             self._as.publish_feedback(self._feedback)
 

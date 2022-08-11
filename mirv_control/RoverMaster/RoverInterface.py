@@ -13,6 +13,7 @@ from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import Twist
 import os
 import sys
+import pickle
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -35,6 +36,7 @@ class RoverInterface():
     E_STOP = "e_stop"
     DOCKED = "docked"
     def __init__(self):
+        self.lastmsg = None
         self.roverState = self.DISCONNECTED
         print("setting up server connections")
         self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
@@ -101,17 +103,14 @@ class RoverInterface():
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
 
-<<<<<<< HEAD
 
     def garage_state_callback(self, data):
         self.garage_state = data.state
         
-=======
     # options are piLit, lanes, piLitAndLanes, aruco, and none
     def changeNeuralNetworkSelected(self, selectedNetwork):
         self.neuralNetworkSelector.publish(selectedNetwork)
 
->>>>>>> 6b6a3467173600db2cd3b110194fb28d6400e655
     def loadRoverMacro(self, macro):
         self.RoverMacro = macro
 
@@ -288,11 +287,14 @@ class RoverInterface():
     def cloudController_client_goal(self ,halt):
         mirv_control.msg.ControllerGoal.runRequested = True
         goal = mirv_control.msg.ControllerGoal
-        if ((self.cloudControllerClient.get_state() =="ABORTED") or (self.cloudControllerClient.get_state() == "SUCCEEDED")):
+        # print(self.cloudControllerClient.get_state())
+        # if ((self.cloudControllerClient.get_state() ==3)):
+        if True:
             self.cloudControllerClient.send_goal(goal, feedback_cb = self.cloud_feedback_callback)
-            time.sleep(0.2)
             if halt:
                 self.cloudControllerClient.wait_for_result()
+        # print(self.cloudControllerClient.get_goal_status_text())
+
 
     def pickup_client_goal(self, intakeSide, angleToTarget):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
@@ -371,82 +373,87 @@ class RoverInterface():
         self.stateMsg = self.roverState
         self.statePublisher.publish(self.stateMsg)
 
+
     def cloud_feedback_callback(self, msg):
-        print(msg)
         if msg.EStop:
             self.roverState = self.E_STOP
             os.system("rosnode kill --all")
             return
-        elif not msg.connectedEnabled and msg.connected:
-            self.cancelAllCommands()
-            self.roverState = self.CONNECTED_DISABLED  
-        elif msg.connected:
-            if self.garage_state != "deployed":
-                print(self.garage_state)
-                if msg.deploy:
-                    print("deploying rover")
-                    # self.RoverMacro.undock()
-                    self.roverState = self.CONNECTED_DISABLED
-                else:
-                    rospy.logwarn("invalid command, rover is docked")
-                    self.roverState = self.DOCKED
-            else:
-                if self.roverState == self.CONNECTED_ENABLED:
-                    if not msg.connectedEnabled:
-                        self.cancelAllCommands()
+        elif pickle.dumps(msg) != self.lastmsg:
+            print(msg)
+            if not msg.connectedEnabled and msg.connected:
+                self.cancelAllCommands()
+                self.roverState = self.CONNECTED_DISABLED  
+                print("connected disabeled \n\n\n")
+            elif msg.connected:
+                print("connected \n\n\n")
+                if self.garage_state != "deployed":
+                    print(self.garage_state)
+                    if msg.deploy:
+                        print("deploying rover")
+                        # self.RoverMacro.undock()
                         self.roverState = self.CONNECTED_DISABLED
                     else:
-                        if (msg.teleopDrive and (msg.pickupPiLit or msg.placePiLit)):
-                            lastState = self.roverState
-                            self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
-                            if msg.pickupPiLit:
-                                print("picking up 1 pi lit")
-                                pass
-                                # TODO:put macro here
-                            if msg.placePiLit:
-                                print("placing 1 pi lit")
-                                pass
-                                # TODO:put macro here
-                            self.roverState = lastState
-                        elif msg.teleopDrive:
-                            self.roverState = self.TELEOP_DRIVE
-                            print("in teleop drive")
-                            # TODO:put macro here
-                            self.roverState = self.CONNECTED_ENABLED
-
-                        elif msg.deployAllPiLits or msg.retrieveAllPiLits or msg.driveToWaypoint or msg.stow:
-                            self.roverState = self.AUTONOMOUS
-                            if msg.deployAllPiLits:
-                                print("deploying all pi lits")
-                                # TODO:put macro here
-                                self.roverState = self.CONNECTED_ENABLED
-                            if msg.retrieveAllPiLits:
-                                print("picking up all pi lits")
-                                # TODO:put macro here
-                                self.roverState = self.CONNECTED_ENABLED
-                            if msg.driveToWaypoint:
-                                print("driving to point")
-                                # TODO:put macro here
-                                self.roverState = self.CONNECTED_ENABLED
-                            if msg.stow:
-                                print("stowing rover")
-                                pass
-                                # TODO:put macro here
-                                self.roverState = self.CONNECTED_ENABLED
+                        rospy.logwarn("invalid command, rover is docked")
+                        self.roverState = self.DOCKED
                 else:
-                    if msg.cancelCommand:
-                        self.cancelAllCommands
-                        self.roverState = self.CONNECTED_ENABLED
-                    else:
-                        if self.roverState == self.CONNECTED_DISABLED:
-                            if msg.connectedEnabled:
-                                self.roverState = self.CONNECTED_ENABLED
-                            else:
-                                rospy.logwarn("invalid command, rover is disabled, must be enabled to take commands")
+                    if self.roverState == self.CONNECTED_ENABLED:
+                        if not msg.connectedEnabled:
+                            self.cancelAllCommands()
+                            self.roverState = self.CONNECTED_DISABLED
                         else:
-                            rospy.logwarn("invalid command, rover is in state: {}, and must be in connected enable to accept new commands".format(self.roverState))
-        else:
-            self.roverState = self.DISCONNECTED
+                            if (msg.teleopDrive and (msg.pickupPiLit or msg.placePiLit)):
+                                lastState = self.roverState
+                                self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
+                                if msg.pickupPiLit:
+                                    print("picking up 1 pi lit")
+                                    pass
+                                    # TODO:put macro here
+                                if msg.placePiLit:
+                                    print("placing 1 pi lit")
+                                    pass
+                                    # TODO:put macro here
+                                self.roverState = lastState
+                            elif msg.teleopDrive:
+                                self.roverState = self.TELEOP_DRIVE
+                                print("in teleop drive")
+                                # TODO:put macro here
+                                self.roverState = self.CONNECTED_ENABLED
+
+                            elif msg.deployAllPiLits or msg.retrieveAllPiLits or msg.driveToWaypoint or msg.stow:
+                                self.roverState = self.AUTONOMOUS
+                                if msg.deployAllPiLits:
+                                    print("deploying all pi lits")
+                                    # TODO:put macro here
+                                    self.roverState = self.CONNECTED_ENABLED
+                                if msg.retrieveAllPiLits:
+                                    print("picking up all pi lits")
+                                    # TODO:put macro here
+                                    self.roverState = self.CONNECTED_ENABLED
+                                if msg.driveToWaypoint:
+                                    print("driving to point")
+                                    # TODO:put macro here
+                                    self.roverState = self.CONNECTED_ENABLED
+                                if msg.stow:
+                                    print("stowing rover")
+                                    pass
+                                    # TODO:put macro here
+                                    self.roverState = self.CONNECTED_ENABLED
+                    else:
+                        if msg.cancelCommand:
+                            self.cancelAllCommands
+                            self.roverState = self.CONNECTED_ENABLED
+                        else:
+                            if self.roverState == self.CONNECTED_DISABLED:
+                                if msg.connectedEnabled:
+                                    self.roverState = self.CONNECTED_ENABLED
+                                else:
+                                    rospy.logwarn("invalid command, rover is disabled, must be enabled to take commands")
+                            else:
+                                rospy.logwarn("invalid command, rover is in state: {}, and must be in connected enable to accept new commands".format(self.roverState))
+            else:
+                self.roverState = self.DISCONNECTED
+        self.lastmsg = pickle.dumps(msg)
 
 
 
