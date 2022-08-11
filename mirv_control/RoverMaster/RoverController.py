@@ -35,9 +35,10 @@ class RoverController():
             self.interface.stateWatchdog()
             self.interface.cloudController_client_goal(False)
             self.rate.sleep()
-        print("exitid loop")
+        print("exited loop")
 
     def main(self):
+        pass
         # while not rospy.is_shutdown():
         #     time.sleep(1)
         #self.interface.garage_client_goal(0)
@@ -74,7 +75,12 @@ class RoverController():
         # # # points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
         # self.macros.undock()
         # pass
-        self.macros.pickupPiLit()
+
+        # self.macros.placePiLit()
+        # time.sleep(1)
+        # self.macros.interface.drive(-0.2, 4)
+        # time.sleep(1)
+        # self.macros.pickupPiLit()
 
 if __name__ == "__main__":
     controller = RoverController()

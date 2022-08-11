@@ -303,6 +303,7 @@ class RoverInterface():
         goal = mirv_control.msg.MovementToPiLitGoal
         self.pickupClient.send_goal(goal)
         self.pickupClient.wait_for_result()
+        return self.pickupClient.get_result()
 
     def garage_client_goal(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
@@ -349,7 +350,7 @@ class RoverInterface():
             self.databaseClient.wait_for_result()
             sides = self.databaseClient.get_result()
             sides = sides.altitude
-            rospy.loginfo(f"Pi-Lits stored left: {sides[0]} right: {sides[1]}")
+            rospy.loginfo(f"Pi-Lits stored right: {sides[0]} left: {sides[1]}")
             return sides
         except:
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
@@ -379,7 +380,7 @@ class RoverInterface():
             self.roverState = self.E_STOP
             os.system("rosnode kill --all")
             return
-        elif pickle.dumps(msg) != self.lastmsg:
+        elif pickle.dumps(msg) != self.lastmsg or (msg.connected and self.roverState == self.DISCONNECTED):
             print(msg)
             if not msg.connectedEnabled and msg.connected:
                 self.cancelAllCommands()
@@ -417,6 +418,7 @@ class RoverInterface():
                             elif msg.teleopDrive:
                                 self.roverState = self.TELEOP_DRIVE
                                 print("in teleop drive")
+                                time.sleep(15)
                                 # TODO:put macro here
                                 self.roverState = self.CONNECTED_ENABLED
 
@@ -424,18 +426,22 @@ class RoverInterface():
                                 self.roverState = self.AUTONOMOUS
                                 if msg.deployAllPiLits:
                                     print("deploying all pi lits")
+                                    time.sleep(15)
                                     # TODO:put macro here
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.retrieveAllPiLits:
                                     print("picking up all pi lits")
+                                    time.sleep(15)
                                     # TODO:put macro here
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.driveToWaypoint:
                                     print("driving to point")
+                                    time.sleep(15)
                                     # TODO:put macro here
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.stow:
                                     print("stowing rover")
+                                    time.sleep(15)
                                     pass
                                     # TODO:put macro here
                                     self.roverState = self.CONNECTED_ENABLED

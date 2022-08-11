@@ -32,7 +32,7 @@ class roverMacros():
         start_time = time.time()
         self.interface.intake_command_pub.publish(String(intakeSide))
         self.interface.intake_command_pub.publish(String("deposit"))
-        while not self.interface.limit_switches[3] and not self.interface.limit_switches[2]:
+        while self.interface.limit_switches[1]:
             if time.time() - start_time > timeout:
                 print("Timed out - Deposit")
                 return False
@@ -49,7 +49,6 @@ class roverMacros():
         else:
             side = "switch_left"
         self.placePiLitFromSide(6, side)
-        time.sleep(2)
         self.interface.intake_command_pub.publish(String("reset"))
         self.interface.loadPointToSQL("deploy", side)
 
@@ -61,28 +60,22 @@ class roverMacros():
             self.interface.PP_client_goal(target)
             self.placePiLitFromSide(6, intakeSide)
             self.interface.intake_command_pub.publish(String("reset"))
-
             self.interface.loadPointToSQL("deploy", intakeSide)
-
             if(intakeSide == "switch_right"):
                 intakeSide = "switch_left"
             else:
                 intakeSide = "switch_right"
-
             time.sleep(2)
 
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"
         for i in range(0, count):
             self.placePiLitFromSide(4, intakeSide)
-
             self.interface.intake_command_pub.publish(String("reset"))
-
             if(intakeSide == "switch_right"):
                 intakeSide = "switch_left"
             else:
                 intakeSide = "switch_right"
-
             time.sleep(4)
 
     def interceptPoint(self, finalPoint):

@@ -112,9 +112,9 @@ class TableManager:
             new_entry[2] = prev_entry[2] + 1
         new_entry[index * 5 + 3] = time.time()
         new_entry[index * 5 + 4] = "stored"
-        new_entry[index * 5 + 5] = 0
-        new_entry[index * 5 + 6] = 0
-        new_entry[index * 5 + 7] = 0
+        new_entry[index * 5 + 5] = None
+        new_entry[index * 5 + 6] = None
+        new_entry[index * 5 + 7] = None
         self.append_row("pilits", table_columns, tuple(new_entry))
 
     def get_rows(self, table_name):
