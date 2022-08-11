@@ -81,6 +81,7 @@ class RoverController():
         # self.macros.interface.drive(-0.2, 4)
         # time.sleep(1)
         # self.macros.pickupPiLit()
+        self.macros.undock()
 
 if __name__ == "__main__":
     controller = RoverController()

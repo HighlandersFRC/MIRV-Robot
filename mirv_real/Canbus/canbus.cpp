@@ -570,30 +570,30 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
 	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
-	if (rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
-		frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
-		backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
-	} else {
-		frontRightDrive.Set(ControlMode::Velocity, 0.0);
-		backRightDrive.Set(ControlMode::Velocity, 0.0);
-	}
+	//Disable forward movement if the touch sensor is activated
 
-		//mutiply back for slightly larger radius
-	if (rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
-		frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
-		backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
-	} else {
-		frontLeftDrive.Set(ControlMode::Velocity, 0.0);
-		backLeftDrive.Set(ControlMode::Velocity, 0.0);
-	}
+	// if (rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0 || rightTicksPer100MS < 0){
+	// 	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	// 	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
+	// } else {
+	// 	frontRightDrive.Set(ControlMode::Velocity, 0.0);
+	// 	backRightDrive.Set(ControlMode::Velocity, 0.0);
+	// }
 
-	// frontRightDrive.Set(ControlMode::PercentOutput, 0.0);
-	// backRightDrive.Set(ControlMode::PercentOutput, 0.0);
+	// //mutiply back for slightly larger radius
+	// if (rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0 || leftTicksPer100MS > 0){
+	// 	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	// 	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
+	// } else {
+	// 	frontLeftDrive.Set(ControlMode::Velocity, 0.0);
+	// 	backLeftDrive.Set(ControlMode::Velocity, 0.0);
+	// }
 
-	// frontLeftDrive.Set(ControlMode::PercentOutput, 0.0);
-	// backLeftDrive.Set(ControlMode::PercentOutput, 0.0);
+	frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
+	backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
 
-
+	frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
+	backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
 }
 
 void powerDriveCallback(const std_msgs::Float64MultiArray::ConstPtr& powers){

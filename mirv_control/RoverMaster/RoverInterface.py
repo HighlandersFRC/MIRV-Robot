@@ -163,9 +163,9 @@ class RoverInterface():
         twist.angular.z = radians / seconds
         stop = Twist()
         stop.angular.z = 0
-        startTime = rospy.get_time()
+        startTime = time.time()
         self.simpleDrivePub.publish(twist)
-        while rospy.get_time - startTime < seconds:
+        while time.time() - startTime < seconds:
             pass
         self.simpleDrivePub.publish(stop)
         return True
