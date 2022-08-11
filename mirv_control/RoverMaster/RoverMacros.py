@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
 
 import math
-from RoverInterface import RoverInterface
 import rospy
 import mirv_control.msg
 import actionlib
-from RoverInterface import RoverInterface
 import threading
 from PiLitController import PiLitControl as PiLitController
 from std_msgs.msg import String, Float64MultiArray
 import time
 import numpy as np
 from RoverInterface import RoverInterface
-
 from sensor_msgs.msg import NavSatFix
 
 class roverMacros():

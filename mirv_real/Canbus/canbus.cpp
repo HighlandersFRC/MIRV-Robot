@@ -570,7 +570,7 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	double leftTicksPer100MS = getTicksPer100MSFromVelocity(leftVelocity);
 	double rightTicksPer100MS = getTicksPer100MSFromVelocity(rightVelocity);
 
-	if (rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
+	if (rightConvMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 		frontRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS);
 		backRightDrive.Set(ControlMode::Velocity, rightTicksPer100MS*0.91);
 	} else {
@@ -579,7 +579,7 @@ void velocityDriveCallback(const geometry_msgs::Twist::ConstPtr& msg){
 	}
 
 		//mutiply back for slightly larger radius
-	if (rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 1){
+	if (rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed() == 0){
 		frontLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS);
 		backLeftDrive.Set(ControlMode::Velocity, leftTicksPer100MS*0.91);
 	} else {
