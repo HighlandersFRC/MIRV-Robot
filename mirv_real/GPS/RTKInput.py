@@ -14,7 +14,7 @@ currentGGA = GGAData()
 currentVTG = VTGData()
 
 print("reading in data")
-with serial.Serial('/dev/ttyUSB2', 115200, timeout=1) as ser:
+with serial.Serial('/dev/ttyUSB0', 115200, timeout=1) as ser:
     while not rospy.is_shutdown():
         try:
             line = ser.readline().decode('utf-8')  # read a '\n' terminated line

@@ -31,16 +31,19 @@ class RoverController():
         # self.interface.run()
     def updateStatus(self):
         while not rospy.is_shutdown():
-            print("looping")
+            print("loop at: {}".format(rospy.get_time()))
             self.interface.stateWatchdog()
-            self.interface.cloudController_client_goal()
+            self.interface.cloudController_client_goal(False)
             self.rate.sleep()
+        print("exitid loop")
 
     def main(self):
+        while not rospy.is_shutdown():
+            time.sleep(1)
         #self.interface.garage_client_goal(0)
         # self.macros.pickupOnePiLit()
-        print(self.interface.Calibrate_client_goal())
-        point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
+        # print(self.interface.Calibrate_client_goal())
+        # point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
         # point2 = self.interface.CoordConversion_client_goal([40.4740120, -104.9696378])
         # # # point3 = self.interface.CoordConversion_client_goal([40.474175983263564,  -104.96935822069644])
         # # # point4 = self.interface.CoordConversion_client_goal([40.4740867177757, -104.96949836611748])
@@ -54,14 +57,14 @@ class RoverController():
 
         # point3 = self.interface.CoordConversion_client_goal([40.4739151,  -104.9697535])
         # # point4 = self.interface.CoordConversion_client_goal([40.4738284,  -104.9696305])
-        point4 = [5, 0]
-        point5 = [3.5,0]
-        point6 = [1, 0]
-        target2 = [point1, point4, point5, point6]
+        # point4 = [5, 0]
+        # point5 = [3.5,0]
+        # point6 = [1, 0]
+        # target2 = [point1, point4, point5, point6]
 
-        self.interface.PP_client_goal(target2)
+        # self.interface.PP_client_goal(target2)
 
-        self.interface.garage_client_goal(0.0)
+        # self.interface.garage_client_goal(0.0)
 
         # # # mirv_control.msg.DatabaseGoal.SendLatest = True
         # # # self.goal = mirv_control.msg.DatabaseGoal

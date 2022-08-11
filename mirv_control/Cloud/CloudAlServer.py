@@ -39,6 +39,7 @@ class CloudAlServer():
         self.resetToDefault()
         lastCommandStatus = self._feedback
     def execute_cb(self):
+        print("got request from client")
         goal = self._as.accept_new_goal()
         if(self.cloudConnected == True):
             print("Cloud connected ")
@@ -53,14 +54,14 @@ class CloudAlServer():
     def resetToDefault(self):
         lastCommandStatus = self._feedback
         self._feedback.connected = self.cloudConnected
-        self._feedback.stow = True
+        self._feedback.stow = False
         self._feedback.deploy = False
         self._feedback.teleopDrive = False
         self._feedback.EStop = False
         self._feedback.placePiLit = False
         self._feedback.pickupPiLit = False
         self._feedback.connectedEnabled = False
-        self._feedback.cancelAutoDrive = True
+        self._feedback.cancelCommand = False
         self._feedback.deployAllPiLits = False
         self._feedback.retrieveAllPiLits = False
         self._feedback.placeLatLong = []
@@ -80,7 +81,13 @@ class CloudAlServer():
         self._feedback.driveToLatLong = []
     
     def cloud_cb(self, message):
-        self.heartBeatTime = 0
+        # print("got callback from cloud")
+        self.heartBeatTime = rospy.get_time()
+        if self.cloudConnected == False:
+            sendFirst = True
+            time.sleep(0.5)
+        else:
+            sendFirst = False
         self.cloudConnected = True
         sendRequired = True
         self._feedback.connected = self.cloudConnected
@@ -157,25 +164,24 @@ class CloudAlServer():
             rospy.logerr("Unknown subsystem")
         print("looping")
         
-        if (self._as.is_active() and sendRequired):
+        if ((self._as.is_active() and sendRequired) or sendFirst):
             print("sending message")
             self._as.publish_feedback(self._feedback)
 
 
     def run(self):
         print("starting Cloud actionLibserver")
-        lastTime = rospy.get_time()
         while not rospy.is_shutdown():
-            loopTime = rospy.get_time()-lastTime
-            lastTime = rospy.get_time()
-            self.heartBeatTime += loopTime
-            if (self.heartBeatTime >= 1.5):
+            if ((rospy.get_time()- self.heartBeatTime) >= 2.1):
                 self.cloudConnected = False
+                rospy.logwarn("lost connection to Cloud with time :{}".format(self.heartBeatTime))
                 self.resetToDefault()
+                if (self._as.is_active()):
+                    self._as.publish_feedback(self._feedback)
+                time.sleep(1)
                 # rospy.logwarn("lost Connection to Cloud")
                 if (self._as.is_active()):
                     self._as.set_aborted()
-            time.sleep(0.5)
 
 
 if __name__ == '__main__':

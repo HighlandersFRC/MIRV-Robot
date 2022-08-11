@@ -140,10 +140,10 @@ double maxVelocity = 6380.0;
 
 //distance between right and left wheels (meters)
 //16 and 11/16 inches
-double wheelSpacing = 0.4238625;
+double wheelSpacing = 0.42038625;
 
 //wheel circumference (meters)
-double wheelCircumference = 0.608447957;
+double wheelCircumference = 0.59438;
 
 //gear ratio of the drive motors
 double motorToWheelRatio = 12.0;

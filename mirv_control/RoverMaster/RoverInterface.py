@@ -65,7 +65,7 @@ class RoverInterface():
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
         self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
         self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
-        self.garage_sub = rospy.Subscriber("GarageStatus", String, self.garage_state_callback)
+        self.garage_sub = rospy.Subscriber("GarageStatus", garage_state_msg, self.garage_state_callback)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
 
 
@@ -99,11 +99,15 @@ class RoverInterface():
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
 
+
+    def garage_state_callback(self, data):
+        self.garage_state = data.state
+        
     def loadRoverMacro(self, macro):
         self.RoverMacro = macro
 
     def garage_state_callback(self, msg):
-        self.garage_state = msg.data
+        self.garage_state = msg.state
 
     def limit_switch_callback(self, switches):
         self.limit_switches = switches.data
@@ -272,11 +276,14 @@ class RoverInterface():
         except:
             rospy.logerr("Failed to run pure pursuit action")
 
-    def cloudController_client_goal(self):
+    def cloudController_client_goal(self ,halt):
         mirv_control.msg.ControllerGoal.runRequested = True
         goal = mirv_control.msg.ControllerGoal
-        self.cloudControllerClient.send_goal(goal, feedback_cb = self.cloud_feedback_callback)
-        self.cloudControllerClient.wait_for_result()
+        if ((self.cloudControllerClient.get_state() =="ABORTED") or (self.cloudControllerClient.get_state() == "SUCCEEDED")):
+            self.cloudControllerClient.send_goal(goal, feedback_cb = self.cloud_feedback_callback)
+            time.sleep(0.2)
+            if halt:
+                self.cloudControllerClient.wait_for_result()
 
     def pickup_client_goal(self, intakeSide, angleToTarget):
         mirv_control.msg.MovementToPiLitGoal.runPID = True
@@ -356,20 +363,21 @@ class RoverInterface():
         self.statePublisher.publish(self.stateMsg)
 
     def cloud_feedback_callback(self, msg):
-        print(rospy.get_time())
         print(msg)
         if msg.EStop:
             self.roverState = self.E_STOP
             os.system("rosnode kill --all")
-        if not msg.connectedEnabled:
+            return
+        elif not msg.connectedEnabled and msg.connected:
             self.cancelAllCommands()
             self.roverState = self.CONNECTED_DISABLED  
-        if msg.connected:
+        elif msg.connected:
             if self.garage_state != "deployed":
+                print(self.garage_state)
                 if msg.deploy:
                     print("deploying rover")
                     # self.RoverMacro.undock()
-                    self.roverState = self.CONNECTED_ENABLED
+                    self.roverState = self.CONNECTED_DISABLED
                 else:
                     rospy.logwarn("invalid command, rover is docked")
                     self.roverState = self.DOCKED
@@ -397,7 +405,7 @@ class RoverInterface():
                             # TODO:put macro here
                             self.roverState = self.CONNECTED_ENABLED
 
-                        else:
+                        elif msg.deployAllPiLits or msg.retrieveAllPiLits or msg.driveToWaypoint or msg.stow:
                             self.roverState = self.AUTONOMOUS
                             if msg.deployAllPiLits:
                                 print("deploying all pi lits")

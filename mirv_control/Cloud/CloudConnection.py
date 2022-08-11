@@ -150,7 +150,10 @@ def statusSubscriber(data):
             get_garage_state(token)        
         if get_webrtc_state == "connected":
             send_to_webrtc(status)
-
+        if len(status_messages) == 0:
+            status_messages.append(data.data)
+        else:
+            status_messages[0] = data.data
     else:
         print("Received Data with Type None", data)
 
@@ -253,7 +256,7 @@ async def offer(request):
         def on_message(message):
             print(message)
             command_pub.publish(message)
-            channel.send("")
+            channel.send(status_messages[0])
             #send_rtc("I Really Like Turtles!")
 
 
@@ -399,18 +402,6 @@ def connection_offer(data):
     x = requests.post('http://localhost:8080/offer', json = data)
     return x.json()
 
-
-def run_webserver():
-    app = web.Application()
-    app.on_shutdown.append(on_shutdown)
-    app.router.add_post("/offer", offer)
-    web.run_app(
-        app, access_log=None, host="0.0.0.0", port=8080
-    )
-
-
-
-
 async def on_shutdown(app):
     # close peer connections
     coros = [pc.close() for pc in pcs]
@@ -421,6 +412,14 @@ async def on_shutdown(app):
     sio.disconnect()
     stop()
     exit()
+
+def run_webserver():
+    app = web.Application()
+    app.on_shutdown.append(on_shutdown)
+    app.router.add_post("/offer", offer)
+    web.run_app(
+        app, access_log=None, host="0.0.0.0", port=8080
+    )
 
 
 # Get Token from API
