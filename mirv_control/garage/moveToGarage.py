@@ -30,6 +30,7 @@ class moveToGarage:
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.touch_sensor_sub = rospy.Subscriber("TouchSensors", Float64MultiArray, self.updateTouchSensorVals)
 
         self.velocityMsg = Twist()
 
@@ -72,6 +73,8 @@ class moveToGarage:
         self.estimatePID.setMaxMinOutput(0.3)
         self.allowSearch = True
 
+        self.touchSensorVals = [0, 0]
+
     def setAllZeros(self):
         self.GarageDepth = 0
         self.GarageAngle = 0
@@ -99,6 +102,9 @@ class moveToGarage:
 
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
+
+    def updateTouchSensorVals(self, touchSensors):
+        self.touchSensorVals = touchSensors.data
 
     def updateGarageLocation(self, location):
         GarageLocation = location.data
@@ -141,7 +147,7 @@ class moveToGarage:
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > self.GarageDepth/0.25):
+        if(time.time() - self.movementInitTime > self.GarageDepth/0.25 or self.touchSensorVals[0] != 0 or self.touchSensorVals[1] != 0):
             # print("WANTED ANGLE: ", self.setPoint)
             # print("CURRENT ANGLE: ", self.imu)
             self.driveToGarage = False
