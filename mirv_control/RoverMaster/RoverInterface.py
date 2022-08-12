@@ -51,8 +51,8 @@ class RoverInterface():
         self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
         self.cloudControllerClient.wait_for_server()
         print("connected to Cloud AL Server")
-        # self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
-        # self.TruckCordClient.wait_for_server()
+        self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
+        self.TruckCordClient.wait_for_server()
         print("connected to Pure Truck CordinateAS")
         self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
@@ -60,6 +60,9 @@ class RoverInterface():
         self.garageClient = actionlib.SimpleActionClient("Docking", mirv_control.msg.GarageAction)
         self.garageClient.wait_for_server()
         print("connected to Garage Server")
+        self.TeleopClient = actionlib.SimpleActionClient("TeleopDrive", mirv_control.msg.generalAction)
+        self.TeleopClient.wait_for_server()
+        print("connected to teleop drive")
 
         #self.pilit_controller = PiLitControl()
 
@@ -230,8 +233,10 @@ class RoverInterface():
         self.sqlPub.publish(msg)
     
     def enableTeleopDrive(self, Halt):
-        mirv_control.msg.generalGoal.goal = ""
-        self.TeleopClient.send_goal(mirv_control.msg.generalGoal.goal)
+        temp = ""
+        mirv_control.msg.generalGoal.goal = temp
+        goal = mirv_control.msg.generalGoal
+        self.TeleopClient.send_goal(goal)
         if Halt:
             self.TeleopClient.wait_for_result()
 
@@ -382,18 +387,23 @@ class RoverInterface():
             return
         elif pickle.dumps(msg) != self.lastmsg or (msg.connected and self.roverState == self.DISCONNECTED):
             print(msg)
-            if not msg.connectedEnabled and msg.connected:
+            if (not msg.connectedEnabled and not msg.deploy) and msg.connected:
                 self.cancelAllCommands()
-                self.roverState = self.CONNECTED_DISABLED  
-                print("connected disabeled \n\n\n")
+                if self.garage_state == "deployed":
+                    self.roverState = self.CONNECTED_DISABLED  
+                else:
+                    self.roverState = self.DOCKED
+                    print("setting to docked")
+                print("connected disabeled ")
             elif msg.connected:
-                print("connected \n\n\n")
+                print("connected ")
                 if self.garage_state != "deployed":
                     print(self.garage_state)
                     if msg.deploy:
                         print("deploying rover")
-                        # self.RoverMacro.undock()
-                        self.roverState = self.CONNECTED_DISABLED
+                        self.RoverMacro.undock()
+                        if(self.garage_state == "deployed"):
+                            self.roverState = self.CONNECTED_DISABLED
                     else:
                         rospy.logwarn("invalid command, rover is docked")
                         self.roverState = self.DOCKED
@@ -455,6 +465,9 @@ class RoverInterface():
                                     self.roverState = self.CONNECTED_ENABLED
                                 else:
                                     rospy.logwarn("invalid command, rover is disabled, must be enabled to take commands")
+                            elif self.roverState == self.DISCONNECTED and msg.connected:
+                                self.roverState = self.CONNECTED_DISABLED
+
                             else:
                                 rospy.logwarn("invalid command, rover is in state: {}, and must be in connected enable to accept new commands".format(self.roverState))
             else:

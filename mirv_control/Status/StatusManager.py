@@ -99,7 +99,7 @@ state_sub = rospy.Subscriber("RoverState", String, state_callback)
 
 #Status publisher and timer
 status_pub = rospy.Publisher("RoverStatus", String, queue_size = 10)
-status_pub_timer = rospy.Timer(rospy.Duration(5), publish_status)
+status_pub_timer = rospy.Timer(rospy.Duration(2), publish_status)
 
 #General update timer
 update_general_timer = rospy.Timer(rospy.Duration(5), update_general)

@@ -17,20 +17,9 @@ class moveToGarage:
     def __init__(self):
         self._feedback = msg.GarageFeedback()
         self._result = msg.GarageResult()
+        self.allowSearch = True
 
         self._action_name = "Docking"
-        self._as = actionlib.SimpleActionServer(self._action_name, msg.GarageAction, auto_start = False)
-        self._as.register_goal_callback(self.turnToGarage)
-        self._as.register_preempt_callback(self.preemptedPickup)
-        self._as.start()
-
-        self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
-        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
-        self.Garage_location_sub = rospy.Subscriber("garageLocation", Float64MultiArray, self.updateGarageLocation)
-        self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
-        self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
-        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
-        self.touch_sensor_sub = rospy.Subscriber("TouchSensors", Float64MultiArray, self.updateTouchSensorVals)
 
         self.velocityMsg = Twist()
 
@@ -71,9 +60,22 @@ class moveToGarage:
         self.estimatePID = PID(self.estimatekP, self.estimatekI, self.estimatekD, self.estimateSetPoint)
         self.GaragePID.setMaxMinOutput(0.5)
         self.estimatePID.setMaxMinOutput(0.3)
-        self.allowSearch = True
+        
 
         self.touchSensorVals = [0, 0]
+        
+        self._as = actionlib.SimpleActionServer(self._action_name, msg.GarageAction, auto_start = False)
+        self._as.register_goal_callback(self.turnToGarage)
+        self._as.register_preempt_callback(self.preemptedPickup)
+        self._as.start()
+
+        self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
+        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
+        self.Garage_location_sub = rospy.Subscriber("garageLocation", Float64MultiArray, self.updateGarageLocation)
+        self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
+        self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
+        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.touch_sensor_sub = rospy.Subscriber("TouchSensors", Float64MultiArray, self.updateTouchSensorVals)
 
     def setAllZeros(self):
         self.GarageDepth = 0
@@ -98,7 +100,6 @@ class moveToGarage:
         self.finished = False
 
         self.reachedEstimate = False
-        self.allowSearch = True
 
     def set_intake_state(self, state: str):
         self.intake_command_pub.publish(state)
@@ -132,6 +133,7 @@ class moveToGarage:
         rospy.loginfo('%s: Preempted' % self._action_name)
         self._as.set_aborted()
 
+    
     def preemptedPickup(self):
         if(self._as.is_new_goal_available()):
             print("pickup preempt received")
@@ -159,7 +161,8 @@ class moveToGarage:
             self.movementInitTime = 0
             self.finished = True
             self.allowSearch = False
-
+    def limit_switch_callback(self, data):
+        pass
     def turnToGarage(self):
         print("GOT GARAGE CALLBACK")
         goal = self._as.accept_new_goal()

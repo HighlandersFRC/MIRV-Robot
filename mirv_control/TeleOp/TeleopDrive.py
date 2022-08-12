@@ -2,6 +2,7 @@
 import math
 import numpy as np
 import rospy
+import json
 import actionlib
 import mirv_control.msg as ASmsg
 from geometry_msgs.msg import Twist
@@ -28,7 +29,7 @@ class TeleopDrive():
         self._as.start()
 
     def scaleJoyInput(self, x, y):
-        angVel = x * self.maxAngularVel
+        angVel = -x * self.maxAngularVel
         linVel = self.maxStrafeVel * abs(y) * -y
 
         #self.rosPubMsg.linear.x = -y
@@ -54,24 +55,36 @@ class TeleopDrive():
 
     def cloud_cb(self, data):
 
-        msg = json.loads(data)
+        msg = json.loads(data.data) #Needs to be data.data
         command = msg.get("command","")
-        joystickX = msg.get("commandParameters", {}).get("x",0)
-        joystickY = msg.get("commandParameters", {}).get("y",0)
+
+
+        
 
         if self._as.is_active:
+
+
             if command == "disable_remote_operation":
                 joystickX = 0
                 joystickY = 0
                 self.active = False
                 self.result.result = ""
-                self._as.set_succeeded(self.ASmsg.generalResult(self.result))
-
-            else:
-                linear, angular = self.scaleJoyInput(joystickX, joystickY)
-                self.rosPubMsg.linear.x = linear
-                self.rosPubMsg.angular.z = angular
+                self.rosPubMsg.linear.x = 0
+                self.rosPubMsg.angular.z = 0
                 self.drive_pub.publish(self.rosPubMsg)
+
+                self._as.set_succeeded(self.ASmsg.generalResult(self.result))
+            else:
+                if "commandParameters" in msg and msg["commandParameters"] is not None:
+                    joystickX = msg.get("commandParameters", {}).get("x",0)
+                    joystickY = msg.get("commandParameters", {}).get("y",0)
+                    linear, angular = self.scaleJoyInput(joystickX, joystickY)
+                    self.rosPubMsg.linear.x = linear
+                    self.rosPubMsg.angular.z = angular
+                    self.drive_pub.publish(self.rosPubMsg)
+
+                
+                
         
     def run(self):
         rospy.spin()

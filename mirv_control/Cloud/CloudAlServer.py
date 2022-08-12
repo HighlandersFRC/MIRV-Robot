@@ -108,12 +108,20 @@ class CloudAlServer():
             elif command == "enable":
                 self._feedback.connectedEnabled = True
             elif command == "deploy":
+                self._feedback.pickupPiLit = False
+                self._feedback.placePiLit = False
                 self._feedback.deploy = True
+                self._feedback.stow = False
             elif command == "stow":
+                self._feedback.pickupPiLit = False
+                self._feedback.placePiLit = False
                 self._feedback.stow = True
+                self._feedback.deploy = False
             elif command == "cancel":
                 self._feedback.cancelCommand = True
             elif command == "deploy_pi_lits":
+                self._feedback.pickupPiLit = False
+                self._feedback.placePiLit = False
                 print(msg)
                 self.resetControlState()
                 self._feedback.deployAllPiLits = True
