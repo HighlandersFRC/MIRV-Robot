@@ -78,7 +78,7 @@ def allowNeuralNetRun(msg):
         runningNeuralNetwork = False
 
 def gotFrame(data):
-    print("GOT A FRAME")
+    #print("GOT A FRAME")
     if(runningNeuralNetwork):
         initTime = time.time()
         frame = ros_numpy.numpify(data.color_frame)

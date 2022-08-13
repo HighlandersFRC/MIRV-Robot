@@ -94,7 +94,7 @@ allIds = []
 decimator = 0
 for i in range(400):
     # if in_rgb is not None:
-    print("got a frame")
+    #print("got a frame")
     frame = qIsp.get().getCvFrame()
 
     # resize frame for neural nets

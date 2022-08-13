@@ -389,7 +389,7 @@ class RoverInterface():
 
 
     def cloud_feedback_callback(self, msg):
-        print("got callback")
+        #print("got callback")
         if msg.EStop:
             self.roverState = self.E_STOP
             os.system("rosnode kill --all")

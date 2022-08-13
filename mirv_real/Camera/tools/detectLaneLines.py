@@ -74,7 +74,7 @@ def execute_cb(self):
 
 # callback function when receiving a frame
 def gotFrame(data):
-    print("GOT A FRAME")
+    #print("GOT A FRAME")
     if(runningNeuralNetwork):
         initTime = time.time()
         frame = ros_numpy.numpify(data.color_frame)

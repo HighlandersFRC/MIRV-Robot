@@ -51,7 +51,7 @@ def pilit_state_callback(state):
     rover_state.timers["pilit_table"].reset()
     rover_state.rover_state["pi_lits"]["pi_lits_stowed_right"] = state.right_count.data
     rover_state.rover_state["pi_lits"]["pi_lits_stowed_left"] = state.left_count.data
-    rover_state.rover_state["pi_lits"]["deployed_pi_lits"] = [{"pi_lit_id": f"PiLit_{state.ids[i]}", "location":{"lat": state.latitudes.data[i], "long": state.longitudes.data[i], "elev": state.altitudes.data[i]}} for i in range(len(list(zip(state.latitudes.data, state.longitudes.data, state.altitudes.data))))]
+    rover_state.rover_state["pi_lits"]["deployed_pi_lits"] = [{"pi_lit_id": f"PiLit_{state.ids.data[i]}", "location":{"lat": state.latitudes.data[i], "long": state.longitudes.data[i], "elev": state.altitudes.data[i]}} for i in range(len(list(zip(state.latitudes.data, state.longitudes.data, state.altitudes.data))))]
 
 def pilit_mode_callback(mode):
     rover_state.rover_state["pi_lits"]["state"] = mode.data

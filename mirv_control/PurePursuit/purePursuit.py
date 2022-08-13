@@ -225,7 +225,7 @@ class PurePursuit():
             self.cancelCallback()
 
     def ServerCallback(self):
-        print("got callback")
+        #print("got callback")
         goal = self._as.accept_new_goal()
         numTarget = goal.NumTargetPoints
         points = list(goal.TargetPoints)

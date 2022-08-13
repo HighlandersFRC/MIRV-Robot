@@ -99,6 +99,15 @@ void initializeDriveMotors(){
 	backRightDrive.Config_kI(0, kI);
 	backRightDrive.Config_kD(0, kD);
 
+	frontRightDrive.ConfigOpenloopRamp(2);
+	frontRightDrive.ConfigClosedloopRamp(2);
+	frontLeftDrive.ConfigOpenloopRamp(2);
+	frontLeftDrive.ConfigClosedloopRamp(2);
+	backLeftDrive.ConfigOpenloopRamp(2);
+	backLeftDrive.ConfigClosedloopRamp(2);
+	backRightDrive.ConfigOpenloopRamp(2);
+	backRightDrive.ConfigClosedloopRamp(2);
+
 	//zero drive motors
 	while (frontRightDrive.GetSelectedSensorPosition() != 0.0){
 		frontRightDrive.SetSelectedSensorPosition(0.0);
