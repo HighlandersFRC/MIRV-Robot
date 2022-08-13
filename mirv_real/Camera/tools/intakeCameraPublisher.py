@@ -129,10 +129,6 @@ sensIso = 0
 found, device_info = depthai.Device.getDeviceByMxId("10.0.20.2")
 depthaiDevice = depthai.Device(pipeline, device_info)
 depthaiDevice.startPipeline()
-print(found, device_info)
-
-# depthaiDevice.setLogLevel(depthai.LogLevel.DEBUG)
-# depthaiDevice.setLogOutputLevel(depthai.LogLevel.DEBUG)
 
 # create queues
 q_rgb = depthaiDevice.getOutputQueue("rgb", maxSize=1, blocking=False)
@@ -145,8 +141,8 @@ imuQueue = depthaiDevice.getOutputQueue(name="imu", maxSize=1, blocking=False)
 disparityMultiplier = 255 / stereo.getMaxDisparity()
 controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
-ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
-ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.AUTO)
+ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.CONTINUOUS_PICTURE)
+ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.WARM_FLUORESCENT)
 controlQueue.send(ctrl)
 
 def interrupt_handler(signal, frame):

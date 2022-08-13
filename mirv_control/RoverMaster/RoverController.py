@@ -42,7 +42,8 @@ class RoverController():
         # while not rospy.is_shutdown():
         #     time.sleep(1)
         # self.interface.garage_client_goal(0)
-        # self.interface.Calibrate_client_goal()
+        #self.interface.Calibrate_client_goal()
+        # self.macros.undock()
         # point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
         # point2 = self.interface.CoordConversion_client_goal([40.4740120, -104.9696378])
         # point3 = self.interface.CoordConversion_client_goal([40.474175983263564,  -104.96935822069644])

@@ -65,7 +65,7 @@ def allowNeuralNetRun(msg):
 
 # callback function when receiving a frame
 def gotFrame(data):
-    # print("GOT A FRAME")
+    print("GOT A FRAME")
     if(runningDetection):
         initTime = time.time()
         frame = ros_numpy.numpify(data.color_frame)

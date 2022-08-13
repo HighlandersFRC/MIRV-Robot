@@ -149,7 +149,7 @@ class moveToGarage:
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
-        if(time.time() - self.movementInitTime > self.GarageDepth/0.25 or self.touchSensorVals[0] != 0 or self.touchSensorVals[1] != 0):
+        if(self.touchSensorVals[0] != 0 or self.touchSensorVals[1] != 0):
             # print("WANTED ANGLE: ", self.setPoint)
             # print("CURRENT ANGLE: ", self.imu)
             self.driveToGarage = False
