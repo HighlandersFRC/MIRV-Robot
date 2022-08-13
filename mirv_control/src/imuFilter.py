@@ -24,7 +24,7 @@ class imuFilter:
 
     def imu_cb(self, msg):
         if self.t == 0:
-            self.yaw_zero = conversion_lib.quat_from_pose2eul(msg.orientation+180)[0]
+            self.yaw_zero = conversion_lib.quat_from_pose2eul((msg.orientation+180)%360)[0]
             self.t = 1
         orientation = conversion_lib.quat_from_pose2eul(msg.orientation)
         orientation[0] -= self.yaw_zero
@@ -33,7 +33,7 @@ class imuFilter:
 
     def imu_dumb_cb(self, data):
         if self.t == 0:
-            self.yaw_zero = -data.data * np.pi/180 +180
+            self.yaw_zero =((-data.data * np.pi/180) + 180)%360
             self.t = 1
         msg = Imu()
         orientation = np.array([-data.data * np.pi/180, 0, 0])
