@@ -13,6 +13,8 @@ from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import Image
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from cv_bridge import CvBridge
+import signal
+
 
 def quat_2_radians(x, y, z, w):
     pitch = math.atan2(2*x*w - 2*y*z, 1-2*x*x - 2* z*z)
@@ -26,7 +28,7 @@ cameraY = 480
 br = CvBridge()
 
 # imgPub = rospy.Publisher('CameraFrames', numpy_msg(Floats),queue_size=10)
-imgPub = rospy.Publisher('BackCameraFrames', depthAndColorFrame, queue_size=1)
+imgPub = rospy.Publisher('IntakeCameraFrames', depthAndColorFrame, queue_size=1)
 rospy.init_node('backCameraPublisher', anonymous=True)
 
 # imuPub = rospy.Publisher('CameraIMU', Float64, queue_size=1)
@@ -123,9 +125,10 @@ sensIso = 0
 found, device_info = depthai.Device.getDeviceByMxId("10.0.10.2")
 depthaiDevice = depthai.Device(pipeline, device_info)
 depthaiDevice.startPipeline()
+print(found, device_info)
 
 # create queues
-q_rgb = depthaiDevice.getOutputQueue("rgb", maxSize=1, blocking=False)
+q_rgb = depthaiDevice.getOutputQueue("rgb", maxSize=1, blocking=True)
 depthQueue = depthaiDevice.getOutputQueue(name="depth", maxSize=1, blocking=False)
 spatialCalcQueue = depthaiDevice.getOutputQueue(name="spatialData", maxSize=1, blocking=False)
 spatialCalcConfigInQueue = depthaiDevice.getInputQueue("spatialCalcConfig")

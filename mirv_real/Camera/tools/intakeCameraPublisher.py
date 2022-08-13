@@ -16,6 +16,16 @@ def quat_2_radians(x, y, z, w):
     roll = math.atan2(2*x*w - 2*x*z, 1-2*y*y - 2*z*z)
     return pitch, yaw, roll
 
+runningNeuralNetwork = True
+
+def allowNeuralNetRun(msg):
+    cmd = msg.data
+    global runningNeuralNetwork
+    if(cmd == "none"):
+        runningNeuralNetwork = False
+    else:
+        runningNeuralNetwork = True
+
 cameraX = 640
 cameraY = 480
 
@@ -119,6 +129,10 @@ sensIso = 0
 found, device_info = depthai.Device.getDeviceByMxId("10.0.20.2")
 depthaiDevice = depthai.Device(pipeline, device_info)
 depthaiDevice.startPipeline()
+print(found, device_info)
+
+# depthaiDevice.setLogLevel(depthai.LogLevel.DEBUG)
+# depthaiDevice.setLogOutputLevel(depthai.LogLevel.DEBUG)
 
 # create queues
 q_rgb = depthaiDevice.getOutputQueue("rgb", maxSize=1, blocking=False)
@@ -131,8 +145,8 @@ imuQueue = depthaiDevice.getOutputQueue(name="imu", maxSize=1, blocking=False)
 disparityMultiplier = 255 / stereo.getMaxDisparity()
 controlQueue = depthaiDevice.getInputQueue('control')
 ctrl = depthai.CameraControl()
-ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.CONTINUOUS_PICTURE)
-ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.WARM_FLUORESCENT)
+ctrl.setAutoFocusMode(depthai.CameraControl.AutoFocusMode.AUTO)
+ctrl.setAutoWhiteBalanceMode(depthai.CameraControl.AutoWhiteBalanceMode.AUTO)
 controlQueue.send(ctrl)
 
 def interrupt_handler(signal, frame):
@@ -193,24 +207,25 @@ try:
 
 
         if in_rgb is not None and inDepth is not None:
-            frame = qIsp.get().getCvFrame()
+            if(runningNeuralNetwork):
+                frame = qIsp.get().getCvFrame()
 
-            # resize frame for neural nets
-            resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
+                # resize frame for neural nets
+                resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
 
-            # result=cv2.imwrite(r'src/cameraFrame.jpg', resizedFrame)
-            # if result==True:
-            #     print("SAVED!")
-            #     firstLoop = False
-            # else:
-            #     print("DIDN'T SAVE")
+                # result=cv2.imwrite(r'src/cameraFrame.jpg', resizedFrame)
+                # if result==True:
+                #     print("SAVED!")
+                #     firstLoop = False
+                # else:
+                #     print("DIDN'T SAVE")
 
-            # create custom frame message to publish
-            framesMessage = depthAndColorFrame()
-            framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
-            framesMessage.color_frame = br.cv2_to_imgmsg(resizedFrame)
-            imgPub.publish(framesMessage)
-            endTime = time.time()
+                # create custom frame message to publish
+                framesMessage = depthAndColorFrame()
+                framesMessage.depth_frame = br.cv2_to_imgmsg(depthFrame)
+                framesMessage.color_frame = br.cv2_to_imgmsg(resizedFrame)
+                imgPub.publish(framesMessage)
+                endTime = time.time()
 
         # if cv2.waitKey(1) == ord('q'):
         #         break

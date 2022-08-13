@@ -57,6 +57,21 @@ def allowNeuralNetRun(msg):
     else:
         runningNeuralNetwork = False
 
+def execute_cb(self):
+    goal = actionServer.accept_new_goal()
+    latitude = goal.latitude
+    longitude = goal.latitude
+    heading = goal.heading
+    lane_type = goal.formation_type
+
+    placements = placement.generate_pi_lit_formation((latitude, longitude), heading, lane_width, lane_type)
+    # print(placsements)
+    msg = Float64MultiArray()
+    msg.data = placements
+
+    self.result.placement_locations = msg
+    actionServer.set_succeeded(self.result)
+
 # callback function when receiving a frame
 def gotFrame(data):
     print("GOT A FRAME")
@@ -111,42 +126,21 @@ def laneLineDetect(img, frame, depthFrame):
     numLines = 0
     piLitLocations = None
     laneType = "CENTER"
-    try:
+    if(len(lines) != 0):
         if(len(lines)%2 == 0):
             mirvLeftLaneNum = (len(lines)/2)
             mirvRightLaneNum = (len(lines)/2) + 1
         else:
             mirvLeftLaneNum = math.floor(len(lines)/2)
             mirvRightLaneNum = math.ceil(len(lines)/2)
-        # print("LEFT LANE NUM: ", mirvLeftLaneNum)
-        # print("RIGHT LANE NUM: ", mirvRightLaneNum)
 
-        if(mirvLeftLaneNum > 2):
-            if(len(lines) - mirvRightLaneNum > 2):
-                laneType = "CENTER"
-            else:
-                laneType = "RIGHT"
-        else:
-            if(len(lines) - mirvRightLaneNum > 2):
-                laneType = "CENTER"
-            else:
-                laneType = "LEFT"
-        
-        print(laneType)
-    except:
+        leftLane = lines[mirvLeftLaneNum]
+        rightLane = lines[mirvRightLaneNum]
+
+        global laneWidth, global boundingInformation = generateLines(depthFrame, leftLane, rightLane)
+    else:
+        global laneWidth = 3
         print("COULD NOT FIND LANE LINES, TRYING AGAIN")
-
-    leftLane = lines[mirvLeftLaneNum]
-    rightLane = lines[mirvRightLaneNum]
-
-    generateLines(depthFrame, leftLane, rightLane)
-
-    # piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask_resized, laneType)
-
-    # if(piLitLocations != None):
-    #     locations = Float64MultiArray()
-    #     locations.data = piLitLocations
-    #     placementPublisher.publish(locations)
 
 def generateLines(depthFrame, leftLane, rightLane):
     leftLineSlope = 0
@@ -197,10 +191,7 @@ def generateLines(depthFrame, leftLane, rightLane):
 
     boundingInformation = [leftLineSlope, leftYIntercept, rightLineSlope, rightYIntercept]
 
-    boundingMsg = Float64MultiArray()
-    boundingMsg.data = boundingInformation
-
-    laneBoundPublisher.publish(boundingMsg)
+    return laneWidth, boundingInformation
 
 # # based on which lane, and width of lane, determine locations pi lits should be placed
 # def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
@@ -312,6 +303,12 @@ placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, que
 
 laneBoundPublisher = rospy.Publisher("laneBound", Float64MultiArray, queue_size = 1)
 rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
+
+self._action_name = "PlacementLocationGenerator"
+self.result = ASmsg.GeneratePlacementLocationsResult()
+global actionServer = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.GeneratePlacementLocationsAction, auto_start = False)
+actionServer.register_goal_callback(self.execute_cb)
+actionServer.start()
 
 try:
     rospy.spin()

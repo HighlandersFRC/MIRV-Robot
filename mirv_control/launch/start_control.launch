@@ -1,7 +1,7 @@
 <launch>
     <!-- <node name="record" pkg="mirv_control" type="record.py"/> -->
     <node name="gps_to_local" pkg="mirv_control" type="globalToTruck.py"/>
-    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py"/>
+    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py" output="screen"/>
     <node name="EKF" pkg="mirv_control" type="EKF.py"/>
 <!--    <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"-->
 <!--        respawn="$(arg respawn)"-->

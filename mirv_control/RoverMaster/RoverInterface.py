@@ -14,6 +14,8 @@ from geometry_msgs.msg import Twist
 import os
 import sys
 import pickle
+import helpful_functions_lib as conversion
+import math
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -63,6 +65,9 @@ class RoverInterface():
         self.TeleopClient = actionlib.SimpleActionClient("TeleopDrive", mirv_control.msg.generalAction)
         self.TeleopClient.wait_for_server()
         print("connected to teleop drive")
+        # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.GeneratePlacementLocationsAction)
+        # self.PlacementGeneratorClient.wait_for_server()
+        # print("connected to placement generator")
 
         #self.pilit_controller = PiLitControl()
 
@@ -73,7 +78,6 @@ class RoverInterface():
         self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
         self.garage_sub = rospy.Subscriber("GarageStatus", garage_state_msg, self.garage_state_callback)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
-
 
         # PUBLISHERS
         self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg, queue_size=5)
@@ -93,6 +97,7 @@ class RoverInterface():
         self.altitude = 0
         self.xPos = 0
         self.yPos = 0
+        self.heading = 0
         self.placementPoints = []
         self.storedPiLits = [4, 4]
         self.garage_state = "invalid"
@@ -106,7 +111,6 @@ class RoverInterface():
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
 
-
     def garage_state_callback(self, data):
         self.garage_state = data.state
         
@@ -116,6 +120,7 @@ class RoverInterface():
 
     def loadRoverMacro(self, macro):
         self.RoverMacro = macro
+        rospy.loginfo("Rover Macros loaded into Rover Interface")
 
     def garage_state_callback(self, msg):
         self.garage_state = msg.state
@@ -168,13 +173,17 @@ class RoverInterface():
         stop.angular.z = 0
         startTime = time.time()
         self.simpleDrivePub.publish(twist)
-        while time.time() - startTime < seconds:
+        while time.time() - startTime < seconds - 1:
             pass
         self.simpleDrivePub.publish(stop)
         return True
 
     def updatePlacementPoints(self, data):
         self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
+        self.placementPoints = self.convertPointsToTruckCoordinates(self.placementPoints)
+
+    def getPlacementPoints(self):
+        return self.placementPoints
 
     def convertOneDimArrayToTwoDim(self, points):
         pointList = []
@@ -186,12 +195,10 @@ class RoverInterface():
             pointList.append([tempX, tempY])
         return pointList
 
-    def getPlacementPoints(self):
-        return self.placementPoints
-
     def convertPointsToTruckCoordinates(self, points):
         for i in range(len(points)):
             points[i] = self.CoordConversion_client_goal(points[i])
+            time.sleep(0.1)
         return points
     
     def getDriveClients(self):
@@ -205,6 +212,7 @@ class RoverInterface():
     def updateTruckOdom(self, data):
         self.xPos = data.pose.pose.position.x
         self.yPos = data.pose.pose.position.y
+        self.heading = conversion.quat_from_pose2eul(data.pose.pose.orientation)[0]
 
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
@@ -217,9 +225,6 @@ class RoverInterface():
 
     def getCurrentAltitude(self):
         return self.altitude
-
-    def getPlacementPoints(self):
-        return self.placementPoints
     
     def loadPointToSQL(self, action, intakeSide):
         msg = pilit_db_msg()
@@ -272,8 +277,9 @@ class RoverInterface():
 
     def PP_client_cancel(self):
         rospy.loginfo("canceling pure pursuit goal")
-        self.PPclient.cancel_all_goals()
-        rospy.loginfo(self.PPclient.get_goal_status_text())
+        if self.PPclient == "Active":
+            self.PPclient.cancel_all_goals()
+            rospy.loginfo(self.PPclient.get_goal_status_text())
 
     def PP_client_goal(self, targetPoints2D):
         rospy.loginfo("running pure pursuit")
@@ -317,7 +323,7 @@ class RoverInterface():
         self.garageClient.send_goal(goal)
         self.garageClient.wait_for_result()
 
-    def pickup_client_cancel(self, intakeSide):
+    def pickup_client_cancel(self):
         print("Cancelling pickup goal")
         self.pickupClient.cancel_all_goals()
         print(self.pickupClient.get_goal_status_text())
@@ -360,19 +366,21 @@ class RoverInterface():
         except:
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
     
-    def cancelAllCommands(self):
+    def cancelAllCommands(self, runIntake):
         print("cancelling all commands")
-        # self.PP_client_cancel()
-        # self.disableTeleopDrive()
-        # self.pickup_client_cancel()
-        # self.intakeUp()
-        # self.magazineIn()
-        # self.stopIntakeAndMagazine()
+        self.PP_client_cancel()
+        self.disableTeleopDrive()
+        self.pickup_client_cancel()
+        if(runIntake):
+            self.intakeUp()
+            self.magazineIn()
+            time.sleep(1)
+            self.stopIntakeAndMagazine()
         
 
     def stateWatchdog(self):
         if self.roverState == self.CONNECTED_DISABLED or self.roverState == self.DISCONNECTED or self.roverState == self.DOCKED:
-            self.cancelAllCommands
+            self.cancelAllCommands(False)
         if self.roverState == self.TELEOP_DRIVE:
             if self.TeleopClient.get_state() != "ACTIVE":
                 self.enableTeleopDrive(False)
@@ -381,6 +389,7 @@ class RoverInterface():
 
 
     def cloud_feedback_callback(self, msg):
+        print("got callback")
         if msg.EStop:
             self.roverState = self.E_STOP
             os.system("rosnode kill --all")
@@ -388,7 +397,7 @@ class RoverInterface():
         elif pickle.dumps(msg) != self.lastmsg or (msg.connected and self.roverState == self.DISCONNECTED):
             print(msg)
             if (not msg.connectedEnabled and not msg.deploy) and msg.connected:
-                self.cancelAllCommands()
+                self.cancelAllCommands(True)
                 if self.garage_state == "deployed":
                     self.roverState = self.CONNECTED_DISABLED  
                 else:
@@ -410,7 +419,7 @@ class RoverInterface():
                 else:
                     if self.roverState == self.CONNECTED_ENABLED:
                         if not msg.connectedEnabled:
-                            self.cancelAllCommands()
+                            self.cancelAllCommands(True)
                             self.roverState = self.CONNECTED_DISABLED
                         else:
                             if (msg.teleopDrive and (msg.pickupPiLit or msg.placePiLit)):
@@ -418,26 +427,23 @@ class RoverInterface():
                                 self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
                                 if msg.pickupPiLit:
                                     print("picking up 1 pi lit")
-                                    pass
-                                    # TODO:put macro here
+                                    self.RoverMacro.pickupPiLit()
                                 if msg.placePiLit:
                                     print("placing 1 pi lit")
-                                    pass
+                                    self.RoverMacro.placePiLit()
                                     # TODO:put macro here
                                 self.roverState = lastState
                             elif msg.teleopDrive:
                                 self.roverState = self.TELEOP_DRIVE
                                 print("in teleop drive")
-                                time.sleep(15)
+                                self.enableTeleopDrive(False)
                                 # TODO:put macro here
-                                self.roverState = self.CONNECTED_ENABLED
 
                             elif msg.deployAllPiLits or msg.retrieveAllPiLits or msg.driveToWaypoint or msg.stow:
                                 self.roverState = self.AUTONOMOUS
                                 if msg.deployAllPiLits:
                                     print("deploying all pi lits")
-                                    time.sleep(15)
-                                    # TODO:put macro here
+                                    self.RoverMacro.placeAllPiLits()
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.retrieveAllPiLits:
                                     print("picking up all pi lits")
@@ -446,19 +452,35 @@ class RoverInterface():
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.driveToWaypoint:
                                     print("driving to point")
-                                    time.sleep(15)
-                                    # TODO:put macro here
+                                    point = msg.driveToLatLong
+                                    TruckPoint = self.CoordConversion_client_goal(point)
+                                    print(TruckPoint)
+                                    self.PP_client_goal([TruckPoint])
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.stow:
                                     print("stowing rover")
-                                    time.sleep(15)
-                                    pass
+                                    self.RoverMacro.dock(0)
                                     # TODO:put macro here
                                     self.roverState = self.CONNECTED_ENABLED
                     else:
                         if msg.cancelCommand:
-                            self.cancelAllCommands
+                            self.cancelAllCommands(True)
                             self.roverState = self.CONNECTED_ENABLED
+                        elif (not msg.teleopDrive and (self.roverState == self.TELEOP_DRIVE or self.roverState == self.TELEOP_DRIVE_AUTONOMOUS)):
+                            self.cancelAllCommands(True)
+                            self.roverState = self.CONNECTED_ENABLED
+                        elif((self.roverState == self.TELEOP_DRIVE) and (msg.teleopDrive and (msg.pickupPiLit or msg.placePiLit))):
+                                self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
+                                if msg.pickupPiLit:
+                                    print("picking up 1 pi lit")
+                                    self.RoverMacro.pickupPiLit()
+                                    print("picked up one pi lit")
+                                if msg.placePiLit:
+                                    print("placing 1 pi lit")
+                                    self.RoverMacro.placePiLit()
+                                    print("placed pi lit")
+                                    # TODO:put macro here
+                                self.roverState = self.TELEOP_DRIVE
                         else:
                             if self.roverState == self.CONNECTED_DISABLED:
                                 if msg.connectedEnabled:

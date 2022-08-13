@@ -24,9 +24,14 @@ class roverMacros():
 
     def dock(self, estimatedAngleToGarage):
         self.interface.changeNeuralNetworkSelected("aruco")
+        lineUpPoint1 = [5, 0]
+        lineUpPoint2 = [3.5,0]
+        lineUpPoint3 = [1, 0]
+        lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
         self.interface.deployGarage()
-        self.interface.garage_client_goal()
-        self.interface.retractGarage(estimatedAngleToGarage)
+        self.interface.PP_client_goal(lineUpPoints)
+        self.interface.garage_client_goal(0)
+        self.interface.retractGarage()
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
@@ -48,11 +53,15 @@ class roverMacros():
             side = "switch_right"
         else:
             side = "switch_left"
-        self.placePiLitFromSide(6, side)
+        self.placePiLitFromSide(7, side)
         self.interface.intake_command_pub.publish(String("reset"))
         self.interface.loadPointToSQL("deploy", side)
 
-    def placeAllPiLits(self, points):
+    def placeAllPiLits(self, firstPoint, roughHeading):
+        firstPointTruckCoord = self.interface.CoordConversion_client_goal(firstPoint)
+        startingTarget = [firstPointTruckCoord]
+        self.interface.PP_client_goal(startingTarget)
+        points = self.interface.getPlacementPoints(firstPoint, roughHeading)
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
         for point in points:

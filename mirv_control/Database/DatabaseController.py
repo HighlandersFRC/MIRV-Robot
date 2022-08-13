@@ -179,6 +179,7 @@ def publish_pilit_info(time):
     status.timestamp.data = data[0]
     status.right_count.data = data[1]
     status.left_count.data = data[2]
+    status.ids.data = [i for i in range(len(data[5::5])) if data[5::5][i] != None]
     status.latitudes.data = data[5::5]
     status.latitudes.data = [lat for lat in status.latitudes.data if lat != None]
     status.longitudes.data = data[6::5]

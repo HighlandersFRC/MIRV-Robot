@@ -31,6 +31,7 @@ class CloudAlServer():
         rospy.init_node("CloudAlServer")
 
         cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_cb)
+        direPub = rospy.Publisher("CloudInterupts", String, queue_size = 5)
         self._action_name = "CloudAlServer"
         self._as = actionlib.SimpleActionServer(self._action_name, mirv_control.msg.ControllerAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
@@ -39,10 +40,10 @@ class CloudAlServer():
         self.resetToDefault()
         lastCommandStatus = self._feedback
     def execute_cb(self):
-        print("got request from client")
+        print("Got client request")
         goal = self._as.accept_new_goal()
         if(self.cloudConnected == True):
-            print("Cloud connected ")
+            print("Cloud connected")
         else:
             self._result.tabletConnected = self.cloudConnected
             self._result.cloudFault = False
@@ -72,6 +73,7 @@ class CloudAlServer():
 
     def resetControlState(self):
         self._feedback.heartbeat = False
+        self._feedback.cancelCommand = False
         self._feedback.teleopDrive = False
         self._feedback.placePiLit = False
         self._feedback.pickupPiLit = False
@@ -83,7 +85,6 @@ class CloudAlServer():
         self._feedback.driveToLatLong = []
     
     def cloud_cb(self, message):
-        # print("got callback from cloud")
         self.heartBeatTime = rospy.get_time()
         if self.cloudConnected == False:
             sendFirst = True
@@ -102,6 +103,7 @@ class CloudAlServer():
             if command == "e_stop":
                 self._feedback.EStop = True
             elif command == "disable":
+                self.resetControlState()
                 self._feedback.teleopDrive = False
                 self._feedback.connectedEnabled = False
                 self._feedback.cancelCommand = True
@@ -113,16 +115,17 @@ class CloudAlServer():
                 self._feedback.deploy = True
                 self._feedback.stow = False
             elif command == "stow":
+                self.resetControlState()
                 self._feedback.pickupPiLit = False
                 self._feedback.placePiLit = False
                 self._feedback.stow = True
                 self._feedback.deploy = False
             elif command == "cancel":
+                self.resetControlState()
                 self._feedback.cancelCommand = True
             elif command == "deploy_pi_lits":
                 self._feedback.pickupPiLit = False
                 self._feedback.placePiLit = False
-                print(msg)
                 self.resetControlState()
                 self._feedback.deployAllPiLits = True
                 self._feedback.placeLatLong = [msg.get("commandParameters", {}).get("location",{}).get("lat"),msg.get("commandParameters", {}).get("location",{}).get("long") ]
@@ -143,7 +146,7 @@ class CloudAlServer():
             command = msg.get("command", {})
             if command == "heartbeat":
                 self._feedback.heartbeat = True
-                print("recived heartbeat Command")
+                print("Received heartbeat")
             else:
                 rospy.logerr("Unknown command in general subsystem")
         
@@ -160,7 +163,7 @@ class CloudAlServer():
         elif subsystem == "drivetrain":
             command = msg.get("command", {})
             if command == "arcade":
-                self.resetControlState()
+                # self.resetControlState()
                 self._feedback.teleopDrive = True
             elif command == "to_location":
                 self.resetControlState()
@@ -172,16 +175,14 @@ class CloudAlServer():
 
         else:
             rospy.logerr("Unknown subsystem")
-        print("looping")
         
         # if ((self._as.is_active()) and (sendRequired or sendFirst)):
         if (self._as.is_active()):
-            print("sending message")
             self._as.publish_feedback(self._feedback)
 
 
     def run(self):
-        print("starting Cloud actionLibserver")
+        print("Starting Cloud actionlib server")
         while not rospy.is_shutdown():
             if ((rospy.get_time()- self.heartBeatTime) >= 2.1):
                 self.cloudConnected = False

@@ -31,14 +31,14 @@ class RoverController():
         # self.interface.run()
     def updateStatus(self):
         while not rospy.is_shutdown():
-            #print("loop at: {}".format(rospy.get_time()))
             self.interface.stateWatchdog()
             self.interface.cloudController_client_goal(False)
             self.rate.sleep()
         print("exited loop")
 
     def main(self):
-        pass
+        self.interface.changeNeuralNetworkSelected("none")
+        # pass
         # while not rospy.is_shutdown():
         #     time.sleep(1)
         # self.interface.garage_client_goal(0)
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     time.sleep(4)
     updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
     mainThread = threading.Thread(target = controller.main, name = "thread2")
-    print("starting threads")
+    print("Starting threads...")
     updateStatusThread.start()
     mainThread.start()
 
-    print("after")
+    print("Threads started")

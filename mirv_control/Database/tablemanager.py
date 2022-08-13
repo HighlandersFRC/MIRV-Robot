@@ -12,7 +12,7 @@ Usage Example:
     my_table_command = '''CREATE TABLE IF NOT EXISTS mytable (
         timestamp double PRIMARY KEY,
         val_1 text NOT NULL,
-        val_2 intager NOT NULL
+        val_2 integer NOT NULL
     )'''
     my_table_columns = (
         'val_1',

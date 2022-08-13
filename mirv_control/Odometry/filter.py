@@ -77,7 +77,7 @@ class Filter:
             self.startingTheta = math.radians(temp)
             self.setStartTheta = True
             self.lastTheta = math.radians(temp)
-        self.heading = self.startingTheta-math.radians(temp)+3.14159/2
+        self.heading = self.startingTheta-math.radians(temp)
     def encoderCallback(self,data):
         temp = data.data
         self.leftVel = temp[0]

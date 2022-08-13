@@ -12,7 +12,7 @@ from std_msgs.msg import String
 
 class TeleopDrive():
     result = ASmsg.NavSatToTruckResult()
-    maxAngularVel = 2
+    maxAngularVel = 1.5
     maxStrafeVel = 1
     rosPubMsg = Twist()
     active = False
@@ -64,7 +64,8 @@ class TeleopDrive():
         if self._as.is_active:
 
 
-            if command == "disable_remote_operation":
+            if command == "disable_remote_operation" or command == "disable":
+                print("\n Dasabeling remote control\n")
                 joystickX = 0
                 joystickY = 0
                 self.active = False
@@ -73,7 +74,7 @@ class TeleopDrive():
                 self.rosPubMsg.angular.z = 0
                 self.drive_pub.publish(self.rosPubMsg)
 
-                self._as.set_succeeded(self.ASmsg.generalResult(self.result))
+                self._as.set_succeeded(self.result)
             else:
                 if "commandParameters" in msg and msg["commandParameters"] is not None:
                     joystickX = msg.get("commandParameters", {}).get("x",0)

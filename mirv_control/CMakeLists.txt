@@ -87,7 +87,8 @@ add_action_files(
   FILES Garage.action
   DIRECTORY action
   FILES general.action
-
+  DIRECTORY action
+  FILES GeneratePlacementLocations.action
 )
 
 # Generate added messages and services with any dependencies listed here

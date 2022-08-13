@@ -150,10 +150,10 @@ def statusSubscriber(data):
             get_garage_state(token)        
         if get_webrtc_state == "connected":
             send_to_webrtc(status)
-        if len(status_messages) == 0:
-            status_messages.append(data.data)
-        else:
-            status_messages[0] = data.data
+        #if len(status_messages) == 0:
+        status_messages.append(data.data)
+        #else:
+        #    status_messages[0] = data.data
     else:
         print("Received Data with Type None", data)
 
@@ -254,9 +254,12 @@ async def offer(request):
     def on_datachannel(channel):
         @channel.on("message")
         def on_message(message):
+            global status_messages
             print(message)
             command_pub.publish(message)
-            channel.send(status_messages[0])
+            for send_message in status_messages:
+               channel.send(send_message)
+            status_messages = []
             #send_rtc("I Really Like Turtles!")
 
 

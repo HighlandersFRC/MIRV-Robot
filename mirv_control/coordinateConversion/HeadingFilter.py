@@ -63,12 +63,12 @@ class ComputeHeading():
             self.startSet = True
         else:
             self.sampleCountIMU+=1
-            self.relativeHeadingChange = data.data - self.startingAngle
+            self.relativeHeadingChange =(data.data - self.startingAngle)
     def run(self):
         while not rospy.is_shutdown():
             print("gps {}, IMU, {}".format(self.sampleCountGPS, self.sampleCountIMU))
             if( self.sampleCountGPS >= self.calibrationLength and self.sampleCountIMU >= self.calibrationLength ):
-                startingHeading = (self.currentHeading - self.relativeHeadingChange + 180)%360
+                startingHeading = (self.currentHeading - self.relativeHeadingChange)
                 print(startingHeading)
                 self.succeeded = True
                 return startingHeading
