@@ -177,7 +177,7 @@ class piLitPickup:
 
             self.velocitydrive_pub.publish(self.velocityMsg)
 
-            if(abs(self.imu - estimatedPiLitAngle) < 5):
+            if(abs(self.imu - estimatedPiLitAngle) < 8):
                 self.reachedEstimate = True
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = 0
@@ -231,7 +231,7 @@ class piLitPickup:
                 self._feedback.result = result
                 self._as.publish_feedback(self._feedback)
 
-                if(abs(self.imu - self.setPoint) < 8 and abs(result) < 0.05):
+                if(abs(self.imu - self.setPoint) < 8):# and abs(result) < 0.05):
                     print("GOT TO TARGET!!!!")
                     self.driveToPiLit = True
                     self.runPID = False

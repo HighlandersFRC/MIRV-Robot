@@ -460,6 +460,7 @@ class RoverInterface():
                                 if msg.stow:
                                     print("stowing rover")
                                     self.RoverMacro.dock(0)
+                                    # self.RoverMacro.dockNoPathing()
                                     # TODO:put macro here
                                     self.roverState = self.CONNECTED_ENABLED
                     else:

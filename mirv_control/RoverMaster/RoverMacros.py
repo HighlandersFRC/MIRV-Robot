@@ -33,6 +33,11 @@ class roverMacros():
         self.interface.garage_client_goal(0)
         self.interface.retractGarage()
 
+    def dockNoPathing(self):
+        self.interface.changeNeuralNetworkSelected("aruco")
+        self.interface.deployGarage()
+        self.interface.garage_client_goal(0)
+
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
         self.interface.intake_command_pub.publish(String(intakeSide))
@@ -100,6 +105,7 @@ class roverMacros():
         return TP
 
     def pickupPiLit(self):
+        self.interface.changeNeuralNetworkSelected("piLit")
         stored = self.interface.getPiLitsStored()
         if not stored or len(stored) != 2:
             rospy.logerr("Invalid number of stored Pi-Lits")
@@ -110,6 +116,7 @@ class roverMacros():
             side = "switch_left"
         self.interface.pickup_client_goal(side, 0)
         self.interface.loadPointToSQL("retrieve", side)
+        self.interface.changeNeuralNetworkSelected("none")
 
     def pickupAllPiLits(self, lists, reverse):
         self.interface.changeNeuralNetworkSelected("piLit")
