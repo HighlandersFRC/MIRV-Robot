@@ -195,7 +195,6 @@ rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
 rospy.Subscriber("RoverStatus", String, statusSubscriber)
 rospy.Subscriber("GarageCommands", String, garageSubscriber)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
-availability_pub = rospy.Publisher('RoverAvailable', String, queue_size=1)
 garage_pub = rospy.Publisher('GarageStatus', garage_state, queue_size=1)
 
 
@@ -271,10 +270,7 @@ async def offer(request):
         state = get_webrtc_state()
         print("Connection Status Changed")
         print(state)
-        if state == "connected":
-            availability_pub.publish("unavailable")
-        else:
-            availability_pub.publish("available")
+        
     # handle offer
     await pc.setRemoteDescription(offer)
 

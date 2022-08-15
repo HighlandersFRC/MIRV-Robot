@@ -78,7 +78,7 @@ def allowNeuralNetRun(msg):
         runningNeuralNetwork = False
 
 def gotFrame(data):
-    print("GOT A FRAME")
+    #print("GOT A FRAME")
     if(runningNeuralNetwork):
         initTime = time.time()
         frame = ros_numpy.numpify(data.color_frame)
@@ -92,7 +92,7 @@ def gotFrame(data):
 def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
     bboxList = []
-    print("DETECTING...")
+    #print("DETECTING...")
     
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
         if(score > 0.5):

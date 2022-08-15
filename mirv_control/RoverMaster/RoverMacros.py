@@ -9,6 +9,7 @@ from PiLitController import PiLitControl as PiLitController
 from std_msgs.msg import String, Float64MultiArray
 import time
 import numpy as np
+import placement
 from RoverInterface import RoverInterface
 from sensor_msgs.msg import NavSatFix
 
@@ -62,11 +63,12 @@ class roverMacros():
         self.interface.intake_command_pub.publish(String("reset"))
         self.interface.loadPointToSQL("deploy", side)
 
-    def placeAllPiLits(self, firstPoint, roughHeading):
+    def placeAllPiLits(self, firstPoint, roughHeading, lane_width, formation_type):
         firstPointTruckCoord = self.interface.CoordConversion_client_goal(firstPoint)
         startingTarget = [firstPointTruckCoord]
         self.interface.PP_client_goal(startingTarget)
-        points = self.interface.getPlacementPoints(firstPoint, roughHeading)
+        #points = self.interface.getPlacementPoints(firstPoint, roughHeading)
+        points = placement.generate_pi_lit_formation(firstPoint, roughHeading, lane_width, formation_type)
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
         for point in points:

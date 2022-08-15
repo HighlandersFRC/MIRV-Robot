@@ -4,11 +4,6 @@ import math
 FEET_TO_METERS = 0.3048
 RADIANS_TO_DEGREES = 180 / math.pi
 DEGREES_TO_RADIANS = math.pi / 180
-
-LANE_TYPES = ["general", "right-shoulder",
-              "left-shoulder", "right-lane", "left-lane"]
-
-
 # 3 Taper: Taper consisting of 3 pucks spaced at 10, 100, and 200 feet longitudinally, at the outside, center, and center of the lane, respectively
 # Source: https://schneiderjobs.com/blog/how-to-place-emergency-triangles, Divided highways and one-way roads
 # | 200 feet | ---------              100 feet | ---------          10 feet | --------- | lane width
@@ -194,7 +189,7 @@ def test():
     long = -104.9694349989295
     heading = 45
     lane_width = 3
-    lane_type = "right-lane"
+    lane_type = "taper_right_3"
     print(generate_pi_lit_formation((lat, long), heading, lane_width, lane_type))
 
 

@@ -32,6 +32,7 @@ class CloudAlServer():
 
         cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_cb)
         direPub = rospy.Publisher("CloudInterupts", String, queue_size = 5)
+        self.availPub = rospy.Publisher('RoverAvailable', String, queue_size=1)
         self._action_name = "CloudAlServer"
         self._as = actionlib.SimpleActionServer(self._action_name, mirv_control.msg.ControllerAction, auto_start = False)
         self._as.register_goal_callback(self.execute_cb)
@@ -44,7 +45,9 @@ class CloudAlServer():
         goal = self._as.accept_new_goal()
         if(self.cloudConnected == True):
             print("Cloud connected")
+            self.availPub.publish("unavailable")
         else:
+            self.availPub.publish("available")
             self._result.tabletConnected = self.cloudConnected
             self._result.cloudFault = False
             self._as.set_succeeded(self._result)
@@ -66,6 +69,7 @@ class CloudAlServer():
         self._feedback.deployAllPiLits = False
         self._feedback.retrieveAllPiLits = False
         self._feedback.placeLatLong = []
+        self._feedback.heading = 0
         self._feedback.formationType = ""
         self._feedback.driveToWaypoint = False
         self._feedback.driveToLatLong = []
@@ -124,12 +128,12 @@ class CloudAlServer():
                 self.resetControlState()
                 self._feedback.cancelCommand = True
             elif command == "deploy_pi_lits":
-                self._feedback.pickupPiLit = False
-                self._feedback.placePiLit = False
+                print("Received Placement Message: ", msg)
                 self.resetControlState()
                 self._feedback.deployAllPiLits = True
                 self._feedback.placeLatLong = [msg.get("commandParameters", {}).get("location",{}).get("lat"),msg.get("commandParameters", {}).get("location",{}).get("long") ]
-                self._feedback.formationType = msg.get("commandParameters", {}).get("formation")
+                self._feedback.heading = msg.get("commandParameters",{}).get("heading",0)
+                self._feedback.formationType = msg.get("commandParameters", {}).get("formation","taper_right_5")
             elif command == "retrieve_pi_lits":
                 self.resetControlState()
                 self._feedback.retrieveAllPiLits = True
@@ -184,9 +188,10 @@ class CloudAlServer():
     def run(self):
         print("Starting Cloud actionlib server")
         while not rospy.is_shutdown():
-            if ((rospy.get_time()- self.heartBeatTime) >= 2.1):
+            if ((rospy.get_time()- self.heartBeatTime) >= 2.1 and self.cloudConnected):
                 self.cloudConnected = False
                 rospy.logwarn("lost connection to Cloud with time :{}".format(self.heartBeatTime))
+                self.availPub.publish("available")
                 self.resetToDefault()
                 if (self._as.is_active()):
                     self._as.publish_feedback(self._feedback)

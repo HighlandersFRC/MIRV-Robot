@@ -442,8 +442,11 @@ class RoverInterface():
                             elif msg.deployAllPiLits or msg.retrieveAllPiLits or msg.driveToWaypoint or msg.stow:
                                 self.roverState = self.AUTONOMOUS
                                 if msg.deployAllPiLits:
-                                    print("deploying all pi lits")
-                                    self.RoverMacro.placeAllPiLits()
+                                    #placeLatLong
+                                    #formationType
+                                    #heading
+                                    print("deploying all pi lits", msg)
+                                    self.RoverMacro.placeAllPiLits(msg.placeLatLong, msg.heading, 3, msg.formationType)
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.retrieveAllPiLits:
                                     print("picking up all pi lits")
