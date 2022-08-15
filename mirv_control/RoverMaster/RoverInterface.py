@@ -16,6 +16,7 @@ import sys
 import pickle
 import helpful_functions_lib as conversion
 import math
+import PiLitController
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -394,6 +395,22 @@ class RoverInterface():
             self.roverState = self.E_STOP
             os.system("rosnode kill --all")
             return
+        elif msg.updateLights:
+            if msg.lightPattern == "simultaneous":
+                PiLitController.inhibit(False)
+                PiLitController.patternType(False)
+            elif msg.lightPattern == "wave_reverse":
+                PiLitController.inhibit(False)
+                PiLitController.patternType(True)
+                PiLitController.reversePattern()
+            elif msg.lightPattern == "wave":
+                PiLitController.inhibit(False)
+                PiLitController.patternType(True)
+                PiLitController.patternType(True)
+            elif msg.lightPattern == "idle":
+                PiLitController.inhibit(True)
+            else:
+                rospy.logwarn("Received Unrecognized Light Command type: " + str(msg.lightPattern))
         elif pickle.dumps(msg) != self.lastmsg or (msg.connected and self.roverState == self.DISCONNECTED):
             print(msg)
             if (not msg.connectedEnabled and not msg.deploy) and msg.connected:

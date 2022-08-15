@@ -13,10 +13,9 @@ class PiLitControl():
 
     #Constructor
     def __init__(self):
-        self.a_class_constant
         self.pub = rospy.Publisher("DOControl", String, queue_size=10)
         self.sub = rospy.Subscriber("/DIO/DI1", Bool, self.callback)
-        rospy.init_node("Pi-LitController", anonymous=True)
+        rospy.init_node("PiLitController", anonymous=True)
         
     def reversePattern(self, isReversed):
         self.pub.publish("{},{}".format(patternPin, isReversed))
@@ -28,7 +27,7 @@ class PiLitControl():
         return self.DI1
 
     def inhibit(self, isInhibit):
-        self.pub.publish("{},{}".format(inhibitPin, isInhibit))
+        self.pub.publish("{},{}".format(inhibitPin, int(isInhibit)))
 
     def patternType(self, isWave):
         self.pub.publish("{},{}".format(patternPin, isWave))

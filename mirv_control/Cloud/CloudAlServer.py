@@ -70,6 +70,8 @@ class CloudAlServer():
         self._feedback.retrieveAllPiLits = False
         self._feedback.placeLatLong = []
         self._feedback.heading = 0
+        self._feedback.updateLights = False
+        self._feedback.lightPattern = ""
         self._feedback.formationType = ""
         self._feedback.driveToWaypoint = False
         self._feedback.driveToLatLong = []
@@ -87,6 +89,8 @@ class CloudAlServer():
         self._feedback.formationType = ""
         self._feedback.driveToWaypoint = False
         self._feedback.driveToLatLong = []
+        self._feedback.updateLights = False
+        self._feedback.lightPattern = ""
     
     def cloud_cb(self, message):
         self.heartBeatTime = rospy.get_time()
@@ -175,10 +179,12 @@ class CloudAlServer():
                 self._feedback.driveToLatLong = [msg.get("commandParameters", []).get("lat"),msg.get("commandParameters", []).get("long")]
             else:
                 rospy.logerr("Unknown command in drivetrain subsystem")
-
-
+        elif subsystem == "pi_lit":
+            rospy.logwarn("Message Not Implemented Yet:" + str(msg))
+            self._feedback.updateLights = True
+            self._feedback.lightPattern = msg.get("command","")
         else:
-            rospy.logerr("Unknown subsystem")
+            rospy.logerr("Unknown subsystem: " + str(subsystem))
         
         # if ((self._as.is_active()) and (sendRequired or sendFirst)):
         if (self._as.is_active()):
