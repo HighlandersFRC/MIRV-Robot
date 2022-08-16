@@ -70,7 +70,7 @@ class RoverInterface():
         # self.PlacementGeneratorClient.wait_for_server()
         # print("connected to placement generator")
 
-        #self.pilit_controller = PiLitControl()
+        self.pilit_controller = PiLitControl()
 
         # SUBSCRIBERS
         # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
