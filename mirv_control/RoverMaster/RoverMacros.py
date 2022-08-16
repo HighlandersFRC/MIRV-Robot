@@ -71,7 +71,8 @@ class roverMacros():
         points = placement.generate_pi_lit_formation(firstPoint, roughHeading, lane_width, formation_type)
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
-        for point in points:
+        for pnt  in points:
+            point = self.interface.CoordConversion_client_goal(pnt)
             target = [point]
             self.interface.PP_client_goal(target)
             self.placePiLitFromSide(6, intakeSide)
@@ -82,6 +83,8 @@ class roverMacros():
             else:
                 intakeSide = "switch_right"
             time.sleep(2)
+        return True
+        
 
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"

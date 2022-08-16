@@ -19,7 +19,7 @@ class PiLitControl():
     def __init__(self):
         self.pub = rospy.Publisher("DOControl", String, queue_size=10)
         self.sub = rospy.Subscriber("/DIO/DI1", Bool, self.callback)
-        rospy.init_node("PiLitController", anonymous=True)
+        #rospy.init_node("PiLitController", anonymous=True)
         self.rate = rospy.Rate(1)
         WatchdogThread = threading.Thread(target = self.watchDog, name = "thread2")
         print("Starting PiLit watchdog")
