@@ -27,7 +27,7 @@ class PiLitControl():
         
     def reversePattern(self, isReversed):
         self.pub.publish("{},{}".format(patternPin, int(isReversed)))
-        self.reversState = int(isReversed)
+        self.reveresState = int(isReversed)
     def callback(self, data):
         self.DI1 = data
 
@@ -43,11 +43,11 @@ class PiLitControl():
         self.patternState = int(isWave)
 
     def reset(self):
-        self.pub.publish("{},1".format())
+        self.pub.publish("{},1".format(resetPin))
         time.sleep(0.5)
-        self.pub.publish("{},0".format())
+        self.pub.publish("{},0".format(resetPin))
         time.sleep(0.5)
-        self.pub.publish("{},1".format())
+        self.pub.publish("{},1".format(resetPin))
 
     def watchDog(self):
         while not rospy.is_shutdown():
@@ -59,7 +59,7 @@ class PiLitControl():
                 self.networkFailCount = 0
             self.pub.publish("{},{}".format(patternPin, int(self.patternState)))
             self.pub.publish("{},{}".format(inhibitPin, int(self.inhibitState)))
-            self.pub.publish("{},{}".format(patternPin, int(self.reversState)))
+            self.pub.publish("{},{}".format(patternPin, int(self.reveresState)))
             self.rate.sleep()
 
 
