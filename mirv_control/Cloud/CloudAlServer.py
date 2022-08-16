@@ -41,7 +41,6 @@ class CloudAlServer():
         self.resetToDefault()
         lastCommandStatus = self._feedback
     def execute_cb(self):
-        print("Got client request")
         goal = self._as.accept_new_goal()
         if(self.cloudConnected == True):
             print("Cloud connected")
@@ -106,6 +105,9 @@ class CloudAlServer():
         self._feedback.pickupPiLit = False
         self._feedback.placePiLit = False
         subsystem = msg.get("subsystem",{})
+        if subsystem != "heartbeat":
+            print("Received Message: ", msg)
+
         if subsystem == "general":
             command = msg.get("command", {})
             if command == "e_stop":
@@ -154,7 +156,7 @@ class CloudAlServer():
             command = msg.get("command", {})
             if command == "heartbeat":
                 self._feedback.heartbeat = True
-                print("Received heartbeat")
+                #print("Received heartbeat")
             else:
                 rospy.logerr("Unknown command in general subsystem")
         

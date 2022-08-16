@@ -64,25 +64,30 @@ class roverMacros():
         self.interface.loadPointToSQL("deploy", side)
 
     def placeAllPiLits(self, firstPoint, roughHeading, lane_width, formation_type):
+
+
         firstPointTruckCoord = self.interface.CoordConversion_client_goal(firstPoint)
         startingTarget = [firstPointTruckCoord]
-        self.interface.PP_client_goal(startingTarget)
+        #self.interface.PP_client_goal(startingTarget)
         #points = self.interface.getPlacementPoints(firstPoint, roughHeading)
         points = placement.generate_pi_lit_formation(firstPoint, roughHeading, lane_width, formation_type)
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
+
         for pnt  in points:
             point = self.interface.CoordConversion_client_goal(pnt)
             target = [point]
-            self.interface.PP_client_goal(target)
-            self.placePiLitFromSide(6, intakeSide)
-            self.interface.intake_command_pub.publish(String("reset"))
-            self.interface.loadPointToSQL("deploy", intakeSide)
-            if(intakeSide == "switch_right"):
-                intakeSide = "switch_left"
-            else:
-                intakeSide = "switch_right"
-            time.sleep(2)
+
+            # self.interface.PP_client_goal(target)
+            # self.placePiLitFromSide(6, intakeSide)
+            # self.interface.intake_command_pub.publish(String("reset"))
+            # self.interface.loadPointToSQL("deploy", intakeSide)
+            # if(intakeSide == "switch_right"):
+            #     intakeSide = "switch_left"
+            # else:
+            #     intakeSide = "switch_right"
+            # time.sleep(2)
+        time.sleep(30)
         return True
         
 
@@ -126,9 +131,11 @@ class roverMacros():
     def pickupAllPiLits(self, lists, reverse):
         self.interface.changeNeuralNetworkSelected("piLit")
         intakeSide = "switch_right"
-        # points = [[lists.latitude[i], lists.longitude[i]] for i in range(len(lists.latitude))]
+        
         if(reverse):
             lists.reverse()
+
+        points = [[lists.latitude[i], lists.longitude[i]] for i in range(len(lists.latitude))]
         for point in lists:
             print(f"POINT {point}")
             convertedPoint = [self.interface.CoordConversion_client_goal(point)]

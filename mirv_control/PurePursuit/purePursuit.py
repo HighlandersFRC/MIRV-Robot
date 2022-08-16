@@ -64,10 +64,10 @@ class PurePursuit():
             distToPoint = round(
                 math.sqrt(math.pow(xTBody, 2) + math.pow(yTBody, 2)), 3)
             self.robotCordList[i] = [xTBody, yTBody, distToPoint]
-        print("current Truck Position: {}".format(newTruckCord))
-        print("target X,Y: {}, CurrentTheta: {}".format(
-            self.robotCordList[0], theta))
-        print("targetTruck X,Y: {}".format(self.cordList[0]))
+        #print("current Truck Position: {}".format(newTruckCord))
+        #print("target X,Y: {}, CurrentTheta: {}".format(
+        #    self.robotCordList[0], theta))
+        #print("targetTruck X,Y: {}".format(self.cordList[0]))
     # helper methods for update target points
 
     def getTruckCord(self):
@@ -204,12 +204,16 @@ class PurePursuit():
                     return [farPoint[0], farPoint[1]]
         return farPoint
     def cancelCallback(self):
+        #self.rosPubMsg.linear.x = 0
+        #self.rosPubMsg.angular.z = 0
+        #self.pub.publish(self.rosPubMsg)
         print(self._as.is_active())
         self._as.set_aborted()
         print(self._as.is_active())
         self.robotCordList.clear()
         self.robotCordList.clear()
         print(self.robotCordList)
+
         
     def preemptCallback(self):
         # self._as.set_preempted()
@@ -276,7 +280,7 @@ class PurePursuit():
                     self.result.angleToTarget = self.angleToTarget
                     self.currentMaxDriveSpeed = self.maxDriveSpeed
                     self._as.set_succeeded(self.result)
-                print(self.rosPubMsg)
+                #print(self.rosPubMsg)
 
             else:
                 # ros.drive.setvel(0,0)

@@ -16,7 +16,6 @@ import sys
 import pickle
 import helpful_functions_lib as conversion
 import math
-import PiLitController
 
 # Brings in the messages used by the fibonacci action, including the
 # goal message and the result message.
@@ -277,10 +276,9 @@ class RoverInterface():
         return self.calibrationClient.get_result().succeeded
 
     def PP_client_cancel(self):
-        rospy.loginfo("canceling pure pursuit goal")
+        print("canceling pure pursuit goal")
         if self.PPclient == "Active":
             self.PPclient.cancel_all_goals()
-            rospy.loginfo(self.PPclient.get_goal_status_text())
 
     def PP_client_goal(self, targetPoints2D):
         rospy.loginfo("running pure pursuit")
@@ -327,7 +325,6 @@ class RoverInterface():
     def pickup_client_cancel(self):
         print("Cancelling pickup goal")
         self.pickupClient.cancel_all_goals()
-        print(self.pickupClient.get_goal_status_text())
 
     def CoordConversion_client_goal(self, point):
         # point is in lat long altitude
@@ -339,6 +336,7 @@ class RoverInterface():
         print("sentGoal")
         self.TruckCordClient.wait_for_result()
         truckPoint = self.TruckCordClient.get_result()
+        print("Got Result: ", [truckPoint.truckCoordX, truckPoint.truckCoordY])
         return ([truckPoint.truckCoordX, truckPoint.truckCoordY])
 
     def getLatestSqlPoints(self):
@@ -368,7 +366,6 @@ class RoverInterface():
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
     
     def cancelAllCommands(self, runIntake):
-        print("cancelling all commands")
         self.PP_client_cancel()
         self.disableTeleopDrive()
         self.pickup_client_cancel()
@@ -390,28 +387,28 @@ class RoverInterface():
 
 
     def cloud_feedback_callback(self, msg):
-        #print("got callback")
+        print("got callback", msg)
         if msg.EStop:
             self.roverState = self.E_STOP
             os.system("rosnode kill --all")
             return
         elif msg.updateLights:
             if msg.lightPattern == "simultaneous":
-                PiLitController.inhibit(False)
-                PiLitController.patternType(False)
+                self.pilit_controller.inhibit(False)
+                self.pilit_controller.patternType(False)
             elif msg.lightPattern == "wave_reverse":
-                PiLitController.inhibit(False)
-                PiLitController.patternType(True)
-                PiLitController.reversePattern()
+                self.pilit_controller.inhibit(False)
+                self.pilit_controller.patternType(True)
+                self.pilit_controller.reversePattern()
             elif msg.lightPattern == "wave":
-                PiLitController.inhibit(False)
-                PiLitController.patternType(True)
-                PiLitController.patternType(True)
+                self.pilit_controller.inhibit(False)
+                self.pilit_controller.patternType(True)
+                self.pilit_controller.patternType(True)
             elif msg.lightPattern == "idle":
-                PiLitController.inhibit(True)
+                self.pilit_controller.inhibit(True)
             else:
                 rospy.logwarn("Received Unrecognized Light Command type: " + str(msg.lightPattern))
-        elif pickle.dumps(msg) != self.lastmsg or (msg.connected and self.roverState == self.DISCONNECTED):
+        elif (msg.connected and self.roverState == self.DISCONNECTED) or pickle.dumps(msg) != self.lastmsg:
             print(msg)
             if (not msg.connectedEnabled and not msg.deploy) and msg.connected:
                 self.cancelAllCommands(True)
@@ -460,7 +457,7 @@ class RoverInterface():
                                 self.roverState = self.AUTONOMOUS
                                 if msg.deployAllPiLits:
                                     print("deploying all pi lits", msg)
-                                    self.RoverMacro.placeAllPiLits(msg.placeLatLong, msg.heading, 3, msg.formationType)
+                                    self.RoverMacro.placeAllPiLits(msg.placeLatLong, msg.heading, 0, msg.formationType)
                                     self.roverState = self.CONNECTED_ENABLED
                                 if msg.retrieveAllPiLits:
                                     print("picking up all pi lits")
@@ -482,6 +479,7 @@ class RoverInterface():
                                     self.roverState = self.CONNECTED_ENABLED
                     else:
                         if msg.cancelCommand:
+                            print("Received Cancel. Cancelling")
                             self.cancelAllCommands(True)
                             self.roverState = self.CONNECTED_ENABLED
                         elif (not msg.teleopDrive and (self.roverState == self.TELEOP_DRIVE or self.roverState == self.TELEOP_DRIVE_AUTONOMOUS)):

@@ -11,7 +11,7 @@ connectionPin = "DI1"
 
 class PiLitControl():
     DI1 = False
-    piLitRestartTimeout = 5
+    piLitRestartTimeout = 60
     networkFailCount = 0
     reveresState = 0
     inhibitState = 0

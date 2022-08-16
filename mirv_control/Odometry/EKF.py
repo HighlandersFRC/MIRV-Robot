@@ -173,6 +173,9 @@ class DDEkf:
             pp = np.dot(F, np.dot(self.P, F.T)) + self.Q
             y = self.z - np.dot(self.H, self.xp)
             print("self.H {}, self.H.T {}, self.R {}".format(self.H, self.H.T, self.R))
+            if self.R is None:
+                print("EKF found R to be None, using 0 instead")
+                self.R = 0
             S = np.dot(self.H, np.dot(pp, self.H.T)) + self.R
             SI = linalg.inv(S)
             kal = np.dot(pp, np.dot(self.H.T, SI))
