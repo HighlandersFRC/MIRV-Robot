@@ -32,7 +32,7 @@ class RoverController():
     def updateStatus(self):
         while not rospy.is_shutdown():
             self.interface.stateWatchdog()
-            self.interface.cloudController_client_goal(False)
+            #self.interface.cloudController_client_goal(False)
             self.rate.sleep()
         print("exited loop")
 
