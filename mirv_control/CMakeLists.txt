@@ -70,13 +70,9 @@ add_message_files(
 # Generate actions in the 'action' folder
 add_action_files(
   DIRECTORY action
-  FILES Fibbonacci.action
-  DIRECTORY action
   FILES PurePursuit.action
   DIRECTORY action
   FILES MovementToPiLit.action
-  DIRECTORY action
-  FILES Controller.action
   DIRECTORY action
   FILES Database.action
   DIRECTORY action

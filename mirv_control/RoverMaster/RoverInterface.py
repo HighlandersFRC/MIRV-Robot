@@ -17,9 +17,8 @@ import pickle
 import helpful_functions_lib as conversion
 import math
 import json
-
-# Brings in the messages used by the fibonacci action, including the
-# goal message and the result message.
+from threading import Thread
+import multiprocessing
 import mirv_control.msg
 
 from mirv_control.msg import pilit_db_msg
@@ -53,9 +52,6 @@ class RoverInterface():
         self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
         self.pickupClient.wait_for_server()
         print("connected to PiLit pickup Server")
-        #self.cloudControllerClient = actionlib.SimpleActionClient("CloudAlServer", mirv_control.msg.ControllerAction)
-        #self.cloudControllerClient.wait_for_server()
-        #print("connected to Cloud AL Server")
         self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
         self.TruckCordClient.wait_for_server()
         print("connected to Pure Truck CordinateAS")
@@ -75,7 +71,6 @@ class RoverInterface():
         self.pilit_controller = PiLitControl()
 
         # SUBSCRIBERS
-        # self.odometrySub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateOdometry)
         self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
         self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
         self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
@@ -107,6 +102,7 @@ class RoverInterface():
         self.garage_state = "invalid"
         self.limit_switches = [1, 1, 0, 0]
         self.heartBeatTime = 0
+        self.tasks = []
 
     # def setPiLitSequence(self, is_wave: bool):
     #     self.pilit_controller.patternType(is_wave)
@@ -280,9 +276,7 @@ class RoverInterface():
         return self.calibrationClient.get_result().succeeded
 
     def PP_client_cancel(self):
-        print("canceling pure pursuit goal")
-        if self.PPclient == "Active":
-            self.PPclient.cancel_all_goals()
+        self.PPclient.cancel_all_goals()
 
     def PP_client_goal(self, targetPoints2D):
         rospy.loginfo("running pure pursuit")
@@ -315,7 +309,6 @@ class RoverInterface():
         self.garageClient.wait_for_result()
 
     def pickup_client_cancel(self):
-        print("Cancelling pickup goal")
         self.pickupClient.cancel_all_goals()
 
     def CoordConversion_client_goal(self, point):
@@ -358,9 +351,11 @@ class RoverInterface():
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
     
     def cancelAllCommands(self, runIntake):
+        print("Cancelling All")
         self.PP_client_cancel()
         self.disableTeleopDrive()
         self.pickup_client_cancel()
+        self.tasks = []
         if(runIntake):
             self.intakeUp()
             self.magazineIn()
@@ -398,8 +393,52 @@ class RoverInterface():
         else:
             rospy.logwarn("Received Unrecognized Light Command type: " + str(command))
 
+    def driveToPoint(self, lat, long):
+        print("driving to point")
+        self.roverState = self.AUTONOMOUS
+        point = [lat, long]
+        TruckPoint = self.CoordConversion_client_goal(point)
+        print(TruckPoint)
+        self.PP_client_goal([TruckPoint])
+        self.roverState = self.CONNECTED_ENABLED
+
+    def placeOnePilit(self):
+        lastState = self.roverState
+        self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
+        self.RoverMacro.placePiLit()
+        print("placed pi lit")
+        self.roverState = lastState
+
+    def pickupOnePilit(self):
+        lastState = self.roverState
+        self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
+        self.RoverMacro.pickupPiLit()
+        self.roverState = lastState
+
+    def deployAllPilits(self, lat, long, heading, formation):
+        self.roverState = self.AUTONOMOUS
+        self.RoverMacro.placeAllPiLits(lat, long, heading, formation)
+        self.roverState = self.CONNECTED_ENABLED
+
+    def retrieveAllPilits(self):
+        self.roverState = self.AUTONOMOUS
+        print("picking up all pi lits")
+        time.sleep(15)
+        self.roverState = self.CONNECTED_ENABLED
+
+    def undock(self):
+        self.roverState = self.AUTONOMOUS
+        self.RoverMacro.undock()
+        self.roverState = self.CONNECTED_DISABLED
+
+    def dock(self):
+        self.roverState = self.AUTONOMOUS
+        self.RoverMacro.dock(0)
+        self.roverState = self.CONNECTED_DISABLED
+
+
     def cloud_callback(self, message):
-        print(message, self.roverState)
+        
         self.heartBeatTime = rospy.get_time()
         msg = json.loads(message.data)
 
@@ -411,6 +450,9 @@ class RoverInterface():
                 self.roverState = self.DOCKED
             else:
                 self.roverState = self.CONNECTED_DISABLED
+
+        if subsystem != 'heartbeat' or True:
+            print(message, self.roverState)
 
         if command == "e_stop":
             self.eSTOP()
@@ -424,26 +466,34 @@ class RoverInterface():
                     self.roverState = self.CONNECTED_ENABLED
             elif command == "deploy":
                 if self.garage_state != "deployed":
-                    self.RoverMacro.undock()
-                    self.roverState = self.CONNECTED_DISABLED
+                    t = Thread(target=self.undock)
+                    t.start()
+                    self.tasks.append(t)
                 else:
                     rospy.logwarn("invalid command, rover is docked")
                     self.roverState = self.DOCKED
 
             elif command == "stow":
-                self.RoverMacro.dock(0)
-                self.roverState = self.CONNECTED_ENABLED
+                t = Thread(target=self.dock)
+                t.start()
+                self.tasks.append(t)
             elif command == "cancel":
+                print("Received Cancel Command")
                 self.cancelAllCommands(True)
                 self.roverState = self.CONNECTED_ENABLED
             elif command == "deploy_pi_lits":
                 self.roverState = self.AUTONOMOUS
-                self.RoverMacro.placeAllPiLits(msg.placeLatLong, msg.heading, 0, msg.formationType)
-                self.roverState = self.CONNECTED_ENABLED
+                heading = msg.get("commandParameters",{}).get("heading",0)
+                lat = msg.get("commandParameters", {}).get("location",{}).get("lat")
+                long = msg.get("commandParameters", {}).get("location",{}).get("long")
+                formation = msg.get("commandParameters", {}).get("formation","taper_right_5")
+                t = Thread(target=self.driveToPoint, args=(lat, long, heading, formation))
+                t.start()
+                self.tasks.append(t)
             elif command == "retrieve_pi_lits":
-                self.roverState = self.AUTONOMOUS
-                print("picking up all pi lits")
-                time.sleep(15)
+                t = Thread(target=self.retrieveAllPilits)
+                t.start()
+                self.tasks.append(t)
             elif command == "enable_remote_operation":
                 self.roverState = self.TELEOP_DRIVE
             elif command == "disable_remote_operation":
@@ -454,29 +504,24 @@ class RoverInterface():
             self.heartBeatTime = rospy.get_time()
         elif subsystem == "intake":
             if command == "pickup_1_pi_lit":
-                lastState = self.roverState
-                self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
-                self.RoverMacro.pickupPiLit()
-                self.roverState = lastState
+                t = Thread(target=self.pickupOnePilit)
+                t.start()
+                self.tasks.append(t)
             elif command == "place_1_pi_lit":
-                lastState = self.roverState
-                self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
-                self.RoverMacro.placePiLit()
-                print("placed pi lit")
-                self.roverState = lastState
+                t = Thread(target=self.placeOnePilit)
+                t.start()
+                self.tasks.append(t)
             else:
                 rospy.logerr("Unknown command in intake subsystem")
         elif subsystem == "drivetrain":
             if command == "arcade":
                 pass
             elif command == "to_location":
-                print("driving to point")
-                self.roverState = self.AUTONOMOUS
-                point = [msg.get("commandParameters", []).get("lat"),msg.get("commandParameters", []).get("long")]
-                TruckPoint = self.CoordConversion_client_goal(point)
-                print(TruckPoint)
-                self.PP_client_goal([TruckPoint])
-                self.roverState = self.CONNECTED_ENABLED
+                lat = msg.get("commandParameters", []).get("lat")
+                long = msg.get("commandParameters", []).get("long")
+                t = Thread(target=self.driveToPoint, args=(lat, long))
+                t.start()
+                self.tasks.append(t)
             else:
                 rospy.logerr("Unknown command in drivetrain subsystem")
         else:

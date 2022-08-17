@@ -64,10 +64,11 @@ class RoverController():
 if __name__ == "__main__":
     controller = RoverController()
     time.sleep(4)
-    updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
-    mainThread = threading.Thread(target = controller.main, name = "thread2")
-    print("Starting threads...")
-    updateStatusThread.start()
-    mainThread.start()
+    #updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
+    #mainThread = threading.Thread(target = controller.main, name = "thread2")
+    #print("Starting threads...")
+    #updateStatusThread.start()
+    #mainThread.start()
 
-    print("Threads started")
+    #print("Threads started")
+    controller.updateStatus()

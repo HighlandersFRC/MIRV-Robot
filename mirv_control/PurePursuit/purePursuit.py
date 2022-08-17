@@ -204,9 +204,9 @@ class PurePursuit():
                     return [farPoint[0], farPoint[1]]
         return farPoint
     def cancelCallback(self):
-        #self.rosPubMsg.linear.x = 0
-        #self.rosPubMsg.angular.z = 0
-        #self.pub.publish(self.rosPubMsg)
+        self.rosPubMsg.linear.x = 0
+        self.rosPubMsg.angular.z = 0
+        self.pub.publish(self.rosPubMsg)
         print(self._as.is_active())
         self._as.set_aborted()
         print(self._as.is_active())
