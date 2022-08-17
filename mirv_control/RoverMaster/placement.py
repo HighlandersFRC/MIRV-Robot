@@ -143,8 +143,8 @@ def spear_7(detected_lanes, heading, lane_width, left_side=False):
 
 def get_center_coordinates(detected_lanes, heading, lane_width):
     if len(detected_lanes.values()) == 2:
-        return (detected_lanes['left'][0] + detected_lanes['right']
-                [0], detected_lanes['left'][1] + detected_lanes['right'][1])
+        return ((detected_lanes['left'][0] + detected_lanes['right']
+                [0])/2, (detected_lanes['left'][1] + detected_lanes['right'][1])/2)
     elif detected_lanes.get('left'):
         return getEndPoint(
             detected_lanes['left'][0], detected_lanes['left'][1], heading + 90, lane_width/2)
@@ -182,9 +182,9 @@ def generate_pi_lit_locations(start_lat_long, heading, lane_width, distances):
 
 
 def test():
-    rover_lat = 40.47413211566721
-    rover_long = -104.96944840997458
-    detected_lanes = {'right': (rover_lat, rover_long)}
+    lat_long_right = (40.47413211566721, -104.96944840997458)
+    lat_long_left = (40.474113038173684, -104.96942333108585)
+    detected_lanes = {'right': lat_long_right, 'left': lat_long_left}
     heading = 225  # Opposite traffic direction
     lane_width = 3  # meters
     lane_type = "spear_7"
