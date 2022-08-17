@@ -417,7 +417,7 @@ class RoverInterface():
 
     def deployAllPilits(self, lat, long, heading, formation):
         self.roverState = self.AUTONOMOUS
-        self.RoverMacro.placeAllPiLits(lat, long, heading, formation)
+        self.RoverMacro.placeAllPiLits([lat, long], heading, formation)
         self.roverState = self.CONNECTED_ENABLED
 
     def retrieveAllPilits(self):
@@ -451,7 +451,7 @@ class RoverInterface():
             else:
                 self.roverState = self.CONNECTED_DISABLED
 
-        if subsystem != 'heartbeat' or True:
+        if subsystem != 'heartbeat' and command != 'arcade':
             print(message, self.roverState)
 
         if command == "e_stop":
@@ -470,8 +470,7 @@ class RoverInterface():
                     t.start()
                     self.tasks.append(t)
                 else:
-                    rospy.logwarn("invalid command, rover is docked")
-                    self.roverState = self.DOCKED
+                    rospy.logwarn("invalid command, rover is not docked")
 
             elif command == "stow":
                 t = Thread(target=self.dock)
@@ -487,7 +486,7 @@ class RoverInterface():
                 lat = msg.get("commandParameters", {}).get("location",{}).get("lat")
                 long = msg.get("commandParameters", {}).get("location",{}).get("long")
                 formation = msg.get("commandParameters", {}).get("formation","taper_right_5")
-                t = Thread(target=self.driveToPoint, args=(lat, long, heading, formation))
+                t = Thread(target=self.deployAllPilits, args=(lat, long, heading, formation))
                 t.start()
                 self.tasks.append(t)
             elif command == "retrieve_pi_lits":
@@ -512,7 +511,7 @@ class RoverInterface():
                 t.start()
                 self.tasks.append(t)
             else:
-                rospy.logerr("Unknown command in intake subsystem")
+                rospy.logerr("Unknown command in intake subsystem. Command: " + str(command))
         elif subsystem == "drivetrain":
             if command == "arcade":
                 pass

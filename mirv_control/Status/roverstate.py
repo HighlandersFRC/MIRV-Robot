@@ -25,7 +25,7 @@ class RoverState:
     def __init__(self):
         self.rover_state = {
             "timestamp": int(time.time() * 1000),
-            "rover_id": "rover_44",
+            "rover_id": "rover_1",
             "state": ROVER_STATES[8],
             "docked": False,
             "status": ROVER_STATUSES[0],

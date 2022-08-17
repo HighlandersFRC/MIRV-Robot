@@ -63,23 +63,24 @@ class roverMacros():
         self.interface.intake_command_pub.publish(String("reset"))
         self.interface.loadPointToSQL("deploy", side)
 
-    def placeAllPiLits(self, firstPoint, roughHeading, lane_width, formation_type):
+    def placeAllPiLits(self, firstPoint, roughHeading, formation_type):
         self.interface.changeNeuralNetworkSelected("lanes")
         firstPointTruckCoord = self.interface.CoordConversion_client_goal(firstPoint)
         startingTarget = [firstPointTruckCoord]
         self.interface.PP_client_goal(startingTarget)
         detected_lanes = {'right': (firstPoint[0], firstPoint[1])}
-        points = self.interface.getPlacementPoints(firstPoint, roughHeading)
-        points = placement.generate_pi_lit_formation(detected_lanes, roughHeading, lane_width, formation_type)
-        print(points)
+        points = placement.generate_pi_lit_formation(detected_lanes, roughHeading, 3, formation_type)
+        print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
 
         for pnt  in points:
             point = self.interface.CoordConversion_client_goal(pnt)
+            print("Converting Point")
             target = [point]
             self.interface.PP_client_goal(target)
+            print("Going to PP target")
             self.placePiLitFromSide(6, intakeSide)
             self.interface.intake_command_pub.publish(String("reset"))
             self.interface.loadPointToSQL("deploy", intakeSide)
