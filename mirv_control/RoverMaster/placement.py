@@ -176,7 +176,6 @@ def generate_pi_lit_locations(start_lat_long, heading, lane_width, distances):
 
         # Save value to array
         loc_rev = [location[0], location[1]]
-        loc_rev = [location[1], location[0]]
         pi_lit_locations.append(loc_rev)
     return pi_lit_locations
 
