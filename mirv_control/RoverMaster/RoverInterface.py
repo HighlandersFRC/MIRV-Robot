@@ -420,10 +420,9 @@ class RoverInterface():
         self.RoverMacro.placeAllPiLits([lat, long], heading, formation)
         self.roverState = self.CONNECTED_ENABLED
 
-    def retrieveAllPilits(self):
+    def pickupAllPilits(self):
         self.roverState = self.AUTONOMOUS
-        print("picking up all pi lits")
-        time.sleep(15)
+        self.RoverMacro.pickupAllPiLits(True)
         self.roverState = self.CONNECTED_ENABLED
 
     def undock(self):
@@ -490,7 +489,7 @@ class RoverInterface():
                 t.start()
                 self.tasks.append(t)
             elif command == "retrieve_pi_lits":
-                t = Thread(target=self.retrieveAllPilits)
+                t = Thread(target=self.pickupAllPilits)
                 t.start()
                 self.tasks.append(t)
             elif command == "enable_remote_operation":
