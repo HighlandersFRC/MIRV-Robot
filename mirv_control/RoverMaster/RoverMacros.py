@@ -185,7 +185,7 @@ class roverMacros():
                 self.interface.pickup_client_goal(intakeSide, angle)
             else:
                 #angle = self.interface.PP_client_goal([currentLocationConverted])
-                self.interface.pickup_client_goal(intakeSide, angleToPlacement)
+                self.interface.pickup_client_goal(intakeSide, math.degrees(angleToPlacement))
             
 
             print("Rover Location", self.interface.CoordConversion_client_goal([self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])

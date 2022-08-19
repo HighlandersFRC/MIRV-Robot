@@ -23,12 +23,30 @@ class PID:
         self.output = 0
         self.result = 0
 
+        # Parameters Setup for use in continuous mode
+        self.continuous = False
+        self.maxInput = 0
+        self.minInput = 0
+
     def setMaxMinOutput(self, output):
         self.maxOutput = output
         self.minOutput = -output
 
+    def setContinuous(self, maxInput, minInput):
+        self.continuous = True
+        self.maxInput = maxInput
+        self.minInput = minInput
+
     def updatePID(self, value):
         self.error = self.setPoint - value
+        if (self.continuous):
+            if (abs(self.error) > (self.maxInput - self.minInput) / 2):
+                if (self.error > 0):
+                    self.error = self.error - self.maxInput + self.minInput
+                else:
+                    self.error = self.error + self.maxInput - self.minInput
+
+        
 
         if ((self.error * self.pVal < self.maxOutput) and (self.error * self.pVal > self.minOutput)):
             self.totalError += self.error

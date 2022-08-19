@@ -70,10 +70,12 @@ class piLitPickup:
         self.estimatePID = PID(self.estimatekP, self.estimatekI, self.estimatekD, self.estimateSetPoint)
         self.piLitPID.setMaxMinOutput(0.5)
         self.estimatePID.setMaxMinOutput(0.3)
+        self.estimatePID.setContinuous(360,0)
         self.allowSearch = False
 
         # in order: Left button, Right Button, Bottom Switch, Top Switch
         self.limit_switches = [0, 0, 1, 1]
+        self.imu_buffer = []
 
     def limit_switch_callback(self, switches):
         self.limit_switches = switches.data
@@ -122,7 +124,19 @@ class piLitPickup:
             print("SETPOINT: ", self.setPoint)
 
     def updateIMU(self, data):
-        self.imu = data.data
+
+        self.imu_buffer.append(data.data)
+        if len(self.imu_buffer) > 10:
+            self.imu_buffer.pop(0)
+        
+        avg = 0
+        for val in self.imu_buffer:
+            avg += val
+
+
+        self.imu = avg / len(self.imu_buffer)
+
+        #self.imu = data.data
         # print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
     def cancelCallback(self):
@@ -145,7 +159,6 @@ class piLitPickup:
         result = -result
         self.velocityMsg.linear.x = 0.25 # m/s
         self.velocityMsg.angular.z = result
-        print(self.velocityMsg)
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > 2/0.25 or self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
             self.driveToPiLit = False
@@ -157,6 +170,7 @@ class piLitPickup:
             self.movementInitTime = 0
             self.finished = True
             self.allowSearch = False
+        print("Move to Pilit complete")
 
     def turnToPiLit(self):
         print("GOT PICKUP CALLBACK")
@@ -164,8 +178,13 @@ class piLitPickup:
         print("ACCEPTED GOAL TO PICKUP PI LIT!")
         intakeSide = goal.intakeSide
         estimatedPiLitAngle = goal.estimatedPiLitAngle
+
+        print("Estimated Pickup Angle: ", estimatedPiLitAngle)
+        print("Current IMU Angle", self.imu)
         estimatedPiLitAngle = estimatedPiLitAngle + self.imu
         estimatedPiLitAngle = estimatedPiLitAngle%360
+
+        print("Target Angle:", estimatedPiLitAngle)
         self.estimatePID.setSetPoint(estimatedPiLitAngle)
         self._result.finished = False
      
@@ -176,12 +195,14 @@ class piLitPickup:
             self.velocityMsg.angular.z = result
 
             self.velocitydrive_pub.publish(self.velocityMsg)
-
             if(abs(self.imu - estimatedPiLitAngle) < 8):
+                print("Finished Alignment", self.imu, estimatedPiLitAngle)
                 self.reachedEstimate = True
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = 0
                 self.velocitydrive_pub.publish(self.velocityMsg)
+
+        print("Pi Lit Alignment Complete")
         self.allowSearch = True
 
         intakeInitTime = time.time()
@@ -233,6 +254,7 @@ class piLitPickup:
 
                 if(abs(self.imu - self.setPoint) < 8):# and abs(result) < 0.05):
                     print("GOT TO TARGET!!!!")
+                    print(self.imu, self.setPoint)
                     self.driveToPiLit = True
                     self.runPID = False
                     self.velocityMsg.linear.x = 0
@@ -242,17 +264,25 @@ class piLitPickup:
                 if(self.moveToPiLitRunning == False):
                     self.movementInitTime = time.time()
                     self.moveToPiLitRunning = True
+
+                print("Moving to Pilt")
                 self.moveToPiLit()
+                print("Moved to Pilit")
             else:
                 storeInitTime = time.time()
                 while(time.time() - storeInitTime < 3):
+                    
                     self.set_intake_state("store")
                     self.velocityMsg.linear.x = 0
                     self.velocityMsg.angular.z = 0
                     self.velocitydrive_pub.publish(self.velocityMsg)
                     self._result.finished = True
+        
+        
         self.setAllZeros()
         self.set_intake_state("store")
+
+        print("Succeeded", self._result)
         self._as.set_succeeded(self._result)
 
     def run(self):
