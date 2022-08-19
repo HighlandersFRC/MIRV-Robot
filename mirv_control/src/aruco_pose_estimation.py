@@ -24,14 +24,20 @@ import mirv_control.helpful_functions_lib as conversion_lib
 
 import ros_numpy
 
+
 class aruco_pose:
 
     def __init__(self):
         self.cameraMatrix = np.array([[402.62901912,   0,         312.7377781],
-                                    [  0,         415.62202789, 225.59830764],
-                                    [  0,           0,           1        ]])
+                                      [0,         415.62202789, 225.59830764],
+                                      [0,           0,           1]])
 
-        self.distCoeffs = np.array([[-0.02239511,  0.03570026, -0.00733071, -0.00355913,  0.00224717]])
+        self.distCoeffs = np.array(
+            [[-0.02239511,  0.03570026, -0.00733071, -0.00355913,  0.00224717]])
+        self.arucoTagId = 0
+        self.markerSize = 8 * 0.0254  # Full size of marker, in meters
+        self.arucoDict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+        self.arucoParameters = aruco.DetectorParameters_create()
 
         self.poseZero = PoseStamped()
         self.poseZero.pose.position.x = 0
@@ -43,94 +49,95 @@ class aruco_pose:
         self.poseZero.pose.orientation.w = 1
 
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber(self.ros_prefix + "IntakeCameraFrames", depthAndColorFrame, self.callback)
-        self.pose_pub = rospy.Publisher(self.ros_prefix + "/aruco/garage_tag", PoseStamped, queue_size=1)
-        self.debug_pub = rospy.Publisher(self.ros_prefix + "/aruco/tag0_in_camera_frame", PoseStamped, queue_size=1)
+        self.image_sub = rospy.Subscriber(
+            self.ros_prefix + "IntakeCameraFrames", depthAndColorFrame, self.callback)
+        self.pose_pub = rospy.Publisher(
+            self.ros_prefix + "/aruco/garage_tag", PoseStamped, queue_size=1)
+        self.debug_pub = rospy.Publisher(
+            self.ros_prefix + "/aruco/tag0_in_camera_frame", PoseStamped, queue_size=1)
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
+
+    def invertPerspective(rvec, tvec):
+        # Generate camera position relative to aruco tag
+        R, _ = cv2.Rodrigues(rvec)
+        R = np.matrix(R).T
+        invTvec = np.dot(-R, np.matrix(tvec))
+        invRvec, _ = cv2.Rodrigues(R)
+        return invRvec, invTvec
+
+    def getCameraPositionFromFrame(self, frame):
+        corners, ids, rejectedImgPoints = aruco.detectMarkers(
+            frame, self.arucoDict, parameters=self.arucoParameters)
+
+        if np.all(ids is not None):  # If there are markers found by detector
+            ids = ids.flatten()
+            marker_r_vec = None
+            marker_t_vec = None
+            for id, corner in zip(ids, corners):  # Iterate in markers
+                # Estimate pose of each marker and return the values rvec and tvec---different from camera coefficients
+                rvec, tvec, markerPoints = aruco.estimatePoseSingleMarkers(corner, self.markerSize, self.cameraMatrix,
+                                                                           self.distCoeffs)
+
+                if id == self.arucoTagId:
+                    marker_r_vec = rvec
+                    marker_t_vec = tvec
+            if 0 in ids:
+                rvec, tvec = marker_r_vec.reshape(
+                    (3, 1)), marker_t_vec.reshape((3, 1))
+                pose_from_camera = self.getPoseFromVectors(
+                    rvec, tvec, "pose_from_camera")
+                pose_from_aruco = self.getPoseFromVectors(
+                    *self.invertPerspective(rvec, tvec), "pose_from_aruco")
+                return pose_from_camera, pose_from_aruco
+        return None, None
+
+    def getPoseFromVectors(rvec, tvec, id):
+        pose = PoseStamped()
+        pose.header.stamp = rospy.Time.now()
+        pose.header.frame_id = id
+
+        # Apply linear bias to the translation estimates
+        # x = tvecs[0][0][2]/1.184 + 0.110
+        # y = -tvecs[0][0][0]/1.032 + 0.243
+        # z = -tvecs[0][0][1]/1.151 - 0.297
+        # dist = np.sqrt(x**2 + y**2 + z**2)
+        # x = x - 0.008*dist + 0.031
+        # y = y + 0.049*dist - 0.222
+        # z = z - 0.062*dist + 0.281
+        pose.pose.position.x = tvec[2][0]
+        pose.pose.position.y = -tvec[0][0]
+        pose.pose.position.z = -tvec[1][0]
+
+        # Swap the angles around to correctly represent our coordinate system
+        # Aruco puts zero at the tag, with z facing out...
+        # We want x forward, y left, z up, euler order zyx = ypr
+        rvecs_reordered = [rvec[2][0], -rvec[0][0], -rvec[1][0]]
+        r = R.from_rotvec(rvecs_reordered)
+        est_ypr = r.as_euler('zyx')
+        quat = conversion_lib.eul2quat(est_ypr[:, None])
+        # r = R.from_euler('zyx', est_ypr + [np.pi, 0, np.pi])
+        # quat = r.as_quat()
+        # print(quat[:])
+        # print(pose.pose.orientation)
+        pose.pose.orientation.x = quat[0]
+        pose.pose.orientation.y = quat[1]
+        pose.pose.orientation.z = quat[2]
+        pose.pose.orientation.w = quat[3]
 
     def callback(self, data):
         frame = ros_numpy.numpify(data.color_frame)
         depthFrame = ros_numpy.numpify(data.depth_frame)
-        
+
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # This is where you set what type pf tag to use: aruco.DICT_NXN_250
-        aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-        parameters = aruco.DetectorParameters_create()
+        pose_from_camera, pose_from_aruco = self.getCameraPositionFromFrame(
+            frame)
 
-        # detectMarkers(image, dictionary[, corners[, ids[, parameters[, rejectedImgPoints]]]]) -> corners, ids, rejectedImgPoints
-        corners, ids, rejectedImgPoints = aruco.detectMarkers(frame, aruco_dict, parameters=parameters)
-        frame = aruco.drawDetectedMarkers(frame, corners, ids, (255, 255, 255))
-
-        # estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs[, rvecs[, tvecs[, _objPoints]]]) -> rvecs, tvecs, _objPoints
-        rvecs, tvecs, objPoints = aruco.estimatePoseSingleMarkers(corners, self.markerLength, self.cameraMatrix,
-                                                                  self.distCoeffs, None,
-                                                                  None, None)
-
-        if (ids is not None):
-            # print('translation vectors')
-            # print(tvecs)
-            # print('rotation vectors')
-            # print(rvecs)
-            # print()
-            # for i in range(len(rvecs)):
-            #     frame = aruco.drawAxis(frame, self.cameraMatrix, self.distCoeffs, rvecs[i], tvecs[i],
-            #                            self.markerLength / 2)
-
-            # marker_pose = PoseMarkers()
-            # marker_pose.ids = list(ids.flatten())
-            pose_array = []
-            for i in range(len(rvecs)):
-                # If you get a bunch of other detections and only want id 0, put it all in this if
-                # if ids[i] == 0:
-                pose = PoseStamped()
-                pose.header.stamp = rospy.Time.now()
-                pose.header.frame_id = 'camera_rgb_frame'
-
-                # Apply linear bias to the translation estimates
-                # x = tvecs[0][0][2]/1.184 + 0.110
-                # y = -tvecs[0][0][0]/1.032 + 0.243
-                # z = -tvecs[0][0][1]/1.151 - 0.297
-                # dist = np.sqrt(x**2 + y**2 + z**2)
-                # x = x - 0.008*dist + 0.031
-                # y = y + 0.049*dist - 0.222
-                # z = z - 0.062*dist + 0.281
-                pose.pose.position.x = tvecs[0][0][2]
-                pose.pose.position.y = -tvecs[0][0][0]
-                pose.pose.position.z = -tvecs[0][0][1]
-
-                # Swap the angles around to correctly represent our coordinate system
-                # Aruco puts zero at the tag, with z facing out...
-                # We want x forward, y left, z up, euler order zyx = ypr
-                rvecs_reordered = [rvecs[0][0][2], -rvecs[0][0][0], -rvecs[0][0][1]]
-                r = R.from_rotvec(rvecs_reordered)
-                est_ypr = r.as_euler('zyx')
-                quat = conversion_lib.eul2quat(est_ypr[:, None])
-                # r = R.from_euler('zyx', est_ypr + [np.pi, 0, np.pi])
-                # quat = r.as_quat()
-                # print(quat[:])
-                # print(pose.pose.orientation)
-                pose.pose.orientation.x = quat[0]
-                pose.pose.orientation.y = quat[1]
-                pose.pose.orientation.z = quat[2]
-                pose.pose.orientation.w = quat[3]
-
-                camera_in_tag_frame = PoseStamped()
-                camera_in_tag_frame.header.stamp = rospy.Time.now()
-                # NOTE - THIS IS NOT ACTUALLY IN THE MAP FRAME. IT IS IN THE GARAGE FRAME, but that doesn't exist yet...
-                camera_in_tag_frame.header.frame_id = 'map'
-                camera_in_tag_frame.pose = conversion_lib.get_frame_transform(pose.pose, self.poseZero.pose)
-                self.pose_pub.publish(camera_in_tag_frame)
-                self.debug_pub.publish(pose)
-
-            # print(pose_array)
-            # marker_pose.pose_array = pose_array
-            # self.pose_pub.publish(marker_pose)
-
-
-        # cv2.imshow("Image window", frame)
-        # cv2.waitKey(3)
+        # Should always both be invalid, or both be valid
+        if pose_from_camera != None and pose_from_aruco != None:
+            self.pose_pub.publish(pose_from_camera)
+            self.debug_pub.publish(pose_from_aruco)
 
 
 def main(args):
