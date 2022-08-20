@@ -3,10 +3,10 @@ import math
 import cv2
 import time
 import depthai
-import rospy
-from std_msgs.msg import Float64
-from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
-from cv_bridge import CvBridge
+# import rospy
+# from std_msgs.msg import Float64
+# from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
+# from cv_bridge import CvBridge
 import sys
 import signal
 import numpy as np
@@ -23,10 +23,10 @@ def quat_2_radians(x, y, z, w):
 cameraX = 640
 cameraY = 480
 
-br = CvBridge()
+# br = CvBridge()
 
-calibrationFeedbackPub = rospy.Publisher('CameraCalibrationFeedback', str)
-rospy.init_node('CameraCalibrator', anonymous=True)
+# calibrationFeedbackPub = rospy.Publisher('CameraCalibrationFeedback', str)
+# rospy.init_node('CameraCalibrator', anonymous=True)
 
 pipeline = depthai.Pipeline()
 
@@ -149,7 +149,7 @@ def interrupt_handler(signal, frame):
 
 
 def is_checkerboard(img):
-    n = 7
+    n = 9
     m = 7
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(8,6,0)
     objp = np.zeros((m*n, 3), np.float32)
@@ -172,23 +172,27 @@ signal.signal(signal.SIGINT, interrupt_handler)
 try:
     j = 0
     while True:
-        j += 1
-        if j % 5 != 0:
+        if j % 10 != 0:
             continue
         in_rgb = q_rgb.tryGet()
         if in_rgb is not None:
             frame = qIsp.get().getCvFrame()
+            frame = cv2.resize(frame, (640, 480),
+                               interpolation=cv2.INTER_LINEAR)
+            cv2.imshow('frame', frame)
 
-            if is_checkerboard(frame):
-                date_str = datetime.datetime.now().strftime('%Y%m%d-%M%H%S-%f')
-                if j > 20:
-                    j = 0
+            key = cv2.waitKey(3)
+            if key == ord('q'):  # Quit
+                break
+            if key == ord('t'):
+                if is_checkerboard(frame):
+                    date_str = datetime.datetime.now().strftime('%Y%m%d-%M%H%S-%f')
                     cv2.imwrite(
-                        f"../auto_calibration_images/calibration_{date_str}.jpg", frame)
+                        f"../auto_calibration_images_small/calibration_{date_str}.jpg", frame)
                     print(
                         f'recorded image - {date_str}')
                 else:
-                    print(f'too early - {date_str}')
+                    print('no checkerboard')
 
 except KeyboardInterrupt:
     print("KEYBOARD INTERRUPT")
