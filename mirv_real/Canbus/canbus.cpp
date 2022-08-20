@@ -262,6 +262,7 @@ class Publisher {
 	ros::Publisher encoderVelocityPub;
 	ros::Publisher intakeLSPub;
 	ros::Publisher touchSensorPub;
+	ros::Publisher encoderPositionPub;
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -313,6 +314,14 @@ class Publisher {
 		touchSensors.data.push_back(rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed());
 		touchSensorPub.publish(touchSensors);
 	};
+
+	// [left dist, right dist], in meters
+	void publishEncoderPosition(){
+		std_msgs::Float64MultiArray positions;
+		positions.data.push_back(getDistanceFromTicks(frontRightDrive.GetSelectedSensorPosition()));
+		positions.data.push_back(getDistanceFromTicks(frontLeftDrive.GetSelectedSensorPosition()));
+		encoderPositionPub.publish(positions);
+	}
 };
 
 Publisher publisher;
@@ -655,6 +664,9 @@ int main(int argc, char **argv) {
 
 	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 10);
 	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishTouchSensor, publisher));
+
+	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 10);
+	ros::Timer encoderPositionTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderPosition, publisher));
 
 	initializeDriveMotors();
 	initializeIntakeMotors();
