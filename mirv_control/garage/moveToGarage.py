@@ -13,6 +13,7 @@ import asyncio
 
 rospy.init_node("garageDocking")
 
+
 class moveToGarage:
     def __init__(self):
         self._feedback = msg.GarageFeedback()
@@ -49,7 +50,7 @@ class moveToGarage:
 
         self.moveToGarageRunning = False
         self.movementInitTime = 0
-        
+
         self.finished = False
 
         self.reachedEstimate = False
@@ -57,25 +58,32 @@ class moveToGarage:
         self.setAllZeros()
 
         self.GaragePID = PID(self.kP, self.kI, self.kD, self.setPoint)
-        self.estimatePID = PID(self.estimatekP, self.estimatekI, self.estimatekD, self.estimateSetPoint)
+        self.estimatePID = PID(
+            self.estimatekP, self.estimatekI, self.estimatekD, self.estimateSetPoint)
         self.GaragePID.setMaxMinOutput(0.5)
         self.estimatePID.setMaxMinOutput(0.3)
-        
 
         self.touchSensorVals = [0, 0]
-        
-        self._as = actionlib.SimpleActionServer(self._action_name, msg.GarageAction, auto_start = False)
+
+        self._as = actionlib.SimpleActionServer(
+            self._action_name, msg.GarageAction, auto_start=False)
         self._as.register_goal_callback(self.turnToGarage)
         self._as.register_preempt_callback(self.preemptedPickup)
         self._as.start()
 
-        self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
-        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
-        self.Garage_location_sub = rospy.Subscriber("garageLocation", Float64MultiArray, self.updateGarageLocation)
+        self.powerdrive_pub = rospy.Publisher(
+            "PowerDrive", Float64MultiArray, queue_size=10)
+        self.intake_command_pub = rospy.Publisher(
+            "intake/command", String, queue_size=10)
+        self.Garage_location_sub = rospy.Subscriber(
+            "garageLocation", Float64MultiArray, self.updateGarageLocation)
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
-        self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
-        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
-        self.touch_sensor_sub = rospy.Subscriber("TouchSensors", Float64MultiArray, self.updateTouchSensorVals)
+        self.velocitydrive_pub = rospy.Publisher(
+            "cmd_vel", Twist, queue_size=5)
+        self.intake_limit_switch_sub = rospy.Subscriber(
+            "intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.touch_sensor_sub = rospy.Subscriber(
+            "TouchSensors", Float64MultiArray, self.updateTouchSensorVals)
 
     def setAllZeros(self):
         self.GarageDepth = 0
@@ -88,7 +96,6 @@ class moveToGarage:
 
         self.imu = 0
 
-
         self.driveToGarage = False
         self.prevGarageAngle = 0
 
@@ -96,7 +103,7 @@ class moveToGarage:
 
         self.moveToGarageRunning = False
         self.movementInitTime = 0
-        
+
         self.finished = False
 
         self.reachedEstimate = False
@@ -115,8 +122,7 @@ class moveToGarage:
             self.GarageDepth = GarageLocation[0]
             self.GarageAngle = GarageLocation[1]
             self.setPoint = self.imu + self.GarageAngle
-            self.setPoint = self.setPoint + 360
-            self.setPoint = self.setPoint%360
+            self.setPoint = self.setPoint % 360
             self.GaragePID.setSetPoint(self.setPoint)
             self.updatedLocation = True
             self.prevGarageAngle = self.GarageAngle
@@ -133,7 +139,6 @@ class moveToGarage:
         rospy.loginfo('%s: Preempted' % self._action_name)
         self._as.set_aborted()
 
-    
     def preemptedPickup(self):
         if(self._as.is_new_goal_available()):
             print("pickup preempt received")
@@ -141,12 +146,13 @@ class moveToGarage:
         else:
             print("aborting pickup")
             self.cancelCallback()
-         
+
     def moveToGarage(self):
         # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
-        result = self.GaragePID.updatePID(self.imu) # this returns in radians/sec
+        result = self.GaragePID.updatePID(
+            self.imu)  # this returns in radians/sec
         result = -result
-        self.velocityMsg.linear.x = 0.25 # m/s
+        self.velocityMsg.linear.x = 0.25  # m/s
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > self.GarageDepth/0.25 or self.touchSensorVals[0] != 0 or self.touchSensorVals[1] != 0):
@@ -161,20 +167,22 @@ class moveToGarage:
             self.movementInitTime = 0
             self.finished = True
             self.allowSearch = False
+
     def limit_switch_callback(self, data):
         pass
+
     def turnToGarage(self):
         print("GOT GARAGE CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO DOCK")
         estimatedGarageAngle = goal.estimatedGarageAngle
         estimatedGarageAngle = estimatedGarageAngle + self.imu
-        estimatedGarageAngle = estimatedGarageAngle%360
+        estimatedGarageAngle = estimatedGarageAngle % 360
         self.estimatePID.setSetPoint(estimatedGarageAngle)
         self._result.finished = False
 
         searchInitTime = time.time()
-     
+
         # while(self.reachedEstimate == False and self.GarageAngle == 0):
         #     # print("TRYING TO REACH ESTIMATE")
         #     result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
@@ -205,9 +213,11 @@ class moveToGarage:
         while(self._result.finished == False):
             if(self.runPID):
                 self.allowSearch = False
-                result = self.GaragePID.updatePID(self.imu) # pid returns in radians/sec
+                result = self.GaragePID.updatePID(
+                    self.imu)  # pid returns in radians/sec
                 result = -result
-                print("Turning - " , " SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
+                print("Turning - ", " SETPOINT: ",
+                      self.setPoint, " CURRENT: ", self.imu)
 
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = result
@@ -241,6 +251,7 @@ class moveToGarage:
             self.velocitydrive_pub.publish(self.velocityMsg)
         except:
             print("an error occurred in purePursuit.py")
+
 
 if __name__ == '__main__':
     print("RUNNING")

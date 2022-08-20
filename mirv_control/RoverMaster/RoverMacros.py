@@ -13,6 +13,7 @@ import placement
 from RoverInterface import RoverInterface
 from sensor_msgs.msg import NavSatFix
 
+
 class roverMacros():
     def __init__(self, Interface: RoverInterface):
         self.interface = Interface
@@ -26,11 +27,15 @@ class roverMacros():
     def dock(self, estimatedAngleToGarage):
         self.interface.changeNeuralNetworkSelected("aruco")
         lineUpPoint1 = [5, 0]
-        lineUpPoint2 = [3.5,0]
+        lineUpPoint2 = [3.5, 0]
         lineUpPoint3 = [1, 0]
         lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
         self.interface.deployGarage()
         self.interface.PP_client_goal(lineUpPoints)
+        # point towards aruco tag
+        # itentify lateral offset to aruco tag
+        # turn to the lateral direction and drive the measure distance
+        # turn back towards the garage
         self.interface.garage_client_goal(0)
         self.interface.retractGarage()
 
@@ -65,17 +70,19 @@ class roverMacros():
 
     def placeAllPiLits(self, firstPoint, roughHeading, formation_type):
         self.interface.changeNeuralNetworkSelected("lanes")
-        firstPointTruckCoord = self.interface.CoordConversion_client_goal(firstPoint)
+        firstPointTruckCoord = self.interface.CoordConversion_client_goal(
+            firstPoint)
         startingTarget = [firstPointTruckCoord]
         self.interface.PP_client_goal(startingTarget)
         detected_lanes = {'right': (firstPoint[0], firstPoint[1])}
-        points = placement.generate_pi_lit_formation(detected_lanes, roughHeading, 3, formation_type)
+        points = placement.generate_pi_lit_formation(
+            detected_lanes, roughHeading, 3, formation_type)
         print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
 
-        for pnt  in points:
+        for pnt in points:
             point = self.interface.CoordConversion_client_goal(pnt)
             print("Converting Point")
             target = [point]
@@ -90,7 +97,6 @@ class roverMacros():
                 intakeSide = "switch_right"
             time.sleep(2)
         return True
-        
 
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"
@@ -107,10 +113,12 @@ class roverMacros():
         currentPoint = np.array(self.interface.getCurrentTruckOdom())
         print(currentPoint)
         print(finalPoint)
-        d = ((currentPoint[0]-finalPoint[0][0])**2 +(currentPoint[1]-finalPoint[0][1])**2)**0.5
-        UV = np.array([(currentPoint[0]-finalPoint[0][0])/d , (currentPoint[1]-finalPoint[0][1])/d])
+        d = ((currentPoint[0]-finalPoint[0][0])**2 +
+             (currentPoint[1]-finalPoint[0][1])**2)**0.5
+        UV = np.array([(currentPoint[0]-finalPoint[0][0])/d,
+                      (currentPoint[1]-finalPoint[0][1])/d])
         d2 = d
-        if(d >1):
+        if(d > 1):
             d2 = d-1
         TP = currentPoint - UV*d2
         return TP
@@ -129,17 +137,22 @@ class roverMacros():
         self.interface.loadPointToSQL("retrieve", side)
         self.interface.changeNeuralNetworkSelected("none")
 
+    def testPointTurn(self):
+        self.interface.pointTurn(180, 10)
+
     def pickupAllPiLits(self, lists, reverse):
         self.interface.changeNeuralNetworkSelected("piLit")
         intakeSide = "switch_right"
-        
+
         if(reverse):
             lists.reverse()
 
-        points = [[lists.latitude[i], lists.longitude[i]] for i in range(len(lists.latitude))]
+        points = [[lists.latitude[i], lists.longitude[i]]
+                  for i in range(len(lists.latitude))]
         for point in lists:
             print(f"POINT {point}")
-            convertedPoint = [self.interface.CoordConversion_client_goal(point)]
+            convertedPoint = [
+                self.interface.CoordConversion_client_goal(point)]
             target = self.interceptPoint(convertedPoint)
             # placementX = convertedPoint[0]
             # placementY = convertedPoint[1]
@@ -176,5 +189,3 @@ class roverMacros():
                 intakeSide = "switch_left"
             else:
                 intakeSide = "switch_right"
-
-            

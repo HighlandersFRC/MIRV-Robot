@@ -37,31 +37,42 @@ class RoverInterface():
     AUTONOMOUS = "autonomous"
     E_STOP = "e_stop"
     DOCKED = "docked"
+
     def __init__(self):
 
-        
         self.lastmsg = None
         self.roverState = self.DISCONNECTED
         print("setting up server connections")
-        self.calibrationClient = actionlib.SimpleActionClient('StartingHeading', mirv_control.msg.IMUCalibrationAction)
+        self.calibrationClient = actionlib.SimpleActionClient(
+            'StartingHeading', mirv_control.msg.IMUCalibrationAction)
         self.calibrationClient.wait_for_server()
         print("connected to starting heading AS")
-        self.PPclient = actionlib.SimpleActionClient('PurePursuitAS', mirv_control.msg.PurePursuitAction)
+        self.PPclient = actionlib.SimpleActionClient(
+            'PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
-        self.pickupClient = actionlib.SimpleActionClient("PickupAS", mirv_control.msg.MovementToPiLitAction)
+        self.pickupClient = actionlib.SimpleActionClient(
+            "PickupAS", mirv_control.msg.MovementToPiLitAction)
         self.pickupClient.wait_for_server()
+        print("connected to PointTurn Server")
+        self.pointTurnClient = actionlib.SimpleActionClient(
+            "PointTurnRelativeAS", mirv_control.msg.PointTurnAction)
+        self.pointTurnClient.wait_for_server()
         print("connected to PiLit pickup Server")
-        self.TruckCordClient = actionlib.SimpleActionClient('NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
+        self.TruckCordClient = actionlib.SimpleActionClient(
+            'NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
         self.TruckCordClient.wait_for_server()
         print("connected to Pure Truck CordinateAS")
-        self.databaseClient = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
+        self.databaseClient = actionlib.SimpleActionClient(
+            "Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
         print("connected to Database Query Server")
-        self.garageClient = actionlib.SimpleActionClient("Docking", mirv_control.msg.GarageAction)
+        self.garageClient = actionlib.SimpleActionClient(
+            "Docking", mirv_control.msg.GarageAction)
         self.garageClient.wait_for_server()
         print("connected to Garage Server")
-        self.TeleopClient = actionlib.SimpleActionClient("TeleopDrive", mirv_control.msg.generalAction)
+        self.TeleopClient = actionlib.SimpleActionClient(
+            "TeleopDrive", mirv_control.msg.generalAction)
         self.TeleopClient.wait_for_server()
         print("connected to teleop drive")
         # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.GeneratePlacementLocationsAction)
@@ -71,20 +82,31 @@ class RoverInterface():
         self.pilit_controller = PiLitControl()
 
         # SUBSCRIBERS
-        self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
-        self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
-        self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
-        self.garage_sub = rospy.Subscriber("GarageStatus", garage_state_msg, self.garage_state_callback)
-        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
-        self.cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_callback)
+        self.gpsOdomSub = rospy.Subscriber(
+            "gps/fix", NavSatFix, self.updateOdometry)
+        self.truckOdomSub = rospy.Subscriber(
+            "/EKF/Odometry", Odometry, self.updateTruckOdom)
+        self.placementLocationSub = rospy.Subscriber(
+            "placementLocation", Float64MultiArray, self.updatePlacementPoints)
+        self.garage_sub = rospy.Subscriber(
+            "GarageStatus", garage_state_msg, self.garage_state_callback)
+        self.intake_limit_switch_sub = rospy.Subscriber(
+            "intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.cloud_sub = rospy.Subscriber(
+            "CloudCommands", String, self.cloud_callback)
 
         # PUBLISHERS
-        self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg, queue_size=5)
-        self.simpleDrivePub = rospy.Publisher("/cmd_vel", Twist, queue_size = 5)
-        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 5)
-        self.garage_pub = rospy.Publisher("GarageCommands", String, queue_size = 5)
-        self.statePublisher = rospy.Publisher("RoverState", String, queue_size = 5)
-        self.neuralNetworkSelector = rospy.Publisher("neuralNetworkSelector", String, queue_size=1)
+        self.sqlPub = rospy.Publisher(
+            "pilit/events", pilit_db_msg, queue_size=5)
+        self.simpleDrivePub = rospy.Publisher("/cmd_vel", Twist, queue_size=5)
+        self.intake_command_pub = rospy.Publisher(
+            "intake/command", String, queue_size=5)
+        self.garage_pub = rospy.Publisher(
+            "GarageCommands", String, queue_size=5)
+        self.statePublisher = rospy.Publisher(
+            "RoverState", String, queue_size=5)
+        self.neuralNetworkSelector = rospy.Publisher(
+            "neuralNetworkSelector", String, queue_size=1)
         # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
 
         self.isJoystickControl = True
@@ -112,9 +134,8 @@ class RoverInterface():
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
 
-
-        
     # options are piLit, lanes, piLitAndLanes, aruco, and none
+
     def changeNeuralNetworkSelected(self, selectedNetwork):
         self.neuralNetworkSelector.publish(selectedNetwork)
 
@@ -180,7 +201,8 @@ class RoverInterface():
 
     def updatePlacementPoints(self, data):
         self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
-        self.placementPoints = self.convertPointsToTruckCoordinates(self.placementPoints)
+        self.placementPoints = self.convertPointsToTruckCoordinates(
+            self.placementPoints)
 
     def getPlacementPoints(self):
         return self.placementPoints
@@ -200,7 +222,7 @@ class RoverInterface():
             points[i] = self.CoordConversion_client_goal(points[i])
             time.sleep(0.1)
         return points
-    
+
     def getDriveClients(self):
         return self.calibrationClient, self.PPclient, self.pickupClient
 
@@ -212,7 +234,8 @@ class RoverInterface():
     def updateTruckOdom(self, data):
         self.xPos = data.pose.pose.position.x
         self.yPos = data.pose.pose.position.y
-        self.heading = conversion.quat_from_pose2eul(data.pose.pose.orientation)[0]
+        self.heading = conversion.quat_from_pose2eul(
+            data.pose.pose.orientation)[0]
 
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
@@ -225,7 +248,7 @@ class RoverInterface():
 
     def getCurrentAltitude(self):
         return self.altitude
-    
+
     def loadPointToSQL(self, action, intakeSide):
         msg = pilit_db_msg()
         msg.deploy_or_retrieve.data = action
@@ -236,7 +259,7 @@ class RoverInterface():
         navSatFixMsg.altitude = self.altitude
         msg.gps_pos = navSatFixMsg
         self.sqlPub.publish(msg)
-    
+
     def enableTeleopDrive(self, Halt):
         temp = ""
         mirv_control.msg.generalGoal.goal = temp
@@ -248,7 +271,7 @@ class RoverInterface():
     def disableTeleopDrive(self):
         self.TeleopClient.cancel_all_goals()
 
-    def convertToOneD(self,TwoDArray):
+    def convertToOneD(self, TwoDArray):
         temp = []
         for i in range(len(TwoDArray)):
             try:
@@ -283,7 +306,8 @@ class RoverInterface():
         try:
             targetPoints1D = self.convertToOneD(targetPoints2D)
             mirv_control.msg.PurePursuitGoal.TargetPoints = targetPoints1D
-            mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(len(targetPoints1D)/2)
+            mirv_control.msg.PurePursuitGoal.NumTargetPoints = int(
+                len(targetPoints1D)/2)
             goal = mirv_control.msg.PurePursuitGoal
             self.PPclient.send_goal(goal)
             self.PPclient.wait_for_result()
@@ -315,7 +339,7 @@ class RoverInterface():
         # point is in lat long altitude
         mirv_control.msg.NavSatToTruckGoal.longitude = point[1]
         mirv_control.msg.NavSatToTruckGoal.latitude = point[0]
-        mirv_control.msg.NavSatToTruckGoal.altitude = 1492
+        mirv_control.msg.NavSatToTruckGoal.altitude = 1492  # TODO: Use actual altitude??
         goal = mirv_control.msg.NavSatToTruckGoal
         self.TruckCordClient.send_goal(goal)
         print("sentGoal")
@@ -331,7 +355,8 @@ class RoverInterface():
             self.databaseClient.send_goal(self.goal)
             self.databaseClient.wait_for_result()
             placedPiLitLocations = self.databaseClient.get_result()
-            points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]] for i in range(len(placedPiLitLocations.latitude))]
+            points = [[placedPiLitLocations.latitude[i], placedPiLitLocations.longitude[i]]
+                      for i in range(len(placedPiLitLocations.latitude))]
             rospy.loginfo(f"PICKUP POINTS: {points}")
             return points
         except:
@@ -349,7 +374,7 @@ class RoverInterface():
             return sides
         except:
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
-    
+
     def cancelAllCommands(self, runIntake):
         print("Cancelling All")
         self.PP_client_cancel()
@@ -361,7 +386,6 @@ class RoverInterface():
             self.magazineIn()
             time.sleep(1)
             self.stopIntakeAndMagazine()
-        
 
     def stateWatchdog(self):
         if self.roverState == self.CONNECTED_DISABLED or self.roverState == self.DISCONNECTED or self.roverState == self.DOCKED:
@@ -391,7 +415,8 @@ class RoverInterface():
         elif command == "idle":
             self.pilit_controller.inhibit(True)
         else:
-            rospy.logwarn("Received Unrecognized Light Command type: " + str(command))
+            rospy.logwarn(
+                "Received Unrecognized Light Command type: " + str(command))
 
     def driveToPoint(self, lat, long):
         print("driving to point")
@@ -436,17 +461,16 @@ class RoverInterface():
         self.RoverMacro.dock(0)
         self.roverState = self.CONNECTED_DISABLED
 
-
     def cloud_callback(self, message):
-        
+
         self.heartBeatTime = rospy.get_time()
         msg = json.loads(message.data)
 
-        subsystem = msg.get("subsystem",{})
-        command = msg.get("command",{})
-        
+        subsystem = msg.get("subsystem", {})
+        command = msg.get("command", {})
+
         if self.roverState == self.DISCONNECTED:
-            if self.garage_state != "deployed":                
+            if self.garage_state != "deployed":
                 self.roverState = self.DOCKED
             else:
                 self.roverState = self.CONNECTED_DISABLED
@@ -482,11 +506,15 @@ class RoverInterface():
                 self.roverState = self.CONNECTED_ENABLED
             elif command == "deploy_pi_lits":
                 self.roverState = self.AUTONOMOUS
-                heading = msg.get("commandParameters",{}).get("heading",0)
-                lat = msg.get("commandParameters", {}).get("location",{}).get("lat")
-                long = msg.get("commandParameters", {}).get("location",{}).get("long")
-                formation = msg.get("commandParameters", {}).get("formation","taper_right_5")
-                t = Thread(target=self.deployAllPilits, args=(lat, long, heading, formation))
+                heading = msg.get("commandParameters", {}).get("heading", 0)
+                lat = msg.get("commandParameters", {}).get(
+                    "location", {}).get("lat")
+                long = msg.get("commandParameters", {}).get(
+                    "location", {}).get("long")
+                formation = msg.get("commandParameters", {}).get(
+                    "formation", "taper_right_5")
+                t = Thread(target=self.deployAllPilits,
+                           args=(lat, long, heading, formation))
                 t.start()
                 self.tasks.append(t)
             elif command == "retrieve_pi_lits":
@@ -511,7 +539,8 @@ class RoverInterface():
                 t.start()
                 self.tasks.append(t)
             else:
-                rospy.logerr("Unknown command in intake subsystem. Command: " + str(command))
+                rospy.logerr(
+                    "Unknown command in intake subsystem. Command: " + str(command))
         elif subsystem == "drivetrain":
             if command == "arcade":
                 pass
@@ -526,6 +555,14 @@ class RoverInterface():
         else:
             rospy.logerr("Unknown subsystem: " + str(subsystem))
         self.lastmsg = pickle.dumps(msg)
+
+    def pointTurn(self, targetAngle, successThreshold):
+        mirv_control.msg.PointTurnGoal.targetAngle = targetAngle
+        mirv_control.msg.PointTurnGoal.successThreshold = successThreshold
+        goal = mirv_control.msg.PointTurnGoal
+        self.pointTurnClient.send_goal(goal)
+        self.pointTurnClient.wait_for_result()
+        return self.pointTurnClient.get_result()
 
 
 if __name__ == '__main__':
