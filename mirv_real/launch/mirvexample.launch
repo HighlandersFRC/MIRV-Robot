@@ -3,11 +3,11 @@
     <arg name="wheel_radius" default="0.1905"/>
     <arg name="param_file_name" default="nmea"/>
     <arg name="param_file_dir" default="$(find mirv_real)/GPS/config"/>
-    <param name="api_host" type="String" value=""/>
-    <param name="api_port" type="String" value=""/>
-    <param name="mirv_common_name" type="String" value=""/>
-    <param name="api_username" type="String" value=""/>
-    <param name="api_password" type="String" value=""/>
+    <param name="api_host" type="String" value="20.242.243.56"/>
+    <param name="api_port" type="String" value="8080"/>
+    <param name="mirv_common_name" type="String" value="rover_1"/>
+    <param name="api_username" type="String" value="rover_dev"/>
+    <param name="api_password" type="String" value="1234"/>
 
     <!-- start control nodes -->
     <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true"/>
@@ -33,6 +33,6 @@
     <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
     <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"/>
     <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py"/>
-    <node name="CloudAlServer" pkg="mirv_control" type="CloudAlServer.py" output="screen"/>
+    <!--<node name="CloudAlServer" pkg="mirv_control" type="CloudAlServer.py" output="screen"/> -->
     <!-- <node name="OdometyDataUnfiltered" pkg="mirv_control" type="controllerFormatting.py"/> -->
 </launch>

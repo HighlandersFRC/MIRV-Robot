@@ -165,25 +165,32 @@ class roverMacros():
             currentX = currentLocationConverted[0]
             currentY = currentLocationConverted[1]
 
+            theta = self.interface.getCameraImu()
+
+            xTBody = placementX*math.cos(theta) + placementY*math.sin(
+                theta) - currentY*math.sin(theta) - currentX*math.cos(theta)
+            yTBody = -placementX*math.sin(theta) + placementY*math.cos(
+                theta) - currentY*math.cos(theta) + currentX*math.sin(theta)
+            distanceToPlacement = round(
+                math.sqrt(math.pow(xTBody, 2) + math.pow(yTBody, 2)), 3)
+
+            angleToPlacement = math.atan2(yTBody, xTBody)
+
+            # distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
             
-
-            angleToPlacement = math.atan2(placementY - currentY, placementX - currentX)
-
-
-            distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
-            
-
             if distanceToPlacement > 2:
-                distanceBeforePiLit = distanceToPlacement - 1
-                pickupDistanceX = distanceBeforePiLit * math.cos(angleToPlacement) + currentX
-                pickupDistanceY = distanceBeforePiLit * math.sin(angleToPlacement) + currentY
+                print(f"Rover is {distanceToPlacement} m from pilit. Performing Path Pickup.")
+                distanceBeforePiLit = distanceToPlacement - 3
+                targetX = distanceBeforePiLit * math.cos(angleToPlacement) + currentX
+                targetY = distanceBeforePiLit * math.sin(angleToPlacement) + currentY
 
-                print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY, "Target Plocation", pickupDistanceX, pickupDistanceY)
+                print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY, "Target Plocation", targetX, targetX)
 
-                targetPoint = [pickupDistanceX, pickupDistanceY]
+                targetPoint = [targetX, targetY]
                 angle = self.interface.PP_client_goal([targetPoint])
                 self.interface.pickup_client_goal(intakeSide, angle)
             else:
+                print("Rover is close to Pi-lit performing basic pickup")
                 #angle = self.interface.PP_client_goal([currentLocationConverted])
                 self.interface.pickup_client_goal(intakeSide, math.degrees(angleToPlacement))
             

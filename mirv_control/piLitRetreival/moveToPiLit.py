@@ -166,7 +166,10 @@ class piLitPickup:
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
             self.velocitydrive_pub.publish(self.velocityMsg)
-            self._result.finished = True
+            if(self.limit_switches[2] == 1 or self.limit_switches[3] == 1):
+                self._result.finished = True
+            else:
+                self._result.finished = False
             self.movementInitTime = 0
             self.finished = True
             self.allowSearch = False
@@ -195,7 +198,7 @@ class piLitPickup:
             self.velocityMsg.angular.z = result
 
             self.velocitydrive_pub.publish(self.velocityMsg)
-            if(abs(self.imu - estimatedPiLitAngle) < 8):
+            if(abs(self.imu - estimatedPiLitAngle) < 3):
                 print("Finished Alignment", self.imu, estimatedPiLitAngle)
                 self.reachedEstimate = True
                 self.velocityMsg.linear.x = 0
@@ -203,8 +206,6 @@ class piLitPickup:
                 self.velocitydrive_pub.publish(self.velocityMsg)
 
         print("Pi Lit Alignment Complete")
-        self.allowSearch = True
-
         intakeInitTime = time.time()
         self.allowSearch = False
         while(time.time() - intakeInitTime < 3):
@@ -236,8 +237,10 @@ class piLitPickup:
             self._result.finished = False
         else:
             self.set_intake_state("reset")
+            self.runPID = False
             self.allowSearch = False
-            self._as.set_succeeded(self._result)
+            self._result.finished = False
+            # self._as.set_succeeded(self._result)
             self.finished = True
 
         while(self._result.finished == False):

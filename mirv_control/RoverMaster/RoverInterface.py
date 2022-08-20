@@ -104,6 +104,9 @@ class RoverInterface():
         self.heartBeatTime = 0
         self.tasks = []
 
+        self.imu_buffer = []
+        self.imu = 0
+
     # def setPiLitSequence(self, is_wave: bool):
     #     self.pilit_controller.patternType(is_wave)
     #     self.pilit_controller.reset()
@@ -112,7 +115,20 @@ class RoverInterface():
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
 
+    def updateIMU(self, data):
+        self.imu_buffer.append(data.data)
+        if len(self.imu_buffer) > 10:
+            self.imu_buffer.pop(0)
+        
+        avg = 0
+        for val in self.imu_buffer:
+            avg += val
 
+
+        self.imu = avg / len(self.imu_buffer)
+
+    def getCameraIMU(self):
+        return self.imu
         
     # options are piLit, lanes, piLitAndLanes, aruco, and none
     def changeNeuralNetworkSelected(self, selectedNetwork):
