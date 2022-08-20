@@ -665,7 +665,7 @@ int main(int argc, char **argv) {
 	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 10);
 	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishTouchSensor, publisher));
 
-	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position", 10);
+	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 10);
 	ros::Timer encoderPositionTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderPosition, publisher));
 
 	initializeDriveMotors();
