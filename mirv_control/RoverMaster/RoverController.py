@@ -40,6 +40,7 @@ class RoverController():
     def main(self):
         self.interface.changeNeuralNetworkSelected("piLit")
         self.macros.testPointTurn()
+        # self.macros.testDriveDistance()
         # point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
         # point2 = self.interface.CoordConversion_client_goal([40.4740120, -104.9696378])
         # point3 = self.interface.CoordConversion_client_goal([40.474175983263564,  -104.96935822069644])

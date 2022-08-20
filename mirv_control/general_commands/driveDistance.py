@@ -68,13 +68,15 @@ class driveDistance:
         return targetDistance - timeDelta * velocity
 
     def driveDistance(self):
-        print("GOT PICKUP CALLBACK")
+        print("GOT DRIVE DISTANCE CALLBACK")
         goal = self._as.accept_new_goal()
-        print("ACCEPTED GOAL TO PICKUP PI LIT!")
+        print("ACCEPTED GOAL TO DRIVE DISTANCE!")
+
         timeStart = time.time()
         targetDistanceMeters = goal.targetDistanceMeters
         velocityMPS = goal.velocityMPS
         successThreshold = goal.successThreshold
+
         distanceError = self.getDistanceError(
             timeStart, velocityMPS, targetDistanceMeters)
         self.reachedTarget = False

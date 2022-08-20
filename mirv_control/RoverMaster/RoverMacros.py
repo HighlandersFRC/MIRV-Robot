@@ -140,6 +140,9 @@ class roverMacros():
     def testPointTurn(self):
         self.interface.pointTurn(180, 10)
 
+    def testDriveDistance(self):
+        self.interface.driveDistance(1, 0.25, .1)
+
     def pickupAllPiLits(self, lists, reverse):
         self.interface.changeNeuralNetworkSelected("piLit")
         intakeSide = "switch_right"
