@@ -165,22 +165,22 @@ class roverMacros():
             currentX = currentLocationConverted[0]
             currentY = currentLocationConverted[1]
 
-            theta = self.interface.getCameraImu()
+            theta = self.interface.getCameraIMU()
 
-            xTBody = placementX*math.cos(theta) + placementY*math.sin(
-                theta) - currentY*math.sin(theta) - currentX*math.cos(theta)
-            yTBody = -placementX*math.sin(theta) + placementY*math.cos(
-                theta) - currentY*math.cos(theta) + currentX*math.sin(theta)
-            distanceToPlacement = round(
-                math.sqrt(math.pow(xTBody, 2) + math.pow(yTBody, 2)), 3)
+            xTBody = placementX*math.cos(theta) + placementY*math.sin(theta) - currentY*math.sin(theta) - currentX*math.cos(theta)
+            yTBody = -placementX*math.sin(theta) + placementY*math.cos(theta) - currentY*math.cos(theta) + currentX*math.sin(theta)
 
-            angleToPlacement = math.atan2(yTBody, xTBody)
+            print(xTBody, yTBody)
+
+            distanceToPlacement = round(math.sqrt(math.pow(xTBody, 2) + math.pow(yTBody, 2)), 3)
+
+            angleToPlacement = math.atan2(yTBody, xTBody) - theta
 
             # distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
             
-            if distanceToPlacement > 2:
+            if distanceToPlacement > 1.5:
                 print(f"Rover is {distanceToPlacement} m from pilit. Performing Path Pickup.")
-                distanceBeforePiLit = distanceToPlacement - 3
+                distanceBeforePiLit = distanceToPlacement - 1.5
                 targetX = distanceBeforePiLit * math.cos(angleToPlacement) + currentX
                 targetY = distanceBeforePiLit * math.sin(angleToPlacement) + currentY
 
@@ -192,7 +192,9 @@ class roverMacros():
             else:
                 print("Rover is close to Pi-lit performing basic pickup")
                 #angle = self.interface.PP_client_goal([currentLocationConverted])
-                self.interface.pickup_client_goal(intakeSide, math.degrees(angleToPlacement))
+                print("Turning Towards: ", math.degrees(angleToPlacement))
+
+                self.interface.pickup_client_goal(intakeSide, math.degrees(angleToPlacement) % 360)
             
 
             print("Rover Location", self.interface.CoordConversion_client_goal([self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])

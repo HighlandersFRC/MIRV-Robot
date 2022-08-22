@@ -70,22 +70,7 @@ class RoverInterface():
 
         self.pilit_controller = PiLitControl()
 
-        # SUBSCRIBERS
-        self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
-        self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
-        self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
-        self.garage_sub = rospy.Subscriber("GarageStatus", garage_state_msg, self.garage_state_callback)
-        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
-        self.cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_callback)
-
-        # PUBLISHERS
-        self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg, queue_size=5)
-        self.simpleDrivePub = rospy.Publisher("/cmd_vel", Twist, queue_size = 5)
-        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 5)
-        self.garage_pub = rospy.Publisher("GarageCommands", String, queue_size = 5)
-        self.statePublisher = rospy.Publisher("RoverState", String, queue_size = 5)
-        self.neuralNetworkSelector = rospy.Publisher("neuralNetworkSelector", String, queue_size=1)
-        # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
+        
 
         self.isJoystickControl = True
         self.isPurePursuitControl = False
@@ -103,9 +88,29 @@ class RoverInterface():
         self.limit_switches = [1, 1, 0, 0]
         self.heartBeatTime = 0
         self.tasks = []
+        self.startingHeading = 0
+        self.globalHeading = 0
 
         self.imu_buffer = []
         self.imu = 0
+
+        # SUBSCRIBERS
+        self.gpsOdomSub = rospy.Subscriber("gps/fix", NavSatFix, self.updateOdometry)
+        self.truckOdomSub = rospy.Subscriber("/EKF/Odometry", Odometry, self.updateTruckOdom)
+        self.placementLocationSub = rospy.Subscriber("placementLocation", Float64MultiArray, self.updatePlacementPoints)
+        self.garage_sub = rospy.Subscriber("GarageStatus", garage_state_msg, self.garage_state_callback)
+        self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
+        self.cloud_sub = rospy.Subscriber("CloudCommands", String, self.cloud_callback)
+        self.startHeadingSub = rospy.Subscriber("Start/Heading", Float64, self.setStartingHeading)
+
+        # PUBLISHERS
+        self.sqlPub = rospy.Publisher("pilit/events", pilit_db_msg, queue_size=5)
+        self.simpleDrivePub = rospy.Publisher("/cmd_vel", Twist, queue_size = 5)
+        self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 5)
+        self.garage_pub = rospy.Publisher("GarageCommands", String, queue_size = 5)
+        self.statePublisher = rospy.Publisher("RoverState", String, queue_size = 5)
+        self.neuralNetworkSelector = rospy.Publisher("neuralNetworkSelector", String, queue_size=1)
+        # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
 
     # def setPiLitSequence(self, is_wave: bool):
     #     self.pilit_controller.patternType(is_wave)
@@ -129,6 +134,7 @@ class RoverInterface():
 
     def getCameraIMU(self):
         return self.imu
+
         
     # options are piLit, lanes, piLitAndLanes, aruco, and none
     def changeNeuralNetworkSelected(self, selectedNetwork):
@@ -220,9 +226,33 @@ class RoverInterface():
     def getDriveClients(self):
         return self.calibrationClient, self.PPclient, self.pickupClient
 
+
+    
+
     def updateOdometry(self, data):
-        self.latitude = data.latitude
-        self.longitude = data.longitude
+
+        #Heading is in radians
+
+        if hasattr(self, "globalHeading") and self.globalHeading != 0:
+            #print("Global Heading", self.globalHeading)
+            offset_meters =  0.3048
+            de = offset_meters * math.cos(self.globalHeading)
+            dn = offset_meters * math.sin(self.globalHeading)
+
+            R=6378137
+
+            #Coordinate offsets in radians
+            dLat = dn/R
+            dLon = de/(R*math.cos(math.radians(data.latitude)))
+
+            
+
+            self.latitude = data.latitude + math.degrees(dLat) 
+            self.longitude = data.longitude + math.degrees(dLon)
+
+        else:
+            self.latitude = data.latitude
+            self.longitude = data.longitude
         self.altitude = data.altitude
 
     def updateTruckOdom(self, data):
@@ -230,6 +260,9 @@ class RoverInterface():
         self.yPos = data.pose.pose.position.y
         self.heading = conversion.quat_from_pose2eul(data.pose.pose.orientation)[0]
 
+        if self.startingHeading != 0:
+            self.globalHeading = math.radians(math.degrees(self.startingHeading - math.pi/2 + self.heading) %360)
+            
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
 
@@ -241,15 +274,22 @@ class RoverInterface():
 
     def getCurrentAltitude(self):
         return self.altitude
+
+    def setStartingHeading(self, data):
+        self.startingHeading = math.radians(data.data)
+        self.startHeadSet = True
+        
     
     def loadPointToSQL(self, action, intakeSide):
         msg = pilit_db_msg()
         msg.deploy_or_retrieve.data = action
         msg.side.data = intakeSide
+
         navSatFixMsg = NavSatFix()
         navSatFixMsg.latitude = self.latitude
         navSatFixMsg.longitude = self.longitude
         navSatFixMsg.altitude = self.altitude
+        
         msg.gps_pos = navSatFixMsg
         self.sqlPub.publish(msg)
     

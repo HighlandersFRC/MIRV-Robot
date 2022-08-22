@@ -190,12 +190,14 @@ class piLitPickup:
         print("Target Angle:", estimatedPiLitAngle)
         self.estimatePID.setSetPoint(estimatedPiLitAngle)
         self._result.finished = False
+        self.reachedEstimate = False
      
         while(self.reachedEstimate == False and self.piLitAngle == 0):
+            print(estimatedPiLitAngle, abs(self.imu - estimatedPiLitAngle))
             result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
 
             self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = result
+            self.velocityMsg.angular.z = -result
 
             self.velocitydrive_pub.publish(self.velocityMsg)
             if(abs(self.imu - estimatedPiLitAngle) < 3):
