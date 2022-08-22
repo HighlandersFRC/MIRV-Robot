@@ -90,6 +90,7 @@ class RoverInterface():
         self.tasks = []
         self.startingHeading = 0
         self.globalHeading = 0
+        self.cancelled = False
 
         self.imu_buffer = []
         self.imu = 0
@@ -412,6 +413,7 @@ class RoverInterface():
         self.disableTeleopDrive()
         self.pickup_client_cancel()
         self.tasks = []
+        self.cancelled = True
         if(runIntake):
             self.intakeUp()
             self.magazineIn()
@@ -429,10 +431,12 @@ class RoverInterface():
         self.statePublisher.publish(self.stateMsg)
 
     def eSTOP(self):
+        self.cancelled = True
         self.roverState = self.E_STOP
         os.system("rosnode kill --all")
 
     def setPiLits(self, command):
+        self.cancelled = False
         if command == "simultaneous":
             self.pilit_controller.inhibit(False)
             self.pilit_controller.patternType(False)
@@ -450,43 +454,47 @@ class RoverInterface():
             rospy.logwarn("Received Unrecognized Light Command type: " + str(command))
 
     def driveToPoint(self, lat, long):
-        print("driving to point")
+        self.cancelled = False
         self.roverState = self.AUTONOMOUS
         point = [lat, long]
         TruckPoint = self.CoordConversion_client_goal(point)
-        print(TruckPoint)
         self.PP_client_goal([TruckPoint])
         self.roverState = self.CONNECTED_ENABLED
 
     def placeOnePilit(self):
+        self.cancelled = False
         lastState = self.roverState
         self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
         self.RoverMacro.placePiLit()
-        print("placed pi lit")
         self.roverState = lastState
 
     def pickupOnePilit(self):
+        self.cancelled = False
         lastState = self.roverState
         self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
         self.RoverMacro.pickupPiLit()
         self.roverState = lastState
 
     def deployAllPilits(self, lat, long, heading, formation):
+        self.cancelled = False
         self.roverState = self.AUTONOMOUS
         self.RoverMacro.placeAllPiLits([lat, long], heading, formation)
         self.roverState = self.CONNECTED_ENABLED
 
     def pickupAllPilits(self):
+        self.cancelled = False
         self.roverState = self.AUTONOMOUS
         self.RoverMacro.pickupAllPiLits(True)
         self.roverState = self.CONNECTED_ENABLED
 
     def undock(self):
+        self.cancelled = False
         self.roverState = self.AUTONOMOUS
         self.RoverMacro.undock()
         self.roverState = self.CONNECTED_DISABLED
 
     def dock(self):
+        self.cancelled = False
         self.roverState = self.AUTONOMOUS
         self.RoverMacro.dock(0)
         self.roverState = self.CONNECTED_DISABLED

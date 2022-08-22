@@ -29,9 +29,18 @@ class roverMacros():
         lineUpPoint2 = [3.5,0]
         lineUpPoint3 = [1, 0]
         lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
+
+        if self.cancelled:
+            return
         self.interface.deployGarage()
+        if self.cancelled:
+            return
         self.interface.PP_client_goal(lineUpPoints)
+        if self.cancelled:
+            return
         self.interface.garage_client_goal(0)
+        if self.cancelled:
+            return
         self.interface.retractGarage()
 
     def dockNoPathing(self):
@@ -41,6 +50,8 @@ class roverMacros():
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
+        if self.cancelled:
+            return False
         self.interface.intake_command_pub.publish(String(intakeSide))
         self.interface.intake_command_pub.publish(String("deposit"))
         while self.interface.limit_switches[1]:
@@ -59,7 +70,11 @@ class roverMacros():
             side = "switch_right"
         else:
             side = "switch_left"
+        if self.cancelled:
+            return
         self.placePiLitFromSide(7, side)
+        if self.cancelled:
+            return
         self.interface.intake_command_pub.publish(String("reset"))
         self.interface.loadPointToSQL("deploy", side)
 
@@ -79,9 +94,15 @@ class roverMacros():
             point = self.interface.CoordConversion_client_goal(pnt)
             print("Converting Point")
             target = [point]
+            if self.cancelled:
+                return
             self.interface.PP_client_goal(target)
             print("Going to PP target")
+            if self.cancelled:
+                return
             self.placePiLitFromSide(6, intakeSide)
+            if self.cancelled:
+                return
             self.interface.intake_command_pub.publish(String("reset"))
             self.interface.loadPointToSQL("deploy", intakeSide)
             if(intakeSide == "switch_right"):
@@ -125,7 +146,12 @@ class roverMacros():
             side = "switch_right"
         else:
             side = "switch_left"
+
+        if self.cancelled:
+            return
         self.interface.pickup_client_goal(side, 0)
+        if self.cancelled:
+            return
         self.interface.loadPointToSQL("retrieve", side)
         self.interface.changeNeuralNetworkSelected("none")
 
@@ -145,20 +171,14 @@ class roverMacros():
              points.reverse()
 
         for point in points:
+            if self.interface.cancelled:
+                return
             print(f"POINT {point}")
             convertedPoint = self.interface.CoordConversion_client_goal(point)
-            #target = self.interceptPoint(convertedPoint)
             
             print("Converted Point:", convertedPoint)
             placementX = convertedPoint[0]
             placementY = convertedPoint[1]
-
-            #navSatFixMsg = NavSatFix()
-            #navSatFixMsg.latitude = self.interface.getCurrentLatitude()
-            #navSatFixMsg.longitude = self.interface.getCurrentLongitude()
-            #navSatFixMsg.altitude = 1492
-
-            #currentLat = self.interface.getCurrentLatitude()
 
             currentLocationConverted = self.interface.CoordConversion_client_goal([self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
 
@@ -187,7 +207,10 @@ class roverMacros():
                 print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY, "Target Plocation", targetX, targetX)
 
                 targetPoint = [targetX, targetY]
+
                 angle = self.interface.PP_client_goal([targetPoint])
+                if self.interface.cancelled:
+                    return
                 self.interface.pickup_client_goal(intakeSide, angle)
             else:
                 print("Rover is close to Pi-lit performing basic pickup")
