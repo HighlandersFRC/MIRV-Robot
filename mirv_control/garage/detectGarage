@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+from cmath import pi
+import math
+import cv2
+from cv2 import aruco
+import os
+import sys
+import time
+import asyncio
+
+import numpy as np
+import torchvision.transforms as transforms
+
+import rospy
+from std_msgs.msg import Float64MultiArray
+from cv_bridge import CvBridge
+from tf2_geometry_msgs import PoseStamped
+import mirv_control.helpful_functions_lib as conversion_lib
+from scipy.spatial.transform import Rotation as R
+from std_msgs.msg import Float64MultiArray, String
+import ros_numpy
+
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import garage_position as GaragePosition
+from mirv_control.msg import camera_calibration as CameraCalibrationMsg
+from mirv_real.Camera.tools import arucoHelper
+
+rospy.init_node("garageDetection")
+
+
+class GarageDetection:
+
+    def __init__(self):
+        self.runningDetection = False
+
+        self.calibration = None
+
+        self.arucoTagId = 0
+        self.markerSize = 8 * 0.0254  # Full size of marker, in meters
+        self.arucoDict = aruco.Dictionary_get(aruco.DICT_4X4_50)
+        self.arucoParameters = aruco.DetectorParameters_create()
+
+        self.SEARCH_TIME = 2  # seconds
+
+        self.poseZero = PoseStamped()
+        self.poseZero.pose.position.x = 0
+        self.poseZero.pose.position.y = 0
+        self.poseZero.pose.position.z = 0
+        self.poseZero.pose.orientation.x = 0
+        self.poseZero.pose.orientation.y = 0
+        self.poseZero.pose.orientation.z = 0
+        self.poseZero.pose.orientation.w = 1
+
+        self.image_sub = rospy.Subscriber(
+            "IntakeCameraFrames", depthAndColorFrame, self.gotFrame)
+        self.calibration_sub = rospy.Subscriber(
+            "CameraCalibration", CameraCalibrationMsg, self.calibrationCallback)
+        self.network_sub = rospy.Subscriber(
+            "neuralNetworkSelector", String, self.allowNeuralNetRun)
+        self.garage_position_pub = rospy.Publisher(
+            "GaragePosition", GaragePosition, queue_size=10)
+
+    def getGaragePosition(self, depthAndColorFrame):
+        print('sadja')
+
+    def calibrationCallback(self, calibrationMsg):
+        self.calibration = calibrationMsg
+
+    def getPositionWithinFrame(self, corners, depthFrame):
+        (topLeft, topRight, bottomRight, bottomLeft) = corners
+        # convert each of the (x, y)-coordinate pairs to integers
+        topRight = (int(topRight[0]), int(topRight[1]))
+        bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+        bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+        topLeft = (int(topLeft[0]), int(topLeft[1]))
+
+        cX = int((topLeft[0] + bottomRight[0]) / 2.0)
+        cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+
+        angle = (cX - self.calibration.horizontalPixels/2) * \
+            self.calibration.degreesPerPixel
+        depth = (depthFrame[cY][cX])/1000
+
+        return angle, depth
+
+    def getCameraPositionFromFrame(self, frame, depthFrame):
+        # Generate camera and aruco poses from camera frame
+        corners, ids, rejectedImgPoints = aruco.detectMarkers(
+            frame, self.arucoDict, parameters=self.arucoParameters)
+
+        if np.all(ids is not None):  # If there are markers found by detector
+            ids = ids.flatten()
+            marker_r_vec = None
+            marker_t_vec = None
+            for id, corner in zip(ids, corners):  # Iterate in markers
+                # Estimate pose of each marker and return the values rvec and tvec---different from camera coefficients
+                rvec, tvec, markerPoints = aruco.estimatePoseSingleMarkers(corner, self.markerSize, self.cameraMatrix,
+                                                                           self.distCoeffs)
+
+                if id == self.arucoTagId:
+                    marker_r_vec = rvec
+                    marker_t_vec = tvec
+            if 0 in ids:
+                rvec, tvec = marker_r_vec.reshape(
+                    (3, 1)), marker_t_vec.reshape((3, 1))
+                pose_from_camera = self.getPoseFromVectors(
+                    rvec, tvec, "pose_from_camera")
+                pose_from_aruco = self.getPoseFromVectors(
+                    *arucoHelper.invertCameraPerspective(rvec, tvec), "pose_from_aruco")
+                angle, depth = self.getPositionWithinFrame(corner, depthFrame)
+                return pose_from_camera, pose_from_aruco, angle, depth
+        return None, None
+
+    def allowNeuralNetRun(self, msg):
+        cmd = msg.data
+        global runningDetection
+        if(cmd == "aruco"):
+            runningDetection = True
+        else:
+            runningDetection = False
+
+    def detect_markers(self, frame, depthFrame):
+        pose_from_camera, pose_from_aruco, angle, depth = self.getCameraPositionFromFrame(
+            frame, depthFrame)
+
+        # Should always both be invalid, or both be valid
+        if pose_from_camera != None and pose_from_aruco != None:
+
+            garagePosition = GaragePosition()
+            garagePosition.pose_from_camera = pose_from_camera
+            garagePosition.pose_from_aruco = pose_from_aruco
+            garagePosition.angle = self.angle
+            garagePosition.depth = self.depth
+
+            self.garage_position_pub.publish(garagePosition)
+
+    def gotFrame(self, data):
+        if self.calibration is None:
+            print("Camera is not calibrated")
+            return
+        if runningDetection:
+            frame = ros_numpy.numpify(data.color_frame)
+            depthFrame = ros_numpy.numpify(data.depth_frame)
+            self.detect_markers(frame, depthFrame)
+
+    def getPoseFromVectors(self, rvec, tvec, id=""):
+        # Generate PoseStamped obj from rvec and tvec
+        pose = PoseStamped()
+        pose.header.stamp = rospy.Time.now()
+        pose.header.frame_id = id
+
+        # Apply linear bias to the translation estimates
+        # x = tvecs[0][0][2]/1.184 + 0.110
+        # y = -tvecs[0][0][0]/1.032 + 0.243
+        # z = -tvecs[0][0][1]/1.151 - 0.297
+        # dist = np.sqrt(x**2 + y**2 + z**2)
+        # x = x - 0.008*dist + 0.031
+        # y = y + 0.049*dist - 0.222
+        # z = z - 0.062*dist + 0.281
+        pose.pose.position.x = tvec[2][0]
+        pose.pose.position.y = -tvec[0][0]
+        pose.pose.position.z = -tvec[1][0]
+
+        # Swap the angles around to correctly represent our coordinate system
+        # Aruco puts zero at the tag, with z facing out...
+        # We want x forward, y left, z up, euler order zyx = ypr
+        rvecs_reordered = [rvec[2][0], -rvec[0][0], -rvec[1][0]]
+        r = R.from_rotvec(rvecs_reordered)
+        est_ypr = r.as_euler('zyx')
+        quat = conversion_lib.eul2quat(est_ypr[:, None])
+        # r = R.from_euler('zyx', est_ypr + [np.pi, 0, np.pi])
+        # quat = r.as_quat()
+        # print(quat[:])
+        # print(pose.pose.orientation)
+        pose.pose.orientation.x = quat[0]
+        pose.pose.orientation.y = quat[1]
+        pose.pose.orientation.z = quat[2]
+        pose.pose.orientation.w = quat[3]

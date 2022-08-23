@@ -60,6 +60,7 @@ class aruco_pose:
 
     def invertPerspective(rvec, tvec):
         # Generate camera position relative to aruco tag
+        # Copied from https://aliyasineser.medium.com/calculation-relative-positions-of-aruco-markers-eee9cc4036e3
         R, _ = cv2.Rodrigues(rvec)
         R = np.matrix(R).T
         invTvec = np.dot(-R, np.matrix(tvec))
@@ -67,6 +68,7 @@ class aruco_pose:
         return invRvec, invTvec
 
     def getCameraPositionFromFrame(self, frame):
+        # Generate camera and aruco poses from camera frame
         corners, ids, rejectedImgPoints = aruco.detectMarkers(
             frame, self.arucoDict, parameters=self.arucoParameters)
 
@@ -92,7 +94,8 @@ class aruco_pose:
                 return pose_from_camera, pose_from_aruco
         return None, None
 
-    def getPoseFromVectors(rvec, tvec, id):
+    def getPoseFromVectors(rvec, tvec, id=""):
+        # Generate PoseStamped obj from rvec and tvec
         pose = PoseStamped()
         pose.header.stamp = rospy.Time.now()
         pose.header.frame_id = id
