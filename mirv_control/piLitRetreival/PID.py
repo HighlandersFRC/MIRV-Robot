@@ -23,6 +23,8 @@ class PID:
         self.output = 0
         self.result = 0
 
+        self.IZone = 0
+
         # Parameters Setup for use in continuous mode
         self.continuous = False
         self.maxInput = 0
@@ -37,6 +39,9 @@ class PID:
         self.maxInput = maxInput
         self.minInput = minInput
 
+    def setIZone(self, IZone):
+        self.IZone = IZone
+
     def updatePID(self, value):
         self.error = self.setPoint - value
         if (self.continuous):
@@ -48,7 +53,8 @@ class PID:
 
         
 
-        if ((self.error * self.pVal < self.maxOutput) and (self.error * self.pVal > self.minOutput)):
+        #if ((self.error * self.pVal < self.maxOutput) and (self.error * self.pVal > self.minOutput)):
+        if abs(self.error) < self.IZone:
             self.totalError += self.error
         else:
             self.totalError = 0
