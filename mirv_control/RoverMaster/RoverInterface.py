@@ -476,7 +476,7 @@ class RoverInterface():
 
     def dock(self):
         self.roverState = self.AUTONOMOUS
-        self.RoverMacro.dock(0)
+        self.RoverMacro.dock()
         self.roverState = self.CONNECTED_DISABLED
 
     def cloud_callback(self, message):

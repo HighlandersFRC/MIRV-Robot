@@ -24,7 +24,10 @@ class roverMacros():
         self.interface.Calibrate_client_goal()
         self.interface.turn(math.pi, 4)
 
-    def dock(self, estimatedAngleToGarage):
+    # Initiate docking procedure. Requires Rover to be more than 5 meters from the garage
+    def dock(self):
+
+        # Step 0: Enable garage detection
         self.interface.changeNeuralNetworkSelected("aruco")
 
         # Step 1: Deploy garage
@@ -38,9 +41,11 @@ class roverMacros():
         self.interface.PP_client_goal(lineUpPoints)
 
         # Step 3: Turn towards tag
+        # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
         garage_angle = self.interface.garageLocation.angle_to_garage
         if not garage_angle:
             rospy.logerr("Garage was not found in frame - Step 2")
+            self.interface.changeNeuralNetworkSelected("none")
             return
         self.interface.pointTurn(garage_angle)
 
@@ -49,6 +54,7 @@ class roverMacros():
         camera_pose_from_garage = self.interface.garageLocation.camera_pose_from_garage
         if np.all(camera_pose_from_garage is not None):
             rospy.logerr("Garage was not found in frame - Step 3")
+            self.interface.changeNeuralNetworkSelected("none")
             return
         angle_to_perpendicular_degrees = 90 - (180 / math.pi) * math.atan2(
             camera_pose_from_garage.pose.position.y, camera_pose_from_garage.pose.position.x)
@@ -73,10 +79,14 @@ class roverMacros():
         # Step 9: Retract garage
         self.interface.retractGarage()
 
+        # Step 10: Disable camera neural network
+        self.interface.changeNeuralNetworkSelected("none")
+
     def dockNoPathing(self):
         self.interface.changeNeuralNetworkSelected("aruco")
         self.interface.deployGarage()
         self.interface.garage_client_goal(0)
+        self.interface.changeNeuralNetworkSelected("none")
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
@@ -226,3 +236,4 @@ class roverMacros():
                 intakeSide = "switch_left"
             else:
                 intakeSide = "switch_right"
+        self.interface.changeNeuralNetworkSelected("none")
