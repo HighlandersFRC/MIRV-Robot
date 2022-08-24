@@ -6,7 +6,7 @@ import actionlib
 import time
 import rospy
 import sys
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Float64
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import mirv_control.msg as ASmsg
@@ -40,13 +40,14 @@ class PurePursuit():
     def __init__(self):
         rospy.init_node('PurePursuitController', anonymous=True)
         self._action_name = 'PurePursuitAS'
+        self.startingHeading = 0
 
         self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.PurePursuitAction, auto_start = False)
         self._as.register_goal_callback(self.ServerCallback)
         self._as.register_preempt_callback(self.preemptCallback)
     
         self._as.start()
-        sub = rospy.Subscriber("/EKF/Odometry", Odometry, self.callBackOdom)
+        self.sub = rospy.Subscriber("/EKF/Odometry", Odometry, self.callBackOdom)
         rospy.loginfo_throttle(0.5, "Pure pursuit Output: LeftSpeed: {}, RightSpeed: {}".format(self.logData[0], self.logData[1]))
 
     def UpdateTargetPoints(self):
@@ -249,10 +250,22 @@ class PurePursuit():
             self.setPath(pointList)
 
     def callBackOdom(self, data):
-        self.currentTruckCord[0] = data.pose.pose.position.x
-        self.currentTruckCord[1] = data.pose.pose.position.y
+        
+        offsetX =  0.3048
+        offsetY = 0
+
         self.currentTruckCord[2] = conversion_lib.quat_from_pose2eul(
             data.pose.pose.orientation)[0]
+
+
+        #self.currentTruckCord[0] = data.pose.pose.position.x + math.cos(self.currentTruckCord[2]) * offsetX + math.sin(self.currentTruckCord[2]) * offsetY
+        #self.currentTruckCord[1] = data.pose.pose.position.y + math.sin(self.currentTruckCord[2]) * offsetX + math.cos(self.currentTruckCord[2]) * offsetY
+
+        self.currentTruckCord[0] = data.pose.pose.position.x
+        self.currentTruckCord[1] = data.pose.pose.position.y
+
+        #print("Original PP Coords", data.pose.pose.position.x, data.pose.pose.position.y, self.currentTruckCord[2])
+        #print("Pure Pursuit Coords", self.currentTruckCord)
         if(self._as.is_active()):
             if (self.cordList):
                 self.UpdateTargetPoints()
@@ -279,6 +292,8 @@ class PurePursuit():
                     self.result.finalTargetPoint = self.currentTruckCord
                     self.result.angleToTarget = self.angleToTarget
                     self.currentMaxDriveSpeed = self.maxDriveSpeed
+                    print("Pure Pursuit Complete:", self.currentTruckCord, self.result.angleToTarget)
+
                     self._as.set_succeeded(self.result)
                 #print(self.rosPubMsg)
 

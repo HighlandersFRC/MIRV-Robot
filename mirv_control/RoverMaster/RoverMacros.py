@@ -214,8 +214,9 @@ class roverMacros():
                 targetPoint = [targetX, targetY]
                 helperPoint = [helperPointX, helperPointY]
 
+                print("Pickup Path:", [helperPoint, targetPoint])
                 angle = self.interface.PP_client_goal([helperPoint, targetPoint])
-                print("Pathing Complete")
+                print("Pathing Complete", angle)
                 #if self.interface.cancelled:
                 #    return
                 print("Running Pickup")

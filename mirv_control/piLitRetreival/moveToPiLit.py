@@ -21,7 +21,7 @@ class piLitPickup:
         self._action_name = "PickupAS"
         self._as = actionlib.SimpleActionServer(self._action_name, msg.MovementToPiLitAction, auto_start = False)
         self._as.register_goal_callback(self.turnToPiLit)
-        self._as.register_preempt_callback(self.preemptedPickup)
+        #self._as.register_preempt_callback(self.preemptedPickup) #Not being used so removed.
         self._as.start()
 
         self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
@@ -72,7 +72,7 @@ class piLitPickup:
         self.piLitPID.setContinuous(360,0)
         self.estimatePID.setMaxMinOutput(0.5)
         self.estimatePID.setContinuous(360,0)
-        self.estimatePID.setIZone(math.radians(8)) # I term only accrues for small error
+        self.estimatePID.setIZone(8) # I term only accrues for small error
         self.allowSearch = False
 
         # in order: Left button, Right Button, Bottom Switch, Top Switch
@@ -150,6 +150,7 @@ class piLitPickup:
         self._as.set_aborted()
 
     def preemptedPickup(self):
+        print("Preempted")
         if(self._as.is_new_goal_available()):
             print("pickup preempt received")
             self._as.set_preempted()
@@ -158,7 +159,7 @@ class piLitPickup:
             self.cancelCallback()
          
     def moveToPiLit(self):
-        print("Move to Pilit")
+        #print("Move to Pilit")
         result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
         result = -result # This should be negative
         print("Result:", result, "Setpoint", self.setPoint, "IMU", self.imu)
@@ -203,8 +204,8 @@ class piLitPickup:
      
         while(self.reachedEstimate == False and self.piLitAngle == 0):
             
-            result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
-            print(estimatedPiLitAngle, abs(self.imu - estimatedPiLitAngle),-result)
+            result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec, input degrees
+            #print(estimatedPiLitAngle, abs(self.imu - estimatedPiLitAngle),-result)
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = -result
 
@@ -216,7 +217,7 @@ class piLitPickup:
                 self.velocityMsg.angular.z = 0
                 self.velocitydrive_pub.publish(self.velocityMsg)
 
-        print("Pi Lit Alignment Complete")
+        print("Pi Lit Alignment Complete", estimatedPiLitAngle, self.imu, self.imu-estimatedPiLitAngle)
         intakeInitTime = time.time()
         self.allowSearch = False
         while(time.time() - intakeInitTime < 3):
@@ -230,8 +231,7 @@ class piLitPickup:
 
         searchStartTime = time.time()
 
-        print("Pickup Sequence")
-        
+        print("Pickup Sequence") 
         while(abs(searchStartTime - time.time()) < 9):
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = 0
@@ -276,7 +276,6 @@ class piLitPickup:
 
                 if(abs(self.imu - self.setPoint) < 8):# and abs(result) < 0.05):
                     print("GOT TO TARGET!!!!")
-                    print(self.imu, self.setPoint)
                     self.driveToPiLit = True
                     self.runPID = False
                     self.velocityMsg.linear.x = 0

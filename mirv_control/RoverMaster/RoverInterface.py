@@ -344,7 +344,7 @@ class RoverInterface():
             goal = mirv_control.msg.PurePursuitGoal
             self.PPclient.send_goal(goal)
             self.PPclient.wait_for_result()
-            print(self.PPclient.get_result())
+            print("Pure Pursuit Result", self.PPclient.get_result())
             return self.PPclient.get_result().angleToTarget
         except:
             rospy.logerr("Failed to run pure pursuit action")

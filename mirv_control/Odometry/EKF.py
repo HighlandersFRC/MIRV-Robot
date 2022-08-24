@@ -175,7 +175,7 @@ class DDEkf:
             print("self.H {}, self.H.T {}, self.R {}".format(self.H, self.H.T, self.R))
 
             S = np.dot(self.H, np.dot(pp, self.H.T))
-            if self.R is None or self.R.shape != S.shape:
+            if self.R is None or self.R.shape != S.shape or self.R.any() is None:
                 print("EKF found R to be None, using 0 instead")
                 self.R = 0
             S = S + self.R
