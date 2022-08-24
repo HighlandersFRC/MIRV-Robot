@@ -55,14 +55,15 @@ class roverMacros():
 
         # Step 4: itentify offsets to aruco tag
         time.sleep(2)
-        camera_pose_from_garage = self.interface.garageLocation.camera_pose_from_garage
-        if np.all(camera_pose_from_garage is not None):
+        x = self.interface.garageLocation.rover_position_x_from_garage
+        y = self.interface.garageLocation.rover_position_y_from_garage
+        if not x or not y:
             rospy.logerr("Garage was not found in frame - Step 3")
             self.interface.changeNeuralNetworkSelected("none")
             return
         angle_to_perpendicular_degrees = 90 - (180 / math.pi) * math.atan2(
-            camera_pose_from_garage.pose.position.y, camera_pose_from_garage.pose.position.x)
-        distance_meters = camera_pose_from_garage.pose.position.y
+            y, x)
+        distance_meters = y
 
         # Step 5: Turn towards perpendicular vector of garage
         print(

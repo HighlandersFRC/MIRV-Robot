@@ -48,6 +48,8 @@ class pointTurnRelative:
 
         self.pid = PID(self.kP, self.kI, self.kD, self.setPoint)
         self.pid.setMaxMinOutput(0.5)
+        self.pid.setContinuous(360, 0)
+        self.pid.setIZone(8)
 
     def setAllZeros(self):
         self.imu = 0
