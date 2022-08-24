@@ -40,6 +40,10 @@ class roverMacros():
         lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
         self.interface.PP_client_goal(lineUpPoints)
 
+        ## TODO: Cancel
+        if self.interface.cancelled:
+            return
+
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
         garage_angle = self.interface.garageLocation.angle_to_garage
@@ -90,6 +94,8 @@ class roverMacros():
 
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
+        if self.interface.cancelled:
+            return False
         self.interface.intake_command_pub.publish(String(intakeSide))
         self.interface.intake_command_pub.publish(String("deposit"))
         while self.interface.limit_switches[1]:
@@ -108,7 +114,11 @@ class roverMacros():
             side = "switch_right"
         else:
             side = "switch_left"
+        if self.interface.cancelled:
+            return
         self.placePiLitFromSide(7, side)
+        if self.interface.cancelled:
+            return
         self.interface.intake_command_pub.publish(String("reset"))
         self.interface.loadPointToSQL("deploy", side)
 
@@ -130,9 +140,15 @@ class roverMacros():
             point = self.interface.CoordConversion_client_goal(pnt)
             print("Converting Point")
             target = [point]
+            if self.interface.cancelled:
+                return
             self.interface.PP_client_goal(target)
             print("Going to PP target")
+            if self.interface.cancelled:
+                return
             self.placePiLitFromSide(6, intakeSide)
+            if self.interface.cancelled:
+                return
             self.interface.intake_command_pub.publish(String("reset"))
             self.interface.loadPointToSQL("deploy", intakeSide)
             if(intakeSide == "switch_right"):
@@ -177,7 +193,12 @@ class roverMacros():
             side = "switch_right"
         else:
             side = "switch_left"
+
+        # if self.interface.cancelled:
+        #    return
         self.interface.pickup_client_goal(side, 0)
+        # if self.interface.cancelled:
+        #    return
         self.interface.loadPointToSQL("retrieve", side)
         self.interface.changeNeuralNetworkSelected("none")
 
@@ -187,47 +208,92 @@ class roverMacros():
     def testDriveDistance(self):
         self.interface.driveDistance(1, 0.25, .1)
 
-    def pickupAllPiLits(self, lists, reverse):
+    def pickupAllPiLits(self, reverse):
         self.interface.changeNeuralNetworkSelected("piLit")
         intakeSide = "switch_right"
 
+        # if(reverse):
+        #     lists.reverse()
+
+        # points = [[lists.latitude[i], lists.longitude[i]] for i in range(len(lists.latitude))]
+
+        points = self.interface.getLatestSqlPoints()
+        print("Retrieving Pi-lits at: ", points)
+
         if(reverse):
-            lists.reverse()
+            points.reverse()
 
-        points = [[lists.latitude[i], lists.longitude[i]]
-                  for i in range(len(lists.latitude))]
-        for point in lists:
+        for point in points:
+            if self.interface.cancelled:
+                return
             print(f"POINT {point}")
-            convertedPoint = [
-                self.interface.CoordConversion_client_goal(point)]
-            target = self.interceptPoint(convertedPoint)
-            # placementX = convertedPoint[0]
-            # placementY = convertedPoint[1]
+            convertedPoint = self.interface.CoordConversion_client_goal(point)
 
-            # currentLocationLongLat = [self.interface.getCurrentLatitude, self.interface.getCurrentLongitude]
+            print("Converted Point:", convertedPoint)
+            placementX = convertedPoint[0]
+            placementY = convertedPoint[1]
 
-            # navSatFixMsg = NavSatFix()
-            # navSatFixMsg.latitude = currentLocationLongLat[0]
-            # navSatFixMsg.longitude = currentLocationLongLat[0]
-            # navSatFixMsg.altitude = 1492
+            currentLocationConverted = self.interface.CoordConversion_client_goal(
+                [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
 
-            # currentLocationConverted = self.interface.CoordConversion_client_goal(currentLocationLongLat)
+            currentX = currentLocationConverted[0]
+            currentY = currentLocationConverted[1]
 
-            # currentX = currentLocationConverted[0]
-            # currentY = currentLocationConverted[1]
+            theta = self.interface.getCameraIMU()
 
-            # angleToPlacement = math.atan2(placementY, placementX)
+            xTBody = placementX*math.cos(theta) + placementY*math.sin(
+                theta) - currentY*math.sin(theta) - currentX*math.cos(theta)
+            yTBody = -placementX*math.sin(theta) + placementY*math.cos(
+                theta) - currentY*math.cos(theta) + currentX*math.sin(theta)
+
+            print(xTBody, yTBody)
+
+            distanceToPlacement = round(
+                math.sqrt(math.pow(xTBody, 2) + math.pow(yTBody, 2)), 3)
+
+            angleToPlacement = math.atan2(yTBody, xTBody) - theta
+
             # distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
-            # distanceBeforePiLit = distanceToPlacement - 1
 
-            # pickupDistanceX = distanceBeforePiLit * math.cos(angleToPlacement)
-            # pickupDistanceY = distanceBeforePiLit * math.sin(angleToPlacement)
+            if distanceToPlacement > 2:
+                print(
+                    f"Rover is {distanceToPlacement} m from pilit. Performing Path Pickup.")
+                distanceBeforePiLit = distanceToPlacement - 1
+                helperDistance = distanceToPlacement - 1
 
-            # convertedPoint = [pickupDistanceX, pickupDistanceY
-            print(target)
-            angle = self.interface.PP_client_goal([target])
-            self.interface.pickup_client_goal(intakeSide, angle)
+                targetX = distanceBeforePiLit * \
+                    math.cos(angleToPlacement) + currentX
+                targetY = distanceBeforePiLit * \
+                    math.sin(angleToPlacement) + currentY
 
+                helperPointX = helperDistance * \
+                    math.cos(angleToPlacement) + currentX
+                helperPointY = helperDistance * \
+                    math.sin(angleToPlacement) + currentY
+
+                print("Rover Location:", currentX, currentY, "PiLit Location",
+                      placementX, placementY, "Target Plocation", targetX, targetX)
+
+                targetPoint = [targetX, targetY]
+                helperPoint = [helperPointX, helperPointY]
+
+                angle = self.interface.PP_client_goal(
+                    [helperPoint, targetPoint])
+                print("Pathing Complete")
+                # if self.interface.cancelled:
+                #    return
+                print("Running Pickup")
+                self.interface.pickup_client_goal(intakeSide, angle)
+            else:
+                print("Rover is close to Pi-lit performing basic pickup")
+                #angle = self.interface.PP_client_goal([currentLocationConverted])
+                print("Turning Towards: ", math.degrees(angleToPlacement))
+
+                self.interface.pickup_client_goal(
+                    intakeSide, math.degrees(angleToPlacement) % 360)
+
+            print("Rover Location", self.interface.CoordConversion_client_goal([self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
+                  )
             print("finished pickup")
 
             self.interface.loadPointToSQL("retrieve", intakeSide)

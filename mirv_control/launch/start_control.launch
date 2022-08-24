@@ -1,13 +1,13 @@
 <launch>
     <!-- <node name="record" pkg="mirv_control" type="record.py"/> -->
-    <node name="gps_to_local" pkg="mirv_control" type="globalToTruck.py" output = "screen"/>
-    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py" output="screen"/>
+    <node name="gps_to_local" pkg="mirv_control" type="globalToTruck.py"/>
+    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py"/>
     <node name="EKF" pkg="mirv_control" type="EKF.py"/>
 <!--    <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"-->
 <!--        respawn="$(arg respawn)"-->
 <!--        respawn_delay="$(arg respawn_delay)"/>-->
     <node name="IMUFilter" pkg="mirv_control" type="imuFilter.py"/>
-    <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py"/>
+    <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py" output = "screen"/>
     <node name="ComputeStartHeading" pkg="mirv_control" type="HeadingFilter.py"/>
     <node name="TeleopDriveALServer" pkg="mirv_control" type="TeleopDrive.py"/>
     <node name="garageDocking" pkg="mirv_control" type="moveToGarage.py" />
