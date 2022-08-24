@@ -26,17 +26,51 @@ class roverMacros():
 
     def dock(self, estimatedAngleToGarage):
         self.interface.changeNeuralNetworkSelected("aruco")
+
+        # Step 1: Deploy garage
+        self.interface.deployGarage()
+
+        # Step 2: Drive to front of garage
         lineUpPoint1 = [5, 0]
         lineUpPoint2 = [3.5, 0]
         lineUpPoint3 = [1, 0]
         lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
-        self.interface.deployGarage()
         self.interface.PP_client_goal(lineUpPoints)
-        # point towards aruco tag
-        # itentify lateral offset to aruco tag
-        # turn to the lateral direction and drive the measure distance
-        # turn back towards the garage
+
+        # Step 3: Turn towards tag
+        garage_angle = self.interface.garageLocation.angle_to_garage
+        if not garage_angle:
+            rospy.logerr("Garage was not found in frame - Step 2")
+            return
+        self.interface.pointTurn(garage_angle)
+
+        # Step 4: itentify offsets to aruco tag
+        time.sleep(2)
+        camera_pose_from_garage = self.interface.garageLocation.camera_pose_from_garage
+        if np.all(camera_pose_from_garage is not None):
+            rospy.logerr("Garage was not found in frame - Step 3")
+            return
+        angle_to_perpendicular_degrees = 90 - (180 / math.pi) * math.atan2(
+            camera_pose_from_garage.pose.position.y, camera_pose_from_garage.pose.position.x)
+        distance_meters = camera_pose_from_garage.pose.position.y
+
+        # Step 5: Turn towards perpendicular vector of garage
+        print(
+            f"Turning to relative angle of {angle_to_perpendicular_degrees} degrees")
+        self.interface.pointTurn(angle_to_perpendicular_degrees, 5)
+
+        # Step 6: Drive to directly in front of garage
+        print(f"Moving distance of {distance_meters} meters")
+        self.interface.driveDistance(distance_meters, 0.25, 0.1)
+
+        # Step 7: Turn to face garage
+        print(f"Turning to relative angle of {90} degrees")
+        self.interface.pointTurn(90, 5)
+
+        # Step 8: Drive directly towards back of garage
         self.interface.garage_client_goal(0)
+
+        # Step 9: Retract garage
         self.interface.retractGarage()
 
     def dockNoPathing(self):

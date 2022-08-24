@@ -58,10 +58,11 @@ class GarageDetection:
         self.network_sub = rospy.Subscriber(
             "neuralNetworkSelector", String, self.allowNeuralNetRun)
         self.garage_position_pub = rospy.Publisher(
-            "GaragePosition", GaragePosition, queue_size=10)
+            "GaragePosition", GaragePosition, queue_size=1)
 
-    def getGaragePosition(self, depthAndColorFrame):
-        print('sadja')
+    def movingaverage(interval, window_size):
+        window = np.ones(int(window_size))/float(window_size)
+        return np.convolve(interval, window, 'same')
 
     def calibrationCallback(self, calibrationMsg):
         self.calibration = calibrationMsg
@@ -176,3 +177,9 @@ class GarageDetection:
         pose.pose.orientation.y = quat[1]
         pose.pose.orientation.z = quat[2]
         pose.pose.orientation.w = quat[3]
+
+
+if __name__ == '__main__':
+    print("RUNNING")
+    drive = driveDistance()
+    drive.run()

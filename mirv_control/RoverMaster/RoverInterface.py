@@ -8,6 +8,7 @@ import actionlib
 import time
 from std_msgs.msg import Float64, Float64MultiArray, String
 from mirv_control.msg import garage_state_msg
+from mirv_control.msg import garage_position as GaragePosition
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import Twist
@@ -98,6 +99,8 @@ class RoverInterface():
             "intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
         self.cloud_sub = rospy.Subscriber(
             "CloudCommands", String, self.cloud_callback)
+        self.garage_location_sub = rospy.Subscriber(
+            "GaragePosition", GaragePosition, self.garage_location_callback)
 
         # PUBLISHERS
         self.sqlPub = rospy.Publisher(
@@ -129,6 +132,7 @@ class RoverInterface():
         self.limit_switches = [1, 1, 0, 0]
         self.heartBeatTime = 0
         self.tasks = []
+        self.garageLocation = None
 
     # def setPiLitSequence(self, is_wave: bool):
     #     self.pilit_controller.patternType(is_wave)
@@ -146,6 +150,9 @@ class RoverInterface():
     def loadRoverMacro(self, macro):
         self.RoverMacro = macro
         rospy.loginfo("Rover Macros loaded into Rover Interface")
+
+    def garage_location_callback(self, msg):
+        self.garageLocation = msg
 
     def garage_state_callback(self, msg):
         self.garage_state = msg.state
@@ -329,7 +336,14 @@ class RoverInterface():
         self.pickupClient.wait_for_result()
         return self.pickupClient.get_result()
 
-    def garage_client_goal(self, angleToTarget):
+    def drive_into_garage(self, angleToTarget):
+        mirv_control.msg.GarageGoal.runPID = True
+        mirv_control.msg.GarageGoal.estimatedGarageAngle = angleToTarget
+        goal = mirv_control.msg.GarageGoal
+        self.garageClient.send_goal(goal)
+        self.garageClient.wait_for_result()
+
+    def indentify_garage_orientation(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
         mirv_control.msg.GarageGoal.estimatedGarageAngle = angleToTarget
         goal = mirv_control.msg.GarageGoal
