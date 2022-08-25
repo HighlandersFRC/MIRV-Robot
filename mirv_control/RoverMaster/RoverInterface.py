@@ -233,27 +233,10 @@ class RoverInterface():
     def updateOdometry(self, data):
 
         #Heading is in radians
-
-        if hasattr(self, "globalHeading") and self.globalHeading != 0:
-            #print("Global Heading", self.globalHeading)
-            offset_meters =  0.3048
-            de = offset_meters * math.cos(self.globalHeading)
-            dn = offset_meters * math.sin(self.globalHeading)
-
-            R=6378137
-
-            #Coordinate offsets in radians
-            dLat = dn/R
-            dLon = de/(R*math.cos(math.radians(data.latitude)))
-
-            
-
-            self.latitude = data.latitude + math.degrees(dLat) 
-            self.longitude = data.longitude + math.degrees(dLon)
-
-        else:
-            self.latitude = data.latitude
-            self.longitude = data.longitude
+        
+        
+        self.latitude = data.latitude
+        self.longitude = data.longitude
         self.altitude = data.altitude
 
     def updateTruckOdom(self, data):
@@ -287,8 +270,29 @@ class RoverInterface():
         msg.side.data = intakeSide
 
         navSatFixMsg = NavSatFix()
-        navSatFixMsg.latitude = self.latitude
-        navSatFixMsg.longitude = self.longitude
+
+        if hasattr(self, "globalHeading") and self.globalHeading != 0:
+            print("Global Heading", self.globalHeading)
+            offset_meters =  0.3048
+            de = offset_meters * math.cos(self.globalHeading)
+            dn = offset_meters * math.sin(self.globalHeading)
+
+            print("Offset North ", dn,"Offset East", de)
+
+            R=6378137
+
+            #Coordinate offsets in radians
+            dLat = dn/R
+            dLon = de/(R*math.cos(math.radians(self.latitude)))
+
+            
+            navSatFixMsg.latitude = self.latitude + math.degrees(dLat) 
+            navSatFixMsg.longitude = self.longitude + math.degrees(dLon)
+
+        else:
+            navSatFixMsg.latitude = self.latitude
+            navSatFixMsg.longitude = self.longitude
+        
         navSatFixMsg.altitude = self.altitude
         
         msg.gps_pos = navSatFixMsg

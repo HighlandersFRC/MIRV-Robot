@@ -198,10 +198,10 @@ class roverMacros():
 
             # distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
             
-            if distanceToPlacement > 2:
+            if distanceToPlacement > 3:
                 print(f"Rover is {distanceToPlacement} m from pilit. Performing Path Pickup.")
                 distanceBeforePiLit = distanceToPlacement - 1
-                helperDistance = distanceToPlacement - 1
+                helperDistance = distanceBeforePiLit - 1
 
                 targetX = distanceBeforePiLit * math.cos(angleToPlacement) + currentX
                 targetY = distanceBeforePiLit * math.sin(angleToPlacement) + currentY
@@ -209,7 +209,7 @@ class roverMacros():
                 helperPointX = helperDistance * math.cos(angleToPlacement) + currentX
                 helperPointY = helperDistance * math.sin(angleToPlacement) + currentY
 
-                print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY, "Target Plocation", targetX, targetX)
+                print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY, "Target Location", targetX, targetY, "Helper Location", helperPointX, helperPointY)
 
                 targetPoint = [targetX, targetY]
                 helperPoint = [helperPointX, helperPointY]
