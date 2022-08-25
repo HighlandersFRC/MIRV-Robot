@@ -58,6 +58,8 @@ add_message_files(
    pilit_status_msg.msg
    laneInformation.msg
    garage_state_msg.msg
+   garage_position.msg
+   camera_calibration.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -81,6 +83,10 @@ add_action_files(
   FILES IMUCalibration.action
   DIRECTORY action
   FILES Garage.action
+  DIRECTORY action
+  FILES DriveDistance.action
+  DIRECTORY action
+  FILES PointTurn.action
   DIRECTORY action
   FILES general.action
   DIRECTORY action

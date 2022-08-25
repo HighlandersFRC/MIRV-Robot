@@ -1,0 +1,4 @@
+float64 rover_position_x_from_garage
+float64 rover_position_y_from_garage
+float64 angle_to_garage
+float64 depth_to_garage

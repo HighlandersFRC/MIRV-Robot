@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Effectively Robot Main, responsible for 
+# Effectively Robot Main, responsible for
 # periodicly checking for faults,
 # managing hierarchy of systems
 # calling macros or subsystem calls
@@ -15,6 +15,7 @@ import threading
 from PiLitController import PiLitControl as PiLitController
 from RoverMacros import roverMacros as RoverMacros
 # from FaultState import FaultStates
+
 
 class RoverController():
     def __init__(self):
@@ -32,12 +33,15 @@ class RoverController():
     def updateStatus(self):
         while not rospy.is_shutdown():
             self.interface.stateWatchdog()
-            #self.interface.cloudController_client_goal(False)
+            # self.interface.cloudController_client_goal(False)
             self.rate.sleep()
         print("exited loop")
 
     def main(self):
-        self.interface.changeNeuralNetworkSelected("piLit")
+        print("RoverController MAIN")
+        self.interface.changeNeuralNetworkSelected("aruco")
+        # self.macros.testPointTurn()
+        # self.macros.testDriveDistance()
         # point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
         # point2 = self.interface.CoordConversion_client_goal([40.4740120, -104.9696378])
         # point3 = self.interface.CoordConversion_client_goal([40.474175983263564,  -104.96935822069644])
@@ -61,14 +65,16 @@ class RoverController():
 
         # points = self.interface.getLatestSQLPoints()
 
+
 if __name__ == "__main__":
     controller = RoverController()
     time.sleep(4)
+    #controller.main()
     #updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
     #mainThread = threading.Thread(target = controller.main, name = "thread2")
     #print("Starting threads...")
-    #updateStatusThread.start()
-    #mainThread.start()
+    # updateStatusThread.start()
+    # mainThread.start()
 
     #print("Threads started")
     controller.updateStatus()
