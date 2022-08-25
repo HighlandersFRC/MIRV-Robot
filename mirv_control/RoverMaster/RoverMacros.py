@@ -29,20 +29,21 @@ class roverMacros():
 
         # Step 0: Enable garage detection
         self.interface.changeNeuralNetworkSelected("aruco")
+        time.sleep(5)
 
-        # Step 1: Deploy garage
-        self.interface.deployGarage()
+        # # Step 1: Deploy garage
+        # self.interface.deployGarage()
 
-        # Step 2: Drive to front of garage
-        lineUpPoint1 = [5, 0]
-        lineUpPoint2 = [3.5, 0]
-        lineUpPoint3 = [1, 0]
-        lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
-        self.interface.PP_client_goal(lineUpPoints)
+        # # Step 2: Drive to front of garage
+        # lineUpPoint1 = [5, 0]
+        # lineUpPoint2 = [3.5, 0]
+        # lineUpPoint3 = [1, 0]
+        # lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
+        # self.interface.PP_client_goal(lineUpPoints)
 
-        ## TODO: Cancel
-        if self.interface.cancelled:
-            return
+        # ## TODO: Cancel
+        # if self.interface.cancelled:
+        #     return
 
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
@@ -51,24 +52,26 @@ class roverMacros():
             rospy.logerr("Garage was not found in frame - Step 2")
             self.interface.changeNeuralNetworkSelected("none")
             return
-        self.interface.pointTurn(garage_angle)
+        self.interface.pointTurn(garage_angle, 10)
 
         # Step 4: itentify offsets to aruco tag
-        time.sleep(2)
+        time.sleep(5)
         x = self.interface.garageLocation.rover_position_x_from_garage
         y = self.interface.garageLocation.rover_position_y_from_garage
         if not x or not y:
             rospy.logerr("Garage was not found in frame - Step 3")
             self.interface.changeNeuralNetworkSelected("none")
             return
-        angle_to_perpendicular_degrees = 90 - (180 / math.pi) * math.atan2(
-            y, x)
-        distance_meters = y
+
+        theta_1 = (180 / math.pi) * math.atan2(y, x)
+        theta_2 = (90 - abs(theta_1))*theta_1/abs(theta_1)
+        angle_to_perpendicular_degrees = theta_2
+        distance_meters = abs(y)
 
         # Step 5: Turn towards perpendicular vector of garage
         print(
             f"Turning to relative angle of {angle_to_perpendicular_degrees} degrees")
-        self.interface.pointTurn(angle_to_perpendicular_degrees, 5)
+        self.interface.pointTurn(angle_to_perpendicular_degrees, 10)
 
         # Step 6: Drive to directly in front of garage
         print(f"Moving distance of {distance_meters} meters")
@@ -76,16 +79,16 @@ class roverMacros():
 
         # Step 7: Turn to face garage
         print(f"Turning to relative angle of {90} degrees")
-        self.interface.pointTurn(90, 5)
+        self.interface.pointTurn(-90, 10)
 
-        # Step 8: Drive directly towards back of garage
-        self.interface.garage_client_goal(0)
+        # # Step 8: Drive directly towards back of garage
+        # self.interface.garage_client_goal(0)
 
-        # Step 9: Retract garage
-        self.interface.retractGarage()
+        # # Step 9: Retract garage
+        # self.interface.retractGarage()
 
-        # Step 10: Disable camera neural network
-        self.interface.changeNeuralNetworkSelected("none")
+        # # Step 10: Disable camera neural network
+        # self.interface.changeNeuralNetworkSelected("none")
 
     def dockNoPathing(self):
         self.interface.changeNeuralNetworkSelected("aruco")
@@ -207,7 +210,7 @@ class roverMacros():
         self.interface.pointTurn(180, 10)
 
     def testDriveDistance(self):
-        self.interface.driveDistance(1, 0.25, .1)
+        self.interface.driveDistance(1.0, 0.25, 0.1)
 
     def pickupAllPiLits(self, reverse):
         self.interface.changeNeuralNetworkSelected("piLit")

@@ -72,14 +72,14 @@ class RoverInterface():
             "TeleopDrive", mirv_control.msg.generalAction)
         self.TeleopClient.wait_for_server()
         print("connected to teleop drive")
-        print("connected to PointTurn Server")
         self.pointTurnClient = actionlib.SimpleActionClient(
             "PointTurnRelativeAS", mirv_control.msg.PointTurnAction)
         self.pointTurnClient.wait_for_server()
-        print("connected to driveDistance Server")
+        print("connected to PointTurn Server")
         self.driveDistanceClient = actionlib.SimpleActionClient(
             "DriveDistanceAS", mirv_control.msg.DriveDistanceAction)
-        self.pointTurnClient.wait_for_server()
+        self.driveDistanceClient.wait_for_server()
+        print("connected to driveDistance Server")
         # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.GeneratePlacementLocationsAction)
         # self.PlacementGeneratorClient.wait_for_server()
         # print("connected to placement generator")
@@ -632,6 +632,7 @@ class RoverInterface():
         self.lastmsg = pickle.dumps(msg)
 
     def pointTurn(self, targetAngle, successThreshold):
+        print(f"INITIATING POINT TURN WITH {targetAngle} and {successThreshold}")
         mirv_control.msg.PointTurnGoal.targetAngle = targetAngle
         mirv_control.msg.PointTurnGoal.successThreshold = successThreshold
         goal = mirv_control.msg.PointTurnGoal
@@ -640,10 +641,10 @@ class RoverInterface():
         return self.pointTurnClient.get_result()
 
     def driveDistance(self, targetDistance, velocityMPS, successThreshold):
-        mirv_control.msg.driveDistanceGoal.targetDistance = targetDistance
-        mirv_control.msg.driveDistanceGoal.velocityMPS = velocityMPS
-        mirv_control.msg.driveDistanceGoal.successThreshold = successThreshold
-        goal = mirv_control.msg.driveDistanceGoal
+        mirv_control.msg.DriveDistanceGoal.targetDistanceMeters = targetDistance
+        mirv_control.msg.DriveDistanceGoal.velocityMPS = velocityMPS
+        mirv_control.msg.DriveDistanceGoal.successThreshold = successThreshold
+        goal = mirv_control.msg.DriveDistanceGoal
         self.driveDistanceClient.send_goal(goal)
         self.driveDistanceClient.wait_for_result()
         return self.driveDistanceClient.get_result()

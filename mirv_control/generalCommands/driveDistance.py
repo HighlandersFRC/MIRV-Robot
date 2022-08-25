@@ -12,19 +12,19 @@ import actionlib
 import mirv_control.msg as msg
 import asyncio
 
-rospy.init_node("driveDistance")
 
 
 class driveDistance:
     def __init__(self):
-        self._feedback = msg.PointTurnFeedback()
-        self._result = msg.PointTurnResult()
+        rospy.init_node("driveDistance")
+        self._feedback = msg.DriveDistanceResult()
+        self._result = msg.DriveDistanceResult()
 
         self._action_name = "DriveDistanceAS"
         self._as = actionlib.SimpleActionServer(
-            self._action_name, msg.MovementToPiLitAction, auto_start=False)
-        self._as.register_goal_callback(self.turnToTarget)
-        self._as.register_preempt_callback(self.preemptedPointTurn)
+            self._action_name, msg.DriveDistanceAction, auto_start=False)
+        self._as.register_goal_callback(self.driveDistance)
+        self._as.register_preempt_callback(self.preemptedDriveDistance)
         self._as.start()
 
         self.powerdrive_pub = rospy.Publisher(
@@ -64,7 +64,7 @@ class driveDistance:
         self.reachedEstimate = False
         self.allowSearch = False
 
-    def getDistanceError(timeStart, velocity, targetDistance):
+    def getDistanceError(self, timeStart, velocity, targetDistance):
         # timeDelta: seconds, velocity: meters per second, targeDistance: meters
         timeDelta = time.time() - timeStart
         return targetDistance - timeDelta * velocity
@@ -81,7 +81,9 @@ class driveDistance:
 
         distanceError = self.getDistanceError(
             timeStart, velocityMPS, targetDistanceMeters)
-        self.reachedTarget = False
+        reachedTarget = False
+
+        prevTime = time.time()
 
         while(reachedTarget == False):
             distanceError = self.getDistanceError(
@@ -93,6 +95,13 @@ class driveDistance:
 
             self.velocitydrive_pub.publish(self.velocityMsg)
 
+
+            if (time.time() - prevTime > 0.1):
+                prevTime = time.time()
+                print(f"Current Set Point: {targetDistanceMeters}, Current Position: {(time.time()-timeStart)*velocityMPS}")
+                print(f"Setting Velocity to {velocityMPS * direction}")
+                print(f"ERROR: {distanceError}")
+
             if abs(distanceError) < successThreshold:
                 reachedTarget = True
                 self.velocityMsg.linear.x = 0
@@ -103,25 +112,16 @@ class driveDistance:
         self._result.distanceError = distanceError
         self._as.set_succeeded(self._result)
 
-    def preemptedPointTurn(self):
+    def preemptedDriveDistance(self):
         if(self._as.is_new_goal_available()):
             print("point turn preempt received")
             self._as.set_preempted()
         else:
             print("aborting point turn")
-            self.cancelCallback()
+            self._as.set_aborted()
 
     def run(self):
-        try:
-            rospy.spin()
-        except KeyboardInterrupt:
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = 0
-
-            print(self.velocityMsg)
-            self.velocitydrive_pub.publish(self.velocityMsg)
-        except:
-            print("an error occurred in purePursuit.py")
+        rospy.spin()
 
 
 if __name__ == '__main__':

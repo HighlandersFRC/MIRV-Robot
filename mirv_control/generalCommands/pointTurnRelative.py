@@ -10,19 +10,18 @@ from PID import PID
 from geometry_msgs.msg import Twist
 import actionlib
 import mirv_control.msg as msg
-import asyncio
-
-rospy.init_node("pointTurnRelative")
 
 
-class pointTurnRelative:
+
+class pointTurnRelative():
     def __init__(self):
+        rospy.init_node("pointTurnRelative", anonymous=True)
         self._feedback = msg.PointTurnFeedback()
         self._result = msg.PointTurnResult()
 
         self._action_name = "PointTurnRelativeAS"
         self._as = actionlib.SimpleActionServer(
-            self._action_name, msg.MovementToPiLitAction, auto_start=False)
+            self._action_name, msg.PointTurnAction, auto_start=False)
         self._as.register_goal_callback(self.turnToTarget)
         self._as.register_preempt_callback(self.preemptedPointTurn)
         self._as.start()
@@ -43,6 +42,7 @@ class pointTurnRelative:
         self.kI = 0
         self.kD = 2
         self.setPoint = 0
+        self.PID_SUCCESS_THRESHOLD = 0.2
 
         self.setAllZeros()
 
@@ -50,6 +50,8 @@ class pointTurnRelative:
         self.pid.setMaxMinOutput(0.5)
         self.pid.setContinuous(360, 0)
         self.pid.setIZone(8)
+
+        self.lastImuTime = time.time()
 
     def setAllZeros(self):
         self.imu = 0
@@ -67,42 +69,59 @@ class pointTurnRelative:
         self.reachedEstimate = False
         self.allowSearch = False
 
-    def getAngleError(initialImu, target, imu):
+    def getAngleError(self, initialImu, target, imu):
         # initialImu: 12, target: 6, imu: 10, (10 - 12 + 6) = 4
         # angle error: +4 (turn 4 degreez in positive Z direction to reach target)
-        return (imu - initialImu) - target
+        angleError = ((imu - initialImu) - target) % 360
+        # print(f"ANGLE ERROR: {angleError}")
+        return angleError
+
+    def updateIMU(self, data):
+        self.imu = data.data
+        if (time.time() - self.lastImuTime > 1):
+            self.lastImuTime = time.time()
+        # print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
     def turnToTarget(self):
         print("GOT PICKUP CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO PICKUP PI LIT!")
         initialImu = self.imu
-        targetAngle = goal.targetAngle
+        targetAngle = (initialImu + goal.targetAngle)%360
         successThreshold = goal.successThreshold
-        angleError = self.getAngleError(initialImu, targetAngle, self.imu)
-        self.estimatePID.setSetPoint(targetAngle)
-        self.reachedTarget = False
+        print(f"Target angle: {targetAngle}, Success Threshold: {successThreshold}")
+        # angleError = self.getAngleError(initialImu, targetAngle, self.imu)
+        self.pid.setSetPoint(targetAngle)
+        reachedTarget = False
+
+        prevTime = time.time()
 
         while(reachedTarget == False):
-            angleError = self.getAngleError(initialImu, targetAngle, self.imu)
+            angularVelPID = self.pid.updatePID(self.imu)  # this returns in radians/sec
 
-            angularVelPID = self.estimatePID.updatePID(
-                self.angleError)  # this returns in radians/sec
 
             self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = angularVelPID
+            self.velocityMsg.angular.z = -angularVelPID
 
             self.velocitydrive_pub.publish(self.velocityMsg)
 
-            if(abs(angleError) < successThreshold):
+            if (time.time() - prevTime > 0.2):
+                prevTime = time.time()
+                print(f"Current Set Point: {self.pid.setPoint}, Current Angle: {self.imu}")
+                print(f"Setting Angular Velocity to {angularVelPID}")
+                print(f"ERROR: {abs(self.imu - targetAngle)}")
+
+            if(abs(self.imu - targetAngle) < successThreshold and abs(angularVelPID) < self.PID_SUCCESS_THRESHOLD):
+                print("SUCCESSFULLY POINT TURNED")
                 reachedTarget = True
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = 0
                 self.velocitydrive_pub.publish(self.velocityMsg)
-        self.setAllZeros()
+        print(f"ERROR: {abs(self.imu - targetAngle)}")
         self._result.finished = reachedTarget
-        self._result.angleError = angleError
+        self._result.angleError = self.imu - targetAngle
         self._as.set_succeeded(self._result)
+        self.setAllZeros()
 
     def preemptedPointTurn(self):
         if(self._as.is_new_goal_available()):
@@ -110,22 +129,13 @@ class pointTurnRelative:
             self._as.set_preempted()
         else:
             print("aborting point turn")
-            self.cancelCallback()
+            self._as.set_aborted()
 
     def run(self):
-        try:
-            rospy.spin()
-        except KeyboardInterrupt:
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = 0
-
-            print(self.velocityMsg)
-            self.velocitydrive_pub.publish(self.velocityMsg)
-        except:
-            print("an error occurred in purePursuit.py")
+        rospy.spin()
 
 
+turn = pointTurnRelative()
 if __name__ == '__main__':
     print("RUNNING")
-    turn = pointTurn()
     turn.run()
