@@ -11,10 +11,9 @@ import ros_numpy
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from mirv_control.msg import garage_position as GaragePosition
 from mirv_control.msg import camera_calibration as CameraCalibrationMsg
-from tf2_geometry_msgs import PoseStamped
-from scipy.spatial.transform import Rotation
 
-EULER_ORDER = 'zyx' 
+
+
 class GarageDetection:
 
     def __init__(self):
@@ -22,13 +21,13 @@ class GarageDetection:
         self.runningDetection = False
 
         self.hFOV = 63
-        self.horizontalPixels = 640
-        self.verticalPixels = 480
+        self.horizontalPixels = 1280
+        self.verticalPixels = 720
         self.degreesPerPixel = self.hFOV/self.horizontalPixels
 
         self.calibration = CameraCalibrationMsg()
-        self.calibration.matrix = np.array([[ 5.3056286139388271e+02, 0., 3.4914697544458500e+02], [0.,
-            5.4078105552029069e+02, 2.0340805917068764e+02], [0., 0., 1.]])
+        self.calibration.matrix = np.array([[ 5.3056286139388271e+02, 0., 1280/2], [0.,
+            5.4078105552029069e+02, 720/2], [0., 0., 1.]])
         self.calibration.distortion = np.array([ 1.0776936782086934e+00, -3.0943308900397768e+00,
             2.8548442856634527e-02, 5.6194055495202615e-02,
             3.3301192908663362e+00])
@@ -37,7 +36,7 @@ class GarageDetection:
         self.calibration.verticalPixels = self.verticalPixels
 
         self.arucoTagId = 0
-        self.markerSize = 8 * 0.0254  # Full size of marker, in meters
+        self.markerSize = 6 * 0.0254  # Full size of marker, in meters
         self.arucoDict = aruco.Dictionary_get(aruco.DICT_4X4_50)
         self.arucoParameters = aruco.DetectorParameters_create()
 
@@ -103,24 +102,9 @@ class GarageDetection:
             if 0 in ids:
                 rvec, tvec = marker_r_vec.reshape(
                     (3, 1)), marker_t_vec.reshape((3, 1))
-
-                garage_pose_from_camera = self.getPoseFromVectors(rvec, tvec)
-                poseZero = PoseStamped()
-                poseZero.pose.position.x = 0
-                poseZero.pose.position.y = 0
-                poseZero.pose.position.z = 0
-                poseZero.pose.orientation.x = 0
-                poseZero.pose.orientation.y = 0
-                poseZero.pose.orientation.z = 0
-                poseZero.pose.orientation.w = 1
-
-                camera_pose_from_garage = self.get_frame_transform(garage_pose_from_camera, poseZero)
-                rover_position_x_from_garage = camera_pose_from_garage.pose.position.x
-                rover_position_y_from_garage = camera_pose_from_garage.pose.position.y
-
-                # rvec_inv, tvec_inv = self.invertCameraPerspective(rvec, tvec)
-                # rover_position_x_from_garage = tvec_inv[2][0]
-                # rover_position_y_from_garage = -tvec_inv[0][0]
+                rvec_inv, tvec_inv = self.invertCameraPerspective(rvec, tvec)
+                rover_position_x_from_garage = tvec_inv[2][0]
+                rover_position_y_from_garage = -tvec_inv[0][0]
                 angle, depth = self.getPositionWithinFrame(corner.reshape(4, 2, 1), depthFrame)
                 return rover_position_x_from_garage, rover_position_y_from_garage, angle, depth
         return None, None, None, None
@@ -157,89 +141,39 @@ class GarageDetection:
             depthFrame = ros_numpy.numpify(data.depth_frame)
             self.detect_markers(frame, depthFrame)
 
-    def getPoseFromVectors(self, rvec, tvec, id=""):
-        # Generate PoseStamped obj from rvec and tvec
-        pose = PoseStamped()
-        pose.header.stamp = rospy.Time.now()
-        pose.header.frame_id = id
+    # def getPoseFromVectors(self, rvec, tvec, id=""):
+    #     # Generate PoseStamped obj from rvec and tvec
+    #     pose = PoseStamped()
+    #     pose.header.stamp = rospy.Time.now()
+    #     pose.header.frame_id = id
 
-        # Apply linear bias to the translation estimates
-        # x = tvecs[0][0][2]/1.184 + 0.110
-        # y = -tvecs[0][0][0]/1.032 + 0.243
-        # z = -tvecs[0][0][1]/1.151 - 0.297
-        # dist = np.sqrt(x**2 + y**2 + z**2)
-        # x = x - 0.008*dist + 0.031
-        # y = y + 0.049*dist - 0.222
-        # z = z - 0.062*dist + 0.281
-        pose.pose.position.x = tvec[2][0]
-        pose.pose.position.y = -tvec[0][0]
-        pose.pose.position.z = -tvec[1][0]
+    #     # Apply linear bias to the translation estimates
+    #     # x = tvecs[0][0][2]/1.184 + 0.110
+    #     # y = -tvecs[0][0][0]/1.032 + 0.243
+    #     # z = -tvecs[0][0][1]/1.151 - 0.297
+    #     # dist = np.sqrt(x**2 + y**2 + z**2)
+    #     # x = x - 0.008*dist + 0.031
+    #     # y = y + 0.049*dist - 0.222
+    #     # z = z - 0.062*dist + 0.281
+    #     pose.pose.position.x = tvec[2][0]
+    #     pose.pose.position.y = -tvec[0][0]
+    #     pose.pose.position.z = -tvec[1][0]
 
-        # Swap the angles around to correctly represent our coordinate system
-        # Aruco puts zero at the tag, with z facing out...
-        # We want x forward, y left, z up, euler order zyx = ypr
-        rvecs_reordered = [rvec[2][0], -rvec[0][0], -rvec[1][0]]
-        r = Rotation.from_rotvec(rvecs_reordered)
-        est_ypr = r.as_euler('zyx')
-        quat = self.eul2quat(est_ypr[:, None])
-        # r = R.from_euler('zyx', est_ypr + [np.pi, 0, np.pi])
-        # quat = r.as_quat()
-        # print(quat[:])
-        # print(pose.pose.orientation)
-        pose.pose.orientation.x = quat[0]
-        pose.pose.orientation.y = quat[1]
-        pose.pose.orientation.z = quat[2]
-        pose.pose.orientation.w = quat[3]
-
-
-    # Converts euler angles into a quaternion, using the euler order described in constants.py
-    def eul2quat(self, eul):
-        r = Rotation.from_euler(EULER_ORDER, eul[:, 0])
-        quat = r.as_quat()
-        return quat
-
-
-    def get_frame_transform(self, from_frame, to_frame):
-        position = [0, 0, 0]
-        position[0] = from_frame.position.x
-        position[1] = from_frame.position.y
-        position[2] = from_frame.position.z
-        quat = [0, 0, 0, 0]
-        quat[0] = from_frame.orientation.x
-        quat[1] = from_frame.orientation.y
-        quat[2] = from_frame.orientation.z
-        quat[3] = from_frame.orientation.w
-        t1 = position
-        r1 = Rotation.from_quat(quat)
-        R1 = r1.as_dcm()
-
-        position = [0, 0, 0]
-        position[0] = to_frame.position.x
-        position[1] = to_frame.position.y
-        position[2] = to_frame.position.z
-        quat = [0, 0, 0, 0]
-        quat[0] = to_frame.orientation.x
-        quat[1] = to_frame.orientation.y
-        quat[2] = to_frame.orientation.z
-        quat[3] = to_frame.orientation.w
-        t2 = position
-        r2 = Rotation.from_quat(quat)
-        R2 = r2.as_dcm()
-
-        tz = (np.transpose(R1).dot(t2) - np.transpose(R1).dot(t1))
-        Rz = np.transpose(R1).dot(R2)
-        rz = Rotation.from_dcm(Rz)
-        rz = rz.as_quat()
-
-        result = PoseStamped()
-        result.position.x = tz[0]
-        result.position.y = tz[1]
-        result.position.z = tz[2]
-        result.orientation.x = rz[0]
-        result.orientation.y = rz[1]
-        result.orientation.z = rz[2]
-        result.orientation.w = rz[3]
-        return result
+    #     # Swap the angles around to correctly represent our coordinate system
+    #     # Aruco puts zero at the tag, with z facing out...
+    #     # We want x forward, y left, z up, euler order zyx = ypr
+    #     rvecs_reordered = [rvec[2][0], -rvec[0][0], -rvec[1][0]]
+    #     r = R.from_rotvec(rvecs_reordered)
+    #     est_ypr = r.as_euler('zyx')
+    #     quat = conversion_lib.eul2quat(est_ypr[:, None])
+    #     # r = R.from_euler('zyx', est_ypr + [np.pi, 0, np.pi])
+    #     # quat = r.as_quat()
+    #     # print(quat[:])
+    #     # print(pose.pose.orientation)
+    #     pose.pose.orientation.x = quat[0]
+    #     pose.pose.orientation.y = quat[1]
+    #     pose.pose.orientation.z = quat[2]
+    #     pose.pose.orientation.w = quat[3]
 
     def run(self):
         rospy.spin()

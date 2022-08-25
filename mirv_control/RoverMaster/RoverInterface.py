@@ -262,7 +262,7 @@ class RoverInterface():
     def updateOdometry(self, data):
 
         # Heading is in radians
-
+        '''
         if hasattr(self, "globalHeading") and self.globalHeading != 0:
             #print("Global Heading", self.globalHeading)
             offset_meters = 0.3048
@@ -277,7 +277,7 @@ class RoverInterface():
 
             self.latitude = data.latitude + math.degrees(dLat)
             self.longitude = data.longitude + math.degrees(dLon)
-
+        '''
         else:
             self.latitude = data.latitude
             self.longitude = data.longitude

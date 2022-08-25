@@ -31,14 +31,13 @@ class roverMacros():
         self.interface.changeNeuralNetworkSelected("aruco")
         time.sleep(5)
 
-        # # Step 1: Deploy garage
-        # self.interface.deployGarage()
+        # Step 1: Deploy garage
+        self.interface.deployGarage()
 
         # # Step 2: Drive to front of garage
-        # lineUpPoint1 = [5, 0]
-        # lineUpPoint2 = [3.5, 0]
-        # lineUpPoint3 = [1, 0]
-        # lineUpPoints = [lineUpPoint1, lineUpPoint2, lineUpPoint3]
+        # lineUpPoint1 = [3, 0]
+        # lineUpPoint2 = [1, 0]
+        # lineUpPoints = [lineUpPoint1, lineUpPoint2]
         # self.interface.PP_client_goal(lineUpPoints)
 
         # ## TODO: Cancel
@@ -52,7 +51,7 @@ class roverMacros():
             rospy.logerr("Garage was not found in frame - Step 2")
             self.interface.changeNeuralNetworkSelected("none")
             return
-        self.interface.pointTurn(garage_angle, 10)
+        self.interface.pointTurn(garage_angle, 5)
 
         # Step 4: itentify offsets to aruco tag
         time.sleep(5)
@@ -71,7 +70,7 @@ class roverMacros():
         # Step 5: Turn towards perpendicular vector of garage
         print(
             f"Turning to relative angle of {angle_to_perpendicular_degrees} degrees")
-        self.interface.pointTurn(angle_to_perpendicular_degrees, 10)
+        self.interface.pointTurn(angle_to_perpendicular_degrees, 5)
 
         # Step 6: Drive to directly in front of garage
         print(f"Moving distance of {distance_meters} meters")
@@ -79,13 +78,15 @@ class roverMacros():
 
         # Step 7: Turn to face garage
         print(f"Turning to relative angle of {90} degrees")
-        self.interface.pointTurn(-90, 10)
+        self.interface.pointTurn(-90*theta_1/abs(theta_1), 5)
 
         # # Step 8: Drive directly towards back of garage
-        # self.interface.garage_client_goal(0)
+        # print(f"Driving Into Garage")
+        # self.interface.drive_into_garage(0)
 
-        # # Step 9: Retract garage
-        # self.interface.retractGarage()
+        # Step 9: Retract garage
+        print(f"Retracting Garage")
+        self.interface.retractGarage()
 
         # # Step 10: Disable camera neural network
         # self.interface.changeNeuralNetworkSelected("none")
@@ -93,7 +94,7 @@ class roverMacros():
     def dockNoPathing(self):
         self.interface.changeNeuralNetworkSelected("aruco")
         self.interface.deployGarage()
-        self.interface.garage_client_goal(0)
+        self.interface.drive_into_garage(0)
         self.interface.changeNeuralNetworkSelected("none")
 
     def placePiLitFromSide(self, timeout, intakeSide):
