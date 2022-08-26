@@ -60,6 +60,8 @@ add_message_files(
    garage_state_msg.msg
    garage_position.msg
    camera_calibration.msg
+   aruco_detection.msg
+   aruco_detections.msg
  )
 
 ## Generate services in the 'srv' folder
