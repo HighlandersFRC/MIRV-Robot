@@ -32,7 +32,12 @@ class PickupPilit():
         self.allowSearch = False
         self.intakeSide = "switch_left"
 
-        self.piLitPID = PID(0.0175, 0, 2, 0)
+        self.piLitPID = PID(0.02, 0.000001, 2, 0)
+        self.piLitPID.setMaxMinOutput(0.5)
+        self.piLitPID.setContinuous(360,0)
+        self.piLitPID.setIZone(8)
+
+        self.movementPID = PID(0.0175, 0, 2, 0)
         self.piLitPID.setMaxMinOutput(0.5)
         self.piLitPID.setContinuous(360,0)
 
@@ -60,8 +65,8 @@ class PickupPilit():
         if(self.allowSearch == True):
             self.piLitDepth = piLitLocation[0]
             self.piLitAngle = piLitLocation[1]
-            self.setPoint = self.imu - self.piLitAngle
-            print("Pi Lit Angle: ", self.piLitAngle)
+            self.setPoint = self.imu + self.piLitAngle
+            print("Pi Lit Angle: ", self.piLitAngle, "Pi Lit Distance", self.piLitDepth)
             if self.intakeSide == "switch_left":
                 self.setPoint = self.setPoint + 360
             else:
@@ -72,7 +77,7 @@ class PickupPilit():
             self.prevPiLitAngle = self.piLitAngle
             print("SETPOINT: ", self.setPoint)
             self.foundPiLit = True
-            self.allowSearch = False
+            #self.allowSearch = False
 
 
     def set_intake_state(self, state: str):
@@ -110,7 +115,7 @@ class PickupPilit():
                 error = error + 360
         
         self.piLitPID.setSetPoint(angle)
-        while abs(error) > 5 or result > 0.1:
+        while abs(error) > 5 or result > 0.05:
             error = angle - self.imu
             if abs(error) > 180:
                 if error > 0:
@@ -145,14 +150,8 @@ class PickupPilit():
             if not self.foundPiLit:
                 self.turn((self.imu + 60)%360)
                 self.searchForPilits()
-        
-
-
-        
-        
 
         print("Search Complete Found Pi-Lit:", self.foundPiLit)
-
 
         success = False
         # Exit if no pilit was found
@@ -164,6 +163,8 @@ class PickupPilit():
             #self._as.set_succeeded(self._result)
         else:
             print("Aligning", self.imu, self.setPoint)
+
+            #Align Based on Camera Feed
             self.turn(self.setPoint)
 
             # Send Intake Down
@@ -175,8 +176,9 @@ class PickupPilit():
             
             print("Picking Up", self.imu, self.setPoint)
             movementInitTime = time.time()
+            self.movementPID.setSetPoint(self.setPoint)
             while time.time() - movementInitTime < (self.piLitDepth*1.5)/0.25  and self.limit_switches[2] != 1 and self.limit_switches[3] != 1:
-                result = self.piLitPID.updatePID(self.imu) # this returns in radians/sec
+                result = self.movementPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result # This should be negative
                 self.drive(0.25,result)
             

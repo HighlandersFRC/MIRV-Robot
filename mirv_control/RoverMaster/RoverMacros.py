@@ -306,66 +306,11 @@ class roverMacros():
             else:
                 side = "switch_left"
 
-            #result = self.interface.pickup_client_goal(side, 0)
-            #if result.finished:
-            #    print("Recovery Successful")
-            #    self.interface.loadPointToSQL("retrieve", side)
+            result = self.interface.pickup_client_goal(side, 0)
+            if result.finished:
+                print("Recovery Successful")
+                self.interface.loadPointToSQL("retrieve", side)
+            time.sleep(2)
 
-            
-
-
-            '''
-            # distanceToPlacement = math.sqrt((math.pow(placementX - currentX, 2)) + (math.pow(placementY - currentY, 2)))
-            
-            if distanceToPlacement > 3:
-                print(f"Rover is {distanceToPlacement} m from pilit. Performing Path Pickup.")
-
-
-                distanceBeforePiLit = distanceToPlacement - 1
-                helperDistance = distanceBeforePiLit - 1
-
-                targetX = distanceBeforePiLit * \
-                    math.cos(angleToPlacement) + currentX
-                targetY = distanceBeforePiLit * \
-                    math.sin(angleToPlacement) + currentY
-
-                helperPointX = helperDistance * \
-                    math.cos(angleToPlacement) + currentX
-                helperPointY = helperDistance * \
-                    math.sin(angleToPlacement) + currentY
-
-
-                print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY, "Target Location", targetX, targetY, "Helper Location", helperPointX, helperPointY)
-                targetPoint = [targetX, targetY]
-                helperPoint = [helperPointX, helperPointY]
-
-
-                print("Pickup Path:", [helperPoint, targetPoint])
-                angle = self.interface.PP_client_goal([helperPoint, targetPoint])
-                print("Pathing Complete", angle)
-                #if self.interface.cancelled:
-                #   return
-                print("Running Pickup")
-                self.interface.pickup_client_goal(intakeSide, angle)
-            else:
-                print(f"Rover is {distanceToPlacement} to Pi-lit performing basic pickup")
-                #angle = self.interface.PP_client_goal([currentLocationConverted])
-                print("Turning Towards: ", math.degrees(angleToPlacement))
-
-
-                self.interface.pickup_client_goal(
-                    intakeSide, math.degrees(0) % 360)
-
-            print("Rover Location", self.interface.CoordConversion_client_goal([self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
-                  )
-            print("finished pickup")
-
-            self.interface.loadPointToSQL("retrieve", intakeSide)
-
-            if(intakeSide == "switch_right"):
-                intakeSide = "switch_left"
-            else:
-                intakeSide = "switch_right"
-            '''
         self.interface.changeNeuralNetworkSelected("none")
         
