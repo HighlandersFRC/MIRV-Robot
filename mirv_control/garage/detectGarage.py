@@ -11,6 +11,8 @@ import ros_numpy
 
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from mirv_control.msg import garage_position as GaragePosition
+from mirv_control.msg import aruco_detections as ArucoDetections
+from mirv_control.msg import aruco_detection as ArucoDetection
 from mirv_control.msg import camera_calibration as CameraCalibrationMsg
 
 
@@ -72,6 +74,8 @@ class GarageDetection:
             "IntakeCameraFrames", depthAndColorFrame, self.gotFrame)
         self.network_sub = rospy.Subscriber(
             "neuralNetworkSelector", String, self.allowNeuralNetRun)
+        self.garage_detections_pub = rospy.Publisher(
+            "GarageArucoDetections", ArucoDetections, queue_size=1)
         self.garage_position_pub = rospy.Publisher(
             "GaragePosition", GaragePosition, queue_size=1)
 
@@ -151,6 +155,7 @@ class GarageDetection:
         angle = None
         depth = None
         results = {}
+        aruco_detections = []
         for d in detections:
             id = d['id']
             rvec = d['rvec']
@@ -181,6 +186,16 @@ class GarageDetection:
                 'angle': angle_d,
                 'depth': depth_d,
             }
+            detection = ArucoDetection()
+            detection.id = id
+            detection.x = x_r
+            detection.y = y_r
+            aruco_detections.append(detection)
+
+        aruco_detections_obj = ArucoDetections()
+        aruco_detections_obj.detections = aruco_detections
+        self.garage_detections_pub.publish(aruco_detections_obj)
+
         positions = []
         if results.get(1):
             positions.append(results[1])
