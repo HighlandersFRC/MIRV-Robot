@@ -1,0 +1,11 @@
+#goal definition
+float64 targetDistanceMeters
+float64 velocityMPS
+float64 successThreshold
+---
+#result definition
+bool finished
+float64 distanceError
+---
+#feedback
+float64 distanceError

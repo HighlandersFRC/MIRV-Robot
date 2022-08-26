@@ -21,8 +21,8 @@ def quat_2_radians(x, y, z, w):
     roll = math.atan2(2*x*w - 2*x*z, 1-2*y*y - 2*z*z)
     return pitch, yaw, roll
 
-cameraX = 640
-cameraY = 480
+cameraX = 1280
+cameraY = 720
 
 br = CvBridge()
 
@@ -98,7 +98,7 @@ for i in range(400):
     frame = qIsp.get().getCvFrame()
 
     # resize frame for neural nets
-    resizedFrame = cv2.resize(frame, (640, 480), interpolation = cv2.INTER_LINEAR)
+    resizedFrame = cv2.resize(frame, (1280, 720), interpolation = cv2.INTER_LINEAR)
 
     gray = cv2.cvtColor(resizedFrame, cv2.COLOR_BGR2GRAY)
     res = cv2.aruco.detectMarkers(gray,dictionary)

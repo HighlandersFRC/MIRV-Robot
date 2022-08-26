@@ -93,9 +93,10 @@ def piLitDetect(img, frame, depthFrame):
     piLitPrediction = piLitModel(img)[0]
     bboxList = []
     #print("DETECTING...")
-    
+    closest_track_location = None
+    closest_track_distance = 5
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.5):
+        if(score > 0.85):
             # print("GOT A PI LIT")
             print(intakeSide)    
             x0,y0,x1,y1 = bbox
@@ -120,17 +121,24 @@ def piLitDetect(img, frame, depthFrame):
             verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
             if(depth < 3 and depth != 0):
-                # angleToPiLitFromIntake = math.degrees(angleToPiLit)
-                angleToPiLitFromIntake = math.degrees(math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
-                piLitLocation = [depth, angleToPiLitFromIntake]
+                if depth < closest_track_distance:
+                    closest_track_distance = depth               
+                    # angleToPiLitFromIntake = math.degrees(angleToPiLit)
+                    angleToPiLitFromIntake = math.degrees(math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
+                    piLitLocation = [depth, angleToPiLitFromIntake]
 
-                locations = Float64MultiArray()
-                locations.data = piLitLocation
 
-                piLitLocationPub.publish(locations)
+                    locations = Float64MultiArray()
+                    locations.data = piLitLocation
+                    closest_track_location = locations
+
+                    
             else:
                 angleToPiLitFromIntake = math.degrees(angleToPiLit)
             print("DEPTH: ", depth, " ORIGINAL ANGLE: ", math.degrees(angleToPiLit), "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+
+    if closest_track_location is not None:
+        piLitLocationPub.publish(closest_track_location)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
@@ -142,7 +150,7 @@ piLitModel = torch.load(os.path.expanduser("~/mirv_ws/src/MIRV-Robot/mirv_real/C
 piLitModel.eval()
 piLitModel = piLitModel.to(device)
 
-rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
+rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame, queue_size=1)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
 rospy.Subscriber("intake/command", String, intakeCommandCallback)
 rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)

@@ -176,6 +176,15 @@ double getVelocityFromTicksPer100MS(double ticksPer100MS){
 	return (((ticksPer100MS * 10.0) / 2048.0) * wheelCircumference) / 12.0;
 }
 
+void stopDrive(){
+	frontRightDrive.Set(ControlMode::Velocity, 0);
+	backRightDrive.Set(ControlMode::Velocity, 0);
+
+	frontLeftDrive.Set(ControlMode::Velocity, 0);
+	backLeftDrive.Set(ControlMode::Velocity, 0);
+}
+
+
 //pose object for returning odometry info
 class Pose {
 	public:
@@ -262,6 +271,7 @@ class Publisher {
 	ros::Publisher encoderVelocityPub;
 	ros::Publisher intakeLSPub;
 	ros::Publisher touchSensorPub;
+	ros::Publisher encoderPositionPub;
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -313,6 +323,14 @@ class Publisher {
 		touchSensors.data.push_back(rightConvMotor.GetSensorCollection().IsRevLimitSwitchClosed());
 		touchSensorPub.publish(touchSensors);
 	};
+
+	// [left dist, right dist], in meters
+	void publishEncoderPosition(){
+		std_msgs::Float64MultiArray positions;
+		positions.data.push_back(getDistanceFromTicks(frontRightDrive.GetSelectedSensorPosition()));
+		positions.data.push_back(getDistanceFromTicks(frontLeftDrive.GetSelectedSensorPosition()));
+		encoderPositionPub.publish(positions);
+	}
 };
 
 Publisher publisher;
@@ -432,7 +450,15 @@ class Intake {
 				rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				startTime = time(NULL);
+				//double reverseSpeed = getTicksPer100MSFromVelocity(-0.2);
+
+				//frontRightDrive.Set(ControlMode::Velocity, -reverseSpeed);
+				//backRightDrive.Set(ControlMode::Velocity, -reverseSpeed*0.91);
+
+				//frontLeftDrive.Set(ControlMode::Velocity, reverseSpeed);
+				//backLeftDrive.Set(ControlMode::Velocity, reverseSpeed*0.91);
 			} else {
+				//stopDrive();
 				if (side > 0){
 					if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
 						if (time(NULL) - startTime > 4){
@@ -449,9 +475,11 @@ class Intake {
 						} else {
 							intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
 						}
+
 						if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 							rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
 						}
+
 						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 					}
@@ -474,10 +502,14 @@ class Intake {
 						if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 							leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
 						}
+
+
 						rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 					}
 				}
+
+				
 			}
 		}
 
@@ -655,6 +687,9 @@ int main(int argc, char **argv) {
 
 	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 10);
 	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishTouchSensor, publisher));
+
+	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 10);
+	ros::Timer encoderPositionTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderPosition, publisher));
 
 	initializeDriveMotors();
 	initializeIntakeMotors();

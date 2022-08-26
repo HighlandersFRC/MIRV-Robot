@@ -58,6 +58,8 @@ add_message_files(
    pilit_status_msg.msg
    laneInformation.msg
    garage_state_msg.msg
+   garage_position.msg
+   camera_calibration.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -72,7 +74,7 @@ add_action_files(
   DIRECTORY action
   FILES PurePursuit.action
   DIRECTORY action
-  FILES MovementToPiLit.action
+  FILES PickupPilit.action
   DIRECTORY action
   FILES Database.action
   DIRECTORY action
@@ -81,6 +83,10 @@ add_action_files(
   FILES IMUCalibration.action
   DIRECTORY action
   FILES Garage.action
+  DIRECTORY action
+  FILES DriveDistance.action
+  DIRECTORY action
+  FILES PointTurn.action
   DIRECTORY action
   FILES general.action
   DIRECTORY action
@@ -269,5 +275,8 @@ catkin_install_python(PROGRAMS Database/DatabaseController.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS Status/StatusManager.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS piLitRetreival/PickupPIlit.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
