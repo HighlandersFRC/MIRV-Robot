@@ -74,7 +74,7 @@ add_action_files(
   DIRECTORY action
   FILES PurePursuit.action
   DIRECTORY action
-  FILES MovementToPiLit.action
+  FILES PickupPilit.action
   DIRECTORY action
   FILES Database.action
   DIRECTORY action
@@ -275,5 +275,8 @@ catkin_install_python(PROGRAMS Database/DatabaseController.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS Status/StatusManager.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS piLitRetreival/PickupPIlit.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

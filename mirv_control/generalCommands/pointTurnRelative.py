@@ -38,8 +38,8 @@ class pointTurnRelative():
 
         self.imu = 0
 
-        self.kP = 0.0175
-        self.kI = 0
+        self.kP = 0.02
+        self.kI = 0.00001
         self.kD = 2
         self.setPoint = 0
         self.PID_SUCCESS_THRESHOLD = 0.2

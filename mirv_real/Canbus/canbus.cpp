@@ -176,6 +176,15 @@ double getVelocityFromTicksPer100MS(double ticksPer100MS){
 	return (((ticksPer100MS * 10.0) / 2048.0) * wheelCircumference) / 12.0;
 }
 
+void stopDrive(){
+	frontRightDrive.Set(ControlMode::Velocity, 0);
+	backRightDrive.Set(ControlMode::Velocity, 0);
+
+	frontLeftDrive.Set(ControlMode::Velocity, 0);
+	backLeftDrive.Set(ControlMode::Velocity, 0);
+}
+
+
 //pose object for returning odometry info
 class Pose {
 	public:
@@ -441,7 +450,15 @@ class Intake {
 				rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				startTime = time(NULL);
+				//double reverseSpeed = getTicksPer100MSFromVelocity(-0.2);
+
+				//frontRightDrive.Set(ControlMode::Velocity, -reverseSpeed);
+				//backRightDrive.Set(ControlMode::Velocity, -reverseSpeed*0.91);
+
+				//frontLeftDrive.Set(ControlMode::Velocity, reverseSpeed);
+				//backLeftDrive.Set(ControlMode::Velocity, reverseSpeed*0.91);
 			} else {
+				//stopDrive();
 				if (side > 0){
 					if (intakeWheelMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 1){
 						if (time(NULL) - startTime > 4){
@@ -458,9 +475,11 @@ class Intake {
 						} else {
 							intakeWheelMotor.Set(ControlMode::PercentOutput, -0.4 * side);
 						}
+
 						if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 							rightConvMotor.Set(ControlMode::PercentOutput, 0.4);
 						}
+
 						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 					}
@@ -483,10 +502,14 @@ class Intake {
 						if (intakeArmMotor.GetSensorCollection().IsFwdLimitSwitchClosed() == 0){
 							leftConvMotor.Set(ControlMode::PercentOutput, -0.4);
 						}
+
+
 						rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, 0.0);
 					}
 				}
+
+				
 			}
 		}
 
