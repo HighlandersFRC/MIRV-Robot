@@ -199,12 +199,9 @@ class roverMacros():
         else:
             side = "switch_left"
 
-        # if self.interface.cancelled:
-        #    return
-        self.interface.pickup_client_goal(side, 0)
-        # if self.interface.cancelled:
-        #    return
-        self.interface.loadPointToSQL("retrieve", side)
+        result = self.interface.pickup_client_goal(side, 0)
+        if result.finished:
+            self.interface.loadPointToSQL("retrieve", side)
         self.interface.changeNeuralNetworkSelected("none")
 
     def testPointTurn(self):
@@ -280,12 +277,13 @@ class roverMacros():
                 self.interface.PP_client_goal([helperPoint, targetPoint])
             
             
-            elif distanceToPlacement > 1:
-                self.interface.driveDistance(distanceToPlacement -1, 0.25, 0.1)
+            elif distanceToPlacement > 2:
+                self.interface.driveDistance(distanceToPlacement -1.5, 0.25, 0.1)
             
-
+            time.sleep(2)
             currentLocationConverted = self.interface.CoordConversion_client_goal(
                 [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
+
 
             print("Current Point:", currentLocationConverted)
             currentX = currentLocationConverted[0]
@@ -297,6 +295,21 @@ class roverMacros():
             angleToPlacement = math.atan2(deltaY, deltaX) + self.interface.heading
             distanceToPlacement = math.sqrt(deltaX**2 + deltaY**2)
             self.interface.pointTurn(math.degrees(angleToPlacement)%360, 5)
+
+
+            stored = self.interface.getPiLitsStored()
+            if not stored or len(stored) != 2:
+                rospy.logerr("Invalid number of stored Pi-Lits")
+                return
+            if stored[0] < stored[1]:
+                side = "switch_right"
+            else:
+                side = "switch_left"
+
+            #result = self.interface.pickup_client_goal(side, 0)
+            #if result.finished:
+            #    print("Recovery Successful")
+            #    self.interface.loadPointToSQL("retrieve", side)
 
             
 

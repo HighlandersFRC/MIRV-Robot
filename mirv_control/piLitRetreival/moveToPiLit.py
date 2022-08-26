@@ -24,10 +24,10 @@ class piLitPickup:
         #self._as.register_preempt_callback(self.preemptedPickup) #Not being used so removed.
         self._as.start()
 
-        self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10)
+        self.powerdrive_pub = rospy.Publisher("PowerDrive", Float64MultiArray, queue_size = 10) # Unused
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
         self.pilit_location_sub = rospy.Subscriber("piLitLocation", Float64MultiArray, self.updatePiLitLocation)
-        self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
+        self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU) 
         self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
 

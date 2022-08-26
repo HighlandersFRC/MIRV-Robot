@@ -52,10 +52,16 @@ class RoverInterface():
             'PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
+        # self.pickupClient = actionlib.SimpleActionClient(
+        #     "PickupAS", mirv_control.msg.MovementToPiLitAction)
+        # self.pickupClient.wait_for_server()
+        # print("connected to PiLit pickup Server")
+
         self.pickupClient = actionlib.SimpleActionClient(
-            "PickupAS", mirv_control.msg.MovementToPiLitAction)
+            "PickupAS", mirv_control.msg.PickupPilitAction)
         self.pickupClient.wait_for_server()
         print("connected to PiLit pickup Server")
+
         self.TruckCordClient = actionlib.SimpleActionClient(
             'NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
         self.TruckCordClient.wait_for_server()
@@ -297,27 +303,28 @@ class RoverInterface():
 
         navSatFixMsg = NavSatFix()
 
-        if hasattr(self, "globalHeading") and self.globalHeading != 0:
-            print("Global Heading", self.globalHeading)
-            offset_meters =  0.3048
-            de = offset_meters * math.cos(self.globalHeading)
-            dn = offset_meters * math.sin(self.globalHeading)
 
-            print("Offset North ", dn,"Offset East", de)
+        # if hasattr(self, "globalHeading") and self.globalHeading != 0:
+        #     print("Global Heading", self.globalHeading)
+        #     offset_meters =  0.3048
+        #     de = offset_meters * math.cos(self.globalHeading)
+        #     dn = offset_meters * math.sin(self.globalHeading)
 
-            R=6378137
+        #     print("Offset North ", dn,"Offset East", de)
 
-            #Coordinate offsets in radians
-            dLat = dn/R
-            dLon = de/(R*math.cos(math.radians(self.latitude)))
+        #     R=6378137
+
+        #     #Coordinate offsets in radians
+        #     dLat = dn/R
+        #     dLon = de/(R*math.cos(math.radians(self.latitude)))
 
             
-            navSatFixMsg.latitude = self.latitude + math.degrees(dLat) 
-            navSatFixMsg.longitude = self.longitude + math.degrees(dLon)
+        #     navSatFixMsg.latitude = self.latitude + math.degrees(dLat) 
+        #     navSatFixMsg.longitude = self.longitude + math.degrees(dLon)
 
-        else:
-            navSatFixMsg.latitude = self.latitude
-            navSatFixMsg.longitude = self.longitude
+        # else:
+        navSatFixMsg.latitude = self.latitude
+        navSatFixMsg.longitude = self.longitude
         
         navSatFixMsg.altitude = self.altitude
 
@@ -381,12 +388,22 @@ class RoverInterface():
             rospy.logerr("Failed to run pure pursuit action")
 
     def pickup_client_goal(self, intakeSide, angleToTarget):
-        mirv_control.msg.MovementToPiLitGoal.runPID = True
-        mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
-        mirv_control.msg.MovementToPiLitGoal.estimatedPiLitAngle = angleToTarget
-        goal = mirv_control.msg.MovementToPiLitGoal
+        # mirv_control.msg.MovementToPiLitGoal.runPID = True
+        # mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
+        # mirv_control.msg.MovementToPiLitGoal.estimatedPiLitAngle = angleToTarget
+        # goal = mirv_control.msg.MovementToPiLitGoal
+        # self.pickupClient.send_goal(goal)
+        # self.pickupClient.wait_for_result()
+        self.changeNeuralNetworkSelected("piLit")
+        print("Pickup Client Goal", intakeSide, type(intakeSide))
+        mirv_control.msg.PickupPilitGoal.intakeSide = intakeSide
+        goal = mirv_control.msg.PickupPilitGoal
+        print(goal)
         self.pickupClient.send_goal(goal)
         self.pickupClient.wait_for_result()
+        print("Pickup Returned", self.pickupClient.get_result())
+
+
         return self.pickupClient.get_result()
 
     def drive_into_garage(self, angleToTarget):
@@ -481,11 +498,11 @@ class RoverInterface():
         elif command == "wave_reverse":
             self.pilit_controller.inhibit(False)
             self.pilit_controller.patternType(True)
-            self.pilit_controller.reversePattern()
+            self.pilit_controller.reversePattern(True)
         elif command == "wave":
             self.pilit_controller.inhibit(False)
             self.pilit_controller.patternType(True)
-            self.pilit_controller.patternType(True)
+            self.pilit_controller.reversePattern(False)
         elif command == "idle":
             self.pilit_controller.inhibit(True)
         else:
