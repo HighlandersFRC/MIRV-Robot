@@ -40,6 +40,8 @@ class RoverController():
     def main(self):
         print("RoverController MAIN")
         self.interface.changeNeuralNetworkSelected("aruco")
+        #time.sleep(20)
+        #self.interface.pickup_client_goal("switch_right", 0)
         # self.macros.testPointTurn()
         # self.macros.testDriveDistance()
         # point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
@@ -78,3 +80,4 @@ if __name__ == "__main__":
 
     #print("Threads started")
     controller.updateStatus()
+    
