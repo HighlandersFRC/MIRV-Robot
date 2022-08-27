@@ -98,9 +98,9 @@ class roverMacros():
             return
         self.interface.pointTurn(garage_angle, 5)
 
-        # # Step 9: Drive directly towards back of garage
-        # print(f"Driving Into Garage")
-        # self.interface.drive_into_garage(0)
+        # Step 9: Drive directly towards back of garage
+        print(f"Driving Into Garage")
+        self.interface.drive_into_garage(0)
 
         # Step 10: Retract garage
         print(f"Retracting Garage")

@@ -57,6 +57,9 @@ def allowNeuralNetRun(msg):
     else:
         runningNeuralNetwork = False
 
+def updateIMU(msg):
+
+
 def execute_cb(self):
     goal = actionServer.accept_new_goal()
     latitude = goal.latitude
@@ -187,11 +190,33 @@ def generateLines(depthFrame, leftLane, rightLane):
 
         rightSideLaneWidth = rightYIntercept/rightLineSlope
 
+    if(closeDepthRight < closeDepthLeft):
+        xT = xRcostheta - yRSintheta
+        yT = xRsintheta + yRcostheta
+
+        xTruck = currentX + xT
+        yTruck = currentY + yT
+        placementLocation = (closeRightX, closeRightY)
+        angleOfDetection = math.acos(farRightX/farRightY)
+        distanceBetweenPoints = farRightY * math.sin(angleOfDetection)
+
+        angleOfLane = math.atan2((farRightX - closeRightX)/distanceBetweenPoints)
+
+        detected_lanes = {'right': placementLocation}
+    else:
+        placementLocation = (closeLeftX, closeLeftY)
+        angleOfDetection = math.acos(farLeftX/farLeftY)
+        distanceBetweenPoints = farLeftY * math.sin(angleOfDetection)
+
+        angleOfLane = math.atan2((farLeftX - closeLeftX)/distanceBetweenPoints)
+
+        detected_lanes = {'left': placementLocation}
+
     laneWidth = leftSideLaneWidth + rightSideLaneWidth
 
     boundingInformation = [leftLineSlope, leftYIntercept, rightLineSlope, rightYIntercept]
 
-    return laneWidth, boundingInformation
+    return laneWidth, placementLocation, headingOfLane
 
 # # based on which lane, and width of lane, determine locations pi lits should be placed
 # def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
@@ -298,6 +323,8 @@ print("loaded model")
 
 rospy.init_node('laneLineDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
+rospy.Subscriber('CameraIMU', Float64, updateIMU) 
+
 
 placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
 

@@ -78,7 +78,7 @@ class moveToGarage:
         self.intake_command_pub = rospy.Publisher(
             "intake/command", String, queue_size=10)
         self.Garage_location_sub = rospy.Subscriber(
-            "garagePosition", GaragePosition, self.updateGarageLocation)
+            "GaragePosition", GaragePosition, self.updateGarageLocation)
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher(
             "cmd_vel", Twist, queue_size=5)
@@ -116,13 +116,13 @@ class moveToGarage:
     def updateTouchSensorVals(self, touchSensors):
         self.touchSensorVals = touchSensors.data
 
-    def updateGarageLocation(self, location):
-        GarageLocation = location.data
+    def updateGarageLocation(self, GarageLocation):
+        print("UPDATING GARAGE LOCATION")
         print(GarageLocation)
         # if(self.runPID == False and self.driveToGarage == False):
         if(self.allowSearch == True):
-            self.GarageDepth = GarageLocation.angle_to_garage
-            self.GarageAngle = GarageLocation.depth_to_garage
+            self.GarageAngle = GarageLocation.angle_to_garage
+            self.GarageDepth = GarageLocation.rover_position_x_from_garage
             self.setPoint = self.imu + self.GarageAngle
             self.setPoint = self.setPoint % 360
             self.GaragePID.setSetPoint(self.setPoint)
@@ -150,6 +150,7 @@ class moveToGarage:
             self.cancelCallback()
 
     def moveToGarage(self):
+        print("MOVING TO GARAGE moveToGarage")
         # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
         result = self.GaragePID.updatePID(
             self.imu)  # this returns in radians/sec
@@ -177,6 +178,7 @@ class moveToGarage:
         print("GOT GARAGE CALLBACK")
         goal = self._as.accept_new_goal()
         print("ACCEPTED GOAL TO DOCK")
+        self.allowSearch = True
         estimatedGarageAngle = goal.estimatedGarageAngle
         estimatedGarageAngle = estimatedGarageAngle + self.imu
         estimatedGarageAngle = estimatedGarageAngle % 360
@@ -202,12 +204,16 @@ class moveToGarage:
         #         self.velocityMsg.angular.z = 0
         #         self.velocitydrive_pub.publish(self.velocityMsg)
 
-        while(time.time() - searchInitTime < 4):
-            print(time.time() - searchInitTime)
+        time.sleep(4)
+
+        # while(time.time() - searchInitTime < 4):
+        #     continue
+            # print(time.time() - searchInitTime)
 
         if(self.GarageAngle != 0):
             self.runPID = True
         else:
+            print("Garage Angle 0, ending")
             self._result.finished = False
             self.setAllZeros()
             self._as.set_succeeded(self._result)
