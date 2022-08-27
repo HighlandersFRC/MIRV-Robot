@@ -161,10 +161,10 @@ def get_center_coordinates(detected_lanes, heading, lane_width):
                 [0])/2, (detected_lanes['left'][1] + detected_lanes['right'][1])/2)
     elif detected_lanes.get('left'):
         return getEndPoint(
-            detected_lanes['left'][0], detected_lanes['left'][1], heading + 90, lane_width/2)
+            detected_lanes['left'][0], detected_lanes['left'][1], heading - 90, lane_width/2)
     elif detected_lanes.get('right'):
         return getEndPoint(
-            detected_lanes['right'][0], detected_lanes['right'][1], heading - 90, lane_width/2)
+            detected_lanes['right'][0], detected_lanes['right'][1], heading + 90, lane_width/2)
     else:
         return (None, None)
 
@@ -223,12 +223,12 @@ def generate_pi_lit_locations_lat_long(start_lat_long, heading, lane_width, dist
 def test():
     # lat_long_right = (40.47413211566721, -104.96944840997458)
     # lat_long_left = (40.474113038173684, -104.96942333108585)
-    point_right = (3, -3)
-    point_left = (3, 0)
-    detected_lanes = {'right': point_right, 'left': point_left}
+    point_right = (0, 0)
+    # point_left = (0, 0)
+    detected_lanes = {'right': point_right}  # , 'left': point_left}
     heading = 0  # Opposite traffic direction
     lane_width = 3  # meters
-    lane_type = "taper_left_5"
+    lane_type = "taper_right_5"
     print(generate_pi_lit_formation(
         detected_lanes, heading, lane_width, lane_type))
 
