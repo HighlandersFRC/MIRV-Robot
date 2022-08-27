@@ -73,12 +73,12 @@ def updateTruckCoordinates(msg):
 
 def execute_cb():
     goal = actionServer.accept_new_goal()
-    latitude = goal.latitude
-    longitude = goal.latitude
-    heading = goal.heading
+    # latitude = goal.latitude
+    # longitude = goal.latitude
+    # heading = goal.heading
     lane_type = goal.formation_type
 
-    placements = placement.generate_pi_lit_formation((latitude, longitude), heading, lane_width, lane_type)
+    placements = placement.generate_pi_lit_formation(detections, heading, lane_width, lane_type)
     # print(placsements)
     msg = Float64MultiArray()
     msg.data = placements
@@ -246,16 +246,15 @@ rospy.init_node('laneLineDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
 rospy.Subscriber('CameraIMU', Float64, updateIMU) 
 
-
 placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
 
 laneBoundPublisher = rospy.Publisher("laneBound", Float64MultiArray, queue_size = 1)
 rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
-_action_name = "PlacementLocationGenerator"
+_action_name = "LaneLineAS"
 result = ASmsg.GeneratePlacementLocationsResult()
 global actionServer 
-actionServer = actionlib.SimpleActionServer(_action_name, ASmsg.mirv_control.msg.GeneratePlacementLocationsAction, auto_start = False)
+actionServer = actionlib.SimpleActionServer(_action_name, ASmsg.GeneratePlacementLocationsAction, auto_start = False)
 actionServer.register_goal_callback(execute_cb)
 actionServer.start()
 

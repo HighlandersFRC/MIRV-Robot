@@ -1,4 +1,3 @@
-import json
 import math
 
 FEET_TO_METERS = 0.3048
@@ -15,7 +14,7 @@ DEGREES_TO_RADIANS = math.pi / 180
 
 # Traffic Direction: >>>>
 
-# 5 Taper: Taper consisting of 5 pucks spaced at 10 feet longitudinally, equally spaced in the lane or shoulder laterally
+# 5 Taper (right): Taper consisting of 5 pucks spaced at 10 feet longitudinally, equally spaced in the lane or shoulder laterally
 # | --------- | 10 feet                            | lane width
 #                                                 >|
 #                                     >            |
@@ -42,7 +41,7 @@ DEGREES_TO_RADIANS = math.pi / 180
 # width: lane width / (num Pi-lits - 1)
 # height: 10 feet
 # andle from longitudinal direction: +math.atan2(10ft, lane_width/(num_pi_lits - 1)) (negative if on right side of spear)
-def getEndPoint(lat1, lon1, bearing, d):
+def getEndPointLatLng(lat1, lon1, bearing, d):
     R = 6371.0*1000  # Radius of the Earth in meters
     brng = math.radians(bearing)  # convert degrees to radians
     dist = d  # convert distance in meters
@@ -55,6 +54,21 @@ def getEndPoint(lat1, lon1, bearing, d):
     lat2 = math.degrees(lat2)
     lon2 = math.degrees(lon2)
     return lat2, lon2
+
+# >
+# |   \
+# |       \
+# ------------>
+# width: lane width / (num Pi-lits - 1)
+# height: 10 feet
+# andle from longitudinal direction: +math.atan2(10ft, lane_width/(num_pi_lits - 1)) (negative if on right side of spear)
+
+
+def getEndPoint(x, y, bearing, d):
+    angle = math.radians(bearing)  # convert degrees to radians
+    dx = d*math.cos(angle)
+    dy = d*math.sin(angle)
+    return x + dx, y + dy
 
 
 ###
@@ -76,9 +90,9 @@ def generate_pi_lit_formation(detected_lanes, heading, lane_width, formation_typ
 
 
 def taper_3(detected_lanes, heading, lane_width, left_side=False):
-    start_lat_long = get_center_coordinates(
+    start_point = get_center_coordinates(
         detected_lanes, heading, lane_width)
-    if start_lat_long == (None, None):
+    if start_point == (None, None):
         return []
 
     # Positive for to the right of start, negative for to the left of start
@@ -87,18 +101,18 @@ def taper_3(detected_lanes, heading, lane_width, left_side=False):
     # longitudinal_dist: longitudal distance from start point to pi-lit, in feet
     # lateral_dist: lateral (sideways) distance from the edge of the lane, in lane widths
     PI_LIT_LOCATIONS = [
-        {'longitudinal_dist': 0, 'lateral_dist': 0.375 * sign},
+        {'longitudinal_dist': 0, 'lateral_dist': -0.375 * sign},
         {'longitudinal_dist': 100, 'lateral_dist': 0.0 * sign},
         {'longitudinal_dist': 200, 'lateral_dist': 0.0 * sign},
     ]
 
-    return generate_pi_lit_locations(start_lat_long, heading, lane_width, PI_LIT_LOCATIONS)
+    return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 
 
 def taper_5(detected_lanes, heading, lane_width, left_side=False):
-    start_lat_long = get_center_coordinates(
+    start_point = get_center_coordinates(
         detected_lanes, heading, lane_width)
-    if start_lat_long == (None, None):
+    if start_point == (None, None):
         return []
 
     # Positive for to the right of start, negative for to the left of start
@@ -107,20 +121,20 @@ def taper_5(detected_lanes, heading, lane_width, left_side=False):
     # longitudinal_dist: longitudal distance from start point to pi-lit, in feet
     # lateral_dist: lateral (sideways) distance from the edge of the lane, in lane widths
     PI_LIT_LOCATIONS = [
-        {'longitudinal_dist': 0,  'lateral_dist': 0.5 * sign},
-        {'longitudinal_dist': 10, 'lateral_dist': 0.25 * sign},
-        {'longitudinal_dist': 20, 'lateral_dist': 0.0 * sign},
-        {'longitudinal_dist': 30, 'lateral_dist': -0.25 * sign},
-        {'longitudinal_dist': 40, 'lateral_dist': -0.5 * sign},
+        {'longitudinal_dist': 0,  'lateral_dist': -0.5 * sign},
+        {'longitudinal_dist': 10, 'lateral_dist': -0.25 * sign},
+        {'longitudinal_dist': 20, 'lateral_dist': -0.0 * sign},
+        {'longitudinal_dist': 30, 'lateral_dist': 0.25 * sign},
+        {'longitudinal_dist': 40, 'lateral_dist': 0.5 * sign},
     ]
 
-    return generate_pi_lit_locations(start_lat_long, heading, lane_width, PI_LIT_LOCATIONS)
+    return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 
 
 def spear_7(detected_lanes, heading, lane_width, left_side=False):
-    start_lat_long = get_center_coordinates(
+    start_point = get_center_coordinates(
         detected_lanes, heading, lane_width)
-    if start_lat_long == (None, None):
+    if start_point == (None, None):
         return []
 
     # Positive for to the right of start, negative for to the left of start
@@ -129,16 +143,16 @@ def spear_7(detected_lanes, heading, lane_width, left_side=False):
     # longitudinal_dist: longitudal distance from start point to pi-lit, in feet
     # lateral_dist: lateral (sideways) distance from the edge of the lane, in lane widths
     PI_LIT_LOCATIONS = [
-        {'longitudinal_dist': 0,  'lateral_dist': 0.5 * sign},
-        {'longitudinal_dist': 10, 'lateral_dist': 0.333 * sign},
-        {'longitudinal_dist': 20, 'lateral_dist': 0.167 * sign},
-        {'longitudinal_dist': 30, 'lateral_dist': 0 * sign},
-        {'longitudinal_dist': 20, 'lateral_dist': -0.167 * sign},
-        {'longitudinal_dist': 10, 'lateral_dist': -0.333 * sign},
         {'longitudinal_dist': 0,  'lateral_dist': -0.5 * sign},
+        {'longitudinal_dist': 10, 'lateral_dist': -0.333 * sign},
+        {'longitudinal_dist': 20, 'lateral_dist': -0.167 * sign},
+        {'longitudinal_dist': 30, 'lateral_dist': 0 * sign},
+        {'longitudinal_dist': 20, 'lateral_dist': 0.167 * sign},
+        {'longitudinal_dist': 10, 'lateral_dist': 0.333 * sign},
+        {'longitudinal_dist': 0,  'lateral_dist': 0.5 * sign},
     ]
 
-    return generate_pi_lit_locations(start_lat_long, heading, lane_width, PI_LIT_LOCATIONS)
+    return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 
 
 def get_center_coordinates(detected_lanes, heading, lane_width):
@@ -155,7 +169,32 @@ def get_center_coordinates(detected_lanes, heading, lane_width):
         return (None, None)
 
 
-def generate_pi_lit_locations(start_lat_long, heading, lane_width, distances):
+def generate_pi_lit_locations(start_point, heading, lane_width, distances):
+    start_x, start_y = start_point
+    pi_lit_locations = []
+    for loc in distances:
+        # Convert units
+        longitudinal_dist_meters = loc['longitudinal_dist'] * FEET_TO_METERS
+        lateral_dist_meters = loc['lateral_dist'] * lane_width
+
+        # Generate angle and hypotenuse
+        pi_lit_angle_relative = math.degrees(math.atan2(lateral_dist_meters,
+                                                        longitudinal_dist_meters))
+        pi_lit_angle = heading + pi_lit_angle_relative
+        pi_lit_distance = math.sqrt(
+            longitudinal_dist_meters**2 + lateral_dist_meters**2)
+
+        # Get end of vector
+        location = getEndPoint(start_x, start_y,
+                               pi_lit_angle, pi_lit_distance)
+
+        # Save value to array
+        loc_rev = [round(location[0], 2), round(location[1], 2)]
+        pi_lit_locations.append(loc_rev)
+    return pi_lit_locations
+
+
+def generate_pi_lit_locations_lat_long(start_lat_long, heading, lane_width, distances):
     start_lat, start_long = start_lat_long
     pi_lit_locations = []
     for loc in distances:
@@ -164,8 +203,8 @@ def generate_pi_lit_locations(start_lat_long, heading, lane_width, distances):
         lateral_dist_meters = loc['lateral_dist'] * lane_width
 
         # Generate angle and hypotenuse
-        pi_lit_angle_relative = math.atan2(lateral_dist_meters,
-                                           longitudinal_dist_meters) * RADIANS_TO_DEGREES
+        pi_lit_angle_relative = math.degrees(math.atan2(lateral_dist_meters,
+                                                        longitudinal_dist_meters))
         pi_lit_angle = heading + pi_lit_angle_relative
         pi_lit_distance = math.sqrt(
             longitudinal_dist_meters**2 + lateral_dist_meters**2)
@@ -180,14 +219,18 @@ def generate_pi_lit_locations(start_lat_long, heading, lane_width, distances):
     return pi_lit_locations
 
 
+# x forward, y left, theta 0 forwards
 def test():
-    lat_long_right = (40.47413211566721, -104.96944840997458)
-    lat_long_left = (40.474113038173684, -104.96942333108585)
-    detected_lanes = {'right': lat_long_right, 'left': lat_long_left}
-    heading = 225  # Opposite traffic direction
+    # lat_long_right = (40.47413211566721, -104.96944840997458)
+    # lat_long_left = (40.474113038173684, -104.96942333108585)
+    point_right = (3, -3)
+    point_left = (3, 0)
+    detected_lanes = {'right': point_right, 'left': point_left}
+    heading = 0  # Opposite traffic direction
     lane_width = 3  # meters
-    lane_type = "spear_7"
-    print(generate_pi_lit_formation(detected_lanes, heading, lane_width, lane_type))
+    lane_type = "taper_left_5"
+    print(generate_pi_lit_formation(
+        detected_lanes, heading, lane_width, lane_type))
 
 
 if __name__ == "__main__":

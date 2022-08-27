@@ -86,6 +86,9 @@ class RoverInterface():
             "DriveDistanceAS", mirv_control.msg.DriveDistanceAction)
         self.driveDistanceClient.wait_for_server()
         print("connected to driveDistance Server")
+        self.laneLineClient = actionlib.SimpleActionClient(
+            "LaneLineAS", mirv_control.msg.GeneratePlacementLocationsAction)
+        self.pickupClient.wait_for_server()
         # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.GeneratePlacementLocationsAction)
         # self.PlacementGeneratorClient.wait_for_server()
         # print("connected to placement generator")
@@ -360,6 +363,13 @@ class RoverInterface():
 
     def getIsPickupControl(self):
         return self.isPickupControl
+    
+    def Lane_Lines_goal(self, formationType):
+        mirv_control.msg.GeneratePlacementLocationsGoal.formation_type = formationType
+        goal = mirv_control.msg.GeneratePlacementLocationsGoal
+        self.laneLineClient.send_goal(goal)
+        self.laneLineClient.wait_for_result()
+        return self.laneLineClient.get_result().placement_locations
 
     def Calibrate_client_goal(self):
         mirv_control.msg.IMUCalibrationGoal.calibrate = True

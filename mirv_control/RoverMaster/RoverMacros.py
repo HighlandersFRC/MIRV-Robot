@@ -154,7 +154,8 @@ class roverMacros():
         detected_lanes = {
             'right': (firstPointTruckCoord[0], firstPointTruckCoord[1])}
         points = placement.generate_pi_lit_formation(
-            detected_lanes, roughHeading, 3, formation_type)
+            detected_lanes, 0, 3, formation_type)
+        # points = self.interface.Lane_Lines_goal(formation_type)
         print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
