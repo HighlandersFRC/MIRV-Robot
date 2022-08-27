@@ -1,4 +1,3 @@
-import json
 import math
 
 FEET_TO_METERS = 0.3048
@@ -91,9 +90,9 @@ def generate_pi_lit_formation(detected_lanes, heading, lane_width, formation_typ
 
 
 def taper_3(detected_lanes, heading, lane_width, left_side=False):
-    start_lat_long = get_center_coordinates(
+    start_point = get_center_coordinates(
         detected_lanes, heading, lane_width)
-    if start_lat_long == (None, None):
+    if start_point == (None, None):
         return []
 
     # Positive for to the right of start, negative for to the left of start
@@ -107,13 +106,13 @@ def taper_3(detected_lanes, heading, lane_width, left_side=False):
         {'longitudinal_dist': 200, 'lateral_dist': 0.0 * sign},
     ]
 
-    return generate_pi_lit_locations(start_lat_long, heading, lane_width, PI_LIT_LOCATIONS)
+    return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 
 
 def taper_5(detected_lanes, heading, lane_width, left_side=False):
-    start_lat_long = get_center_coordinates(
+    start_point = get_center_coordinates(
         detected_lanes, heading, lane_width)
-    if start_lat_long == (None, None):
+    if start_point == (None, None):
         return []
 
     # Positive for to the right of start, negative for to the left of start
@@ -129,13 +128,13 @@ def taper_5(detected_lanes, heading, lane_width, left_side=False):
         {'longitudinal_dist': 40, 'lateral_dist': 0.5 * sign},
     ]
 
-    return generate_pi_lit_locations(start_lat_long, heading, lane_width, PI_LIT_LOCATIONS)
+    return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 
 
 def spear_7(detected_lanes, heading, lane_width, left_side=False):
-    start_lat_long = get_center_coordinates(
+    start_point = get_center_coordinates(
         detected_lanes, heading, lane_width)
-    if start_lat_long == (None, None):
+    if start_point == (None, None):
         return []
 
     # Positive for to the right of start, negative for to the left of start
@@ -153,7 +152,7 @@ def spear_7(detected_lanes, heading, lane_width, left_side=False):
         {'longitudinal_dist': 0,  'lateral_dist': 0.5 * sign},
     ]
 
-    return generate_pi_lit_locations(start_lat_long, heading, lane_width, PI_LIT_LOCATIONS)
+    return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 
 
 def get_center_coordinates(detected_lanes, heading, lane_width):
