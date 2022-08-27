@@ -200,6 +200,7 @@ try:
 
                 if(i == len(imuPackets) - 1):
                     imuPub.publish(pitch)
+                    break
 
 
             if in_rgb is not None and inDepth is not None:

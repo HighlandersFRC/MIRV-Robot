@@ -39,9 +39,11 @@ class RoverController():
 
     def main(self):
         print("RoverController MAIN")
-        self.interface.changeNeuralNetworkSelected("aruco")
-        #time.sleep(20)
+        self.interface.changeNeuralNetworkSelected("none")
+        time.sleep(30)
         #self.interface.pickup_client_goal("switch_right", 0)
+
+        # self.interface.drive_into_garage(0)
         # self.macros.testPointTurn()
         # self.macros.testDriveDistance()
         # point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
