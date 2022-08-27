@@ -160,8 +160,9 @@ class roverMacros():
         intakeSide = "switch_right"
 
         for pnt in points:
-            point = self.interface.CoordConversion_client_goal(pnt)
-            print("Converting Point")
+            # point = self.interface.CoordConversion_client_goal(pnt)
+            # print("Converting Point")
+            point = [pnt[0], pnt[1]]
             target = [point]
             if self.interface.cancelled:
                 return
@@ -267,10 +268,9 @@ class roverMacros():
             angleToPlacement = absAngleToPlacement + self.interface.heading
             distanceToPlacement = math.sqrt(deltaX**2 + deltaY**2)
 
-
             # Start By Turning in the general direction of the target
-            self.interface.pointTurn(math.degrees(angleToPlacement)%360, 5)
-            
+            self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
+
             if distanceToPlacement > 3:
                 distanceBeforePiLit = distanceToPlacement - 1
                 helperDistance = distanceBeforePiLit - 1
@@ -285,23 +285,21 @@ class roverMacros():
                 helperPointY = helperDistance * \
                     math.sin(-absAngleToPlacement) + currentY
 
-
-                print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY, "Target Location", targetX, targetY, "Helper Location", helperPointX, helperPointY)
+                print("Rover Location:", currentX, currentY, "PiLit Location", placementX, placementY,
+                      "Target Location", targetX, targetY, "Helper Location", helperPointX, helperPointY)
                 targetPoint = [targetX, targetY]
                 helperPoint = [helperPointX, helperPointY]
 
-
                 print("Pickup Path:", [helperPoint, targetPoint])
                 self.interface.PP_client_goal([helperPoint, targetPoint])
-            
-            
+
             elif distanceToPlacement > 2:
-                self.interface.driveDistance(distanceToPlacement -1.5, 0.25, 0.1)
-            
+                self.interface.driveDistance(
+                    distanceToPlacement - 1.5, 0.25, 0.1)
+
             time.sleep(2)
             currentLocationConverted = self.interface.CoordConversion_client_goal(
                 [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
-
 
             print("Current Point:", currentLocationConverted)
             currentX = currentLocationConverted[0]
@@ -310,10 +308,10 @@ class roverMacros():
             deltaX = placementX - currentX
             deltaY = -(placementY - currentY)
 
-            angleToPlacement = math.atan2(deltaY, deltaX) + self.interface.heading
+            angleToPlacement = math.atan2(
+                deltaY, deltaX) + self.interface.heading
             distanceToPlacement = math.sqrt(deltaX**2 + deltaY**2)
-            self.interface.pointTurn(math.degrees(angleToPlacement)%360, 5)
-
+            self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
 
             stored = self.interface.getPiLitsStored()
             if not stored or len(stored) != 2:
@@ -331,4 +329,3 @@ class roverMacros():
             time.sleep(2)
 
         self.interface.changeNeuralNetworkSelected("none")
-        
