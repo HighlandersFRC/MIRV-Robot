@@ -151,7 +151,8 @@ class roverMacros():
             firstPoint)
         startingTarget = [firstPointTruckCoord]
         self.interface.PP_client_goal(startingTarget)
-        detected_lanes = {'right': (firstPoint[0], firstPoint[1])}
+        detected_lanes = {
+            'right': (firstPointTruckCoord[0], firstPointTruckCoord[1])}
         points = placement.generate_pi_lit_formation(
             detected_lanes, roughHeading, 3, formation_type)
         print("Calculated Placement Points: ", points)
