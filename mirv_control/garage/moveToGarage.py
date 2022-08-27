@@ -10,6 +10,7 @@ from PID import PID
 from geometry_msgs.msg import Twist
 import actionlib
 import mirv_control.msg as msg
+from mirv_control.msg import garage_position as GaragePosition
 import asyncio
 
 rospy.init_node("garageDocking")
@@ -77,7 +78,7 @@ class moveToGarage:
         self.intake_command_pub = rospy.Publisher(
             "intake/command", String, queue_size=10)
         self.Garage_location_sub = rospy.Subscriber(
-            "garageLocation", Float64MultiArray, self.updateGarageLocation)
+            "garagePosition", GaragePosition, self.updateGarageLocation)
         self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher(
             "cmd_vel", Twist, queue_size=5)
@@ -120,8 +121,8 @@ class moveToGarage:
         print(GarageLocation)
         # if(self.runPID == False and self.driveToGarage == False):
         if(self.allowSearch == True):
-            self.GarageDepth = GarageLocation[0]
-            self.GarageAngle = GarageLocation[1]
+            self.GarageDepth = GarageLocation.angle_to_garage
+            self.GarageAngle = GarageLocation.depth_to_garage
             self.setPoint = self.imu + self.GarageAngle
             self.setPoint = self.setPoint % 360
             self.GaragePID.setSetPoint(self.setPoint)

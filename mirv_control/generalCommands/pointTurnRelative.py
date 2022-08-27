@@ -39,7 +39,7 @@ class pointTurnRelative():
         self.imu = 0
 
         self.kP = 0.02
-        self.kI = 0.00001
+        self.kI = 0.00000
         self.kD = 2
         self.setPoint = 0
         self.PID_SUCCESS_THRESHOLD = 0.2
@@ -69,17 +69,19 @@ class pointTurnRelative():
         self.reachedEstimate = False
         self.allowSearch = False
 
-    def getAngleError(self, initialImu, target, imu):
+    def getAngleError(self, imu, target):
         # initialImu: 12, target: 6, imu: 10, (10 - 12 + 6) = 4
         # angle error: +4 (turn 4 degreez in positive Z direction to reach target)
-        angleError = ((imu - initialImu) - target) % 360
-        # print(f"ANGLE ERROR: {angleError}")
-        return angleError
+        error = (imu - target) % 360
+        if error > 180:
+                error -= 360
+        return error
 
     def updateIMU(self, data):
         self.imu = data.data
-        if (time.time() - self.lastImuTime > 1):
+        if (time.time() - self.lastImuTime > .1):
             self.lastImuTime = time.time()
+            print(self.imu)
         # print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
     def turnToTarget(self):
@@ -98,28 +100,40 @@ class pointTurnRelative():
 
         while(reachedTarget == False):
             angularVelPID = self.pid.updatePID(self.imu)  # this returns in radians/sec
-
+            error = self.getAngleError(self.imu, targetAngle)
 
             self.velocityMsg.linear.x = 0
             self.velocityMsg.angular.z = -angularVelPID
 
             self.velocitydrive_pub.publish(self.velocityMsg)
 
-            if (time.time() - prevTime > 0.2):
-                prevTime = time.time()
-                print(f"Current Set Point: {self.pid.setPoint}, Current Angle: {self.imu}")
-                print(f"Setting Angular Velocity to {angularVelPID}")
-                print(f"ERROR: {abs(self.imu - targetAngle)}")
+            
 
-            if(abs(self.imu - targetAngle) < successThreshold and abs(angularVelPID) < self.PID_SUCCESS_THRESHOLD):
+            # if (time.time() - prevTime > 0.1):
+            #     prevTime = time.time()
+            #     print(f"Current Set Point: {self.pid.setPoint}, Current Angle: {self.imu}")
+            #     print(f"Setting Angular Velocity to {angularVelPID}")
+            #     print(f"ERROR: {error}")
+
+            if(abs(error) < successThreshold): # and abs(angularVelPID) < self.PID_SUCCESS_THRESHOLD
                 print("SUCCESSFULLY POINT TURNED")
+                print(f"ERROR: {self.getAngleError(self.imu, targetAngle)}")
                 reachedTarget = True
+                startTime = time.time()
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = 0
                 self.velocitydrive_pub.publish(self.velocityMsg)
-        print(f"ERROR: {abs(self.imu - targetAngle)}")
+                print("Set motion to zero")
+                while (time.time() - startTime < 0.2):
+                    self.velocityMsg.linear.x = 0
+                    self.velocityMsg.angular.z = -angularVelPID
+                    self.velocitydrive_pub.publish(self.velocityMsg)
+                self.velocityMsg.linear.x = 0
+                self.velocityMsg.angular.z = 0
+                self.velocitydrive_pub.publish(self.velocityMsg)
+        print(f"ERROR: {self.getAngleError(self.imu, targetAngle)}")
         self._result.finished = reachedTarget
-        self._result.angleError = self.imu - targetAngle
+        self._result.angleError = self.getAngleError(self.imu, targetAngle)
         self._as.set_succeeded(self._result)
         self.setAllZeros()
 

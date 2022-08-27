@@ -29,4 +29,6 @@ optional other packages:
 ```
 roslaunch mirv_real mirv.launch
 rosrun mirv_control RoverController.py
+sudo shutdown
+sudo poweroff
 ```

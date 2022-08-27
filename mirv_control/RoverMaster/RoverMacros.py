@@ -35,6 +35,7 @@ class roverMacros():
         self.interface.deployGarage()
 
         # # Step 2: Drive to front of garage
+        # print(f"Step 2: Driving to front of garage")
         # lineUpPoint1 = [3, 0]
         # lineUpPoint2 = [1, 0]
         # lineUpPoints = [lineUpPoint1, lineUpPoint2]
@@ -46,7 +47,9 @@ class roverMacros():
 
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
+        time.sleep(5)
         garage_angle = self.interface.garageLocation.angle_to_garage
+        print(f"Step 3: Turning to relative angle of {garage_angle} degrees")
         if not garage_angle:
             rospy.logerr("Garage was not found in frame - Step 2")
             self.interface.changeNeuralNetworkSelected("none")
@@ -64,27 +67,42 @@ class roverMacros():
 
         theta_1 = (180 / math.pi) * math.atan2(y, x)
         theta_2 = (90 - abs(theta_1))*theta_1/abs(theta_1)
+        print(f"Angles: {theta_1}, {theta_2}")
         angle_to_perpendicular_degrees = theta_2
         distance_meters = abs(y)
+        print(f"Distance: {distance_meters}")
 
         # Step 5: Turn towards perpendicular vector of garage
+        time.sleep(5)
         print(
-            f"Turning to relative angle of {angle_to_perpendicular_degrees} degrees")
+            f"Step 5: Turning to relative angle of {angle_to_perpendicular_degrees} degrees")
         self.interface.pointTurn(angle_to_perpendicular_degrees, 5)
 
         # Step 6: Drive to directly in front of garage
-        print(f"Moving distance of {distance_meters} meters")
+        time.sleep(5)
+        print(f"Step 6: Moving distance of {distance_meters} meters")
         self.interface.driveDistance(distance_meters, 0.25, 0.1)
 
         # Step 7: Turn to face garage
-        print(f"Turning to relative angle of {90} degrees")
+        time.sleep(5)
+        print(f"Step 7: Turning to relative angle of {90} degrees")
         self.interface.pointTurn(-90*theta_1/abs(theta_1), 5)
 
-        # # Step 8: Drive directly towards back of garage
+        # Step 8: Turn towards tag
+        time.sleep(5)
+        garage_angle = self.interface.garageLocation.angle_to_garage
+        print(f"Step 8: Turning to relative angle of {garage_angle} degrees")
+        if not garage_angle:
+            rospy.logerr("Garage was not found in frame - Step 8")
+            self.interface.changeNeuralNetworkSelected("none")
+            return
+        self.interface.pointTurn(garage_angle, 5)
+
+        # # Step 9: Drive directly towards back of garage
         # print(f"Driving Into Garage")
         # self.interface.drive_into_garage(0)
 
-        # Step 9: Retract garage
+        # Step 10: Retract garage
         print(f"Retracting Garage")
         self.interface.retractGarage()
 
@@ -205,7 +223,7 @@ class roverMacros():
         self.interface.changeNeuralNetworkSelected("none")
 
     def testPointTurn(self):
-        self.interface.pointTurn(180, 10)
+        self.interface.pointTurn(180, 5)
 
     def testDriveDistance(self):
         self.interface.driveDistance(1.0, 0.25, 0.1)

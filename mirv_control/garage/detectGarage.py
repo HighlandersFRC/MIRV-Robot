@@ -15,6 +15,7 @@ from mirv_control.msg import aruco_detections as ArucoDetections
 from mirv_control.msg import aruco_detection as ArucoDetection
 from mirv_control.msg import camera_calibration as CameraCalibrationMsg
 
+INCHES_TO_METERS = 0.0254
 
 class GarageDetection:
 
@@ -27,27 +28,28 @@ class GarageDetection:
         self.verticalPixels = 480
         self.degreesPerPixel = self.hFOV/self.horizontalPixels
 
+
         self.transformations = {
             0: {
                 'angle': 0,
                 'x_offset': 0,
                 'y_offset': 0,
-                'x_scale': 1.35,
-                'y_scale': 1,
+                'x_scale': 1,
+                'y_scale': 1.35,
             },
             1: {
-                'angle': -79 * math.pi/180,
-                'x_offset': 25.5/2 - 2,
-                'y_offset': 22.5,
-                'x_scale': 1.35,
-                'y_scale': 1,
+                'angle': -76.5 * math.pi/180,
+                'x_offset': 22.5 * INCHES_TO_METERS,
+                'y_offset': -(25.5/2 - 2) * INCHES_TO_METERS - 0.02,
+                'x_scale': 0.91,
+                'y_scale': 0.84,
             },
             2: {
-                'angle': 85 * math.pi/180,
-                'x_offset': -25.5/2,
-                'y_offset': 22.5,
-                'x_scale': 1.35,
-                'y_scale': 1,
+                'angle': 80.1 * math.pi/180,
+                'x_offset': 22.5 * INCHES_TO_METERS,
+                'y_offset': 25.5/2 * INCHES_TO_METERS + 0.05,
+                'x_scale': 0.91,
+                'y_scale': 0.84,
             }
         }
 
@@ -64,7 +66,7 @@ class GarageDetection:
         self.calibration.verticalPixels = self.verticalPixels
 
         self.arucoTagId = 0
-        self.markerSize = 6 * 0.0254  # Full size of marker, in meters
+        self.markerSize = 6 * INCHES_TO_METERS  # Full size of marker, in meters
         self.arucoDict = aruco.Dictionary_get(aruco.DICT_4X4_50)
         self.arucoParameters = aruco.DetectorParameters_create()
 
@@ -135,20 +137,23 @@ class GarageDetection:
                 # Estimate pose of each marker and return the values rvec and tvec---different from camera coefficients
                 rvec, tvec, markerPoints = aruco.estimatePoseSingleMarkers(corner, self.markerSize, self.calibration.matrix,
                                                                            self.calibration.distortion)
-            rvec_t, tvec_t = self.invertCameraPerspective(rvec, tvec)
-            detection = {}
-            detection['id'] = id
-            detection['rvec'] = rvec
-            detection['tvec'] = tvec
-            detection['rvec_t'] = rvec_t
-            detection['tvec_t'] = tvec_t
-            detection['corners'] = corner
-            if id == 0:
-                angle, depth = self.getPositionWithinFrame(
-                    corner.reshape(4, 2, 1), depthFrame)
-                detection['angle_within_frame'] = angle
-                detection['depth_distance'] = depth
-            detections.append(detection)
+                
+                rvec, tvec = rvec.reshape((3, 1)), tvec.reshape((3, 1))
+
+                rvec_t, tvec_t = self.invertCameraPerspective(rvec, tvec)
+                detection = {}
+                detection['id'] = id
+                detection['rvec'] = rvec
+                detection['tvec'] = tvec
+                detection['rvec_t'] = rvec_t
+                detection['tvec_t'] = tvec_t
+                detection['corners'] = corner
+                if id == 0:
+                    angle, depth = self.getPositionWithinFrame(
+                        corner.reshape(4, 2, 1), depthFrame)
+                    detection['angle_within_frame'] = angle
+                    detection['depth_distance'] = depth
+                detections.append(detection)
         return detections
 
     def combineDetections(self, detections):
@@ -166,14 +171,14 @@ class GarageDetection:
             angle_d = d.get('angle_within_frame')
             depth_d = d.get('depth_distance')
 
-            x = tvec_t[0][0]
-            z = tvec_t[2][0]
+            x = tvec_t[2][0]
+            y = -tvec_t[0][0]
 
             t = self.transformations.get(id)
             if not t:
                 continue
 
-            x_r, y_r = self.rotateAxes2d(z, x, t['angle'])
+            x_r, y_r = self.rotateAxes2d(y, x, t['angle'])
             x_r += t['x_offset']
             y_r += t['y_offset']
             x_r *= t['x_scale']
@@ -209,10 +214,10 @@ class GarageDetection:
             for i in positions:
                 delta_x = results[0]['x'] - i['x']
                 delta_y = results[0]['y'] - i['y']
-            if abs(delta_x) < 5 and abs(delta_y) < 10:
+            if abs(delta_x) < 0.2 and abs(delta_y) < 0.4:
                 positions.append(results[0])
-        x = 0
-        y = 0
+        x = 0.0
+        y = 0.0
         ids = []
         l = len(positions)
         for i in positions:
@@ -244,8 +249,7 @@ class GarageDetection:
             frame, depthFrame)
 
         # Should always both be invalid, or both be valid
-        if pos_x != None and pos_y != None:
-
+        if pos_x and pos_y and angle and depth:
             garagePosition = GaragePosition()
             garagePosition.rover_position_x_from_garage = pos_x
             garagePosition.rover_position_y_from_garage = pos_y
