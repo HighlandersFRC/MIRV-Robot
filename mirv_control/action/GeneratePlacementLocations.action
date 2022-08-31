@@ -5,7 +5,7 @@ float64 position_y
 float64 heading
 ---
 #result definition
-float64[] placement_locations
+std_msgs/Float64MultiArray[] placement_locations
 ---
 #feedback
 string feedback

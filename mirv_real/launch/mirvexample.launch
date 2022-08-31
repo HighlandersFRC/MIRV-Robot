@@ -47,8 +47,8 @@
 
 
     <!-- Start real-world/simulation agnostic nodes -->
-    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true" output = "screen"/>
-    <include file="$(find mirv_control)/launch/cloud_nodes.launch" pass_all_args="true" output = "screen"/>
+    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true" output="screen"/>
+    <include file="$(find mirv_control)/launch/cloud_nodes.launch" pass_all_args="true" output="screen"/>
 
     <!-- start real-world nodes -->
     <node name="Canbus" pkg="mirv_real" type="canbus"/>
@@ -56,7 +56,7 @@
         respawn="$(arg respawn)" 
         respawn_delay="$(arg respawn_delay)"/>
     <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py"/>
-    <node name="laneLineDetector" pkg="mirv_real" type="detectLaneLines.py"/>
-    <node name="PiLitModuleController" pkg="mirv_real" type="PiLitModuleController.py" output = "screen"/>
+    <node name="laneLineDetector" pkg="mirv_real" type="detectLaneLines.py"  output="screen"/>
+    <node name="PiLitModuleController" pkg="mirv_real" type="PiLitModuleController.py"/>
     
 </launch>

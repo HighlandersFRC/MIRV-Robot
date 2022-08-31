@@ -63,6 +63,7 @@ add_message_files(
    aruco_detection.msg
    aruco_detections.msg
    pilit_state.msg
+   pi_lit_location.msg
  )
 
 ## Generate services in the 'srv' folder

@@ -24,10 +24,11 @@ theta_v_corner = math.degrees(math.atan(H/math.sqrt(D**2 + W**2)))
 
 
 def rotateAxes2d(x, y, theta):
-    x_r_x = x * math.sin(theta)
-    x_r_y = x * math.cos(theta)
-    y_r_x = y * math.sin(math.pi/2 + theta)
-    y_r_y = y * math.cos(math.pi/2 + theta)
+    angle = math.radians(theta)
+    x_r_x = x * math.sin(angle)
+    x_r_y = x * math.cos(angle)
+    y_r_x = y * math.sin(math.pi/2 + angle)
+    y_r_y = y * math.cos(math.pi/2 + angle)
     x_r = x_r_x + y_r_x
     y_r = x_r_y + y_r_y
     return x_r, y_r
@@ -149,9 +150,13 @@ def get_line_equations(line, imu_offset, rover_position, center_angle, height):
     points_y = []
 
     x_intercept, dx_sign = get_intercept_pixels(line)
+    
+    l = get_line_length(*line[0], *line[-1])
+    
+    if l < 50/scale:
+        return x_intercept, dx_sign, None, None, None
 
     for x, y in line:
-
         p = get_real_position(x, y, imu_offset,
                               rover_position, center_angle, height)
         if p[0] != None and p[1] != None:
@@ -169,6 +174,11 @@ def get_line_equations(line, imu_offset, rover_position, center_angle, height):
 
 def get_sign(val):
     return 1 if val >= 0 else -1
+
+
+def get_line_length(x0, y0, x1, y1):
+    return math.sqrt((x1 - x0)**2 + (y1 - y0)**2)
+    
 
 
 # print(HFOV/2, VFOV/2)

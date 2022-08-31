@@ -370,6 +370,10 @@ class RoverInterface():
     
     def Lane_Lines_goal(self, formationType):
         mirv_control.msg.GeneratePlacementLocationsGoal.formation_type = formationType
+        mirv_control.msg.GeneratePlacementLocationsGoal.position_x = self.xPos
+        mirv_control.msg.GeneratePlacementLocationsGoal.position_y = self.yPos
+        mirv_control.msg.GeneratePlacementLocationsGoal.heading = math.degrees(self.heading) % 360
+        print(f"INITIAL CONDITIONS: {self.xPos}, {self.yPos}, {math.degrees(self.heading) % 360}")
         goal = mirv_control.msg.GeneratePlacementLocationsGoal
         self.laneLineClient.send_goal(goal)
         self.laneLineClient.wait_for_result()

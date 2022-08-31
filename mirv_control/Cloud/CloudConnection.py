@@ -14,6 +14,7 @@ import ros_numpy
 import numpy as np
 import math
 import json
+import time
 from std_msgs.msg import String, Bool
 from aiohttp import web
 from av import VideoFrame
@@ -90,6 +91,10 @@ channels = []
 #Cache incoming frames for sending
 frames = []
 status_messages = []
+
+cap = cv2.VideoCapture(0)
+
+
 
 def get_webrtc_state():
     if len(pcs) > 0:
@@ -201,39 +206,41 @@ class RobotVideoStreamTrack(VideoStreamTrack):
     def __init__(self):
         super().__init__()  # don't forget this!
         self.counter = 0
+    
+    
+    # async def recv(self):
+    #     pts, time_base = await self.next_timestamp()
+    #     #print("test") 
+    #     if len(frames) > 0:
+    #         #print("sending real frame")
+    #         cv_frame = frames[0]
+    #         corrected_frame = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
+    #         frame = VideoFrame.from_ndarray(corrected_frame)
+    #         if len(frames) > 1:
+    #             frames.remove(frames[0])
+    #     else:
+    #         #print("sending blank frame")
+    #         blank_image = np.zeros((480,640,3), np.uint8)
+    #         frame = VideoFrame.from_ndarray(blank_image)
         
+    #     frame.pts = pts
+    #     frame.time_base = time_base
+    #    return frame
+    
     async def recv(self):
-        
+        startTime = time.time()
         pts, time_base = await self.next_timestamp()
-        #print("test") 
-        if len(frames) > 0:
-            #print("sending real frame")
-            cv_frame = frames[0]
-            corrected_frame = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
-            frame = VideoFrame.from_ndarray(corrected_frame)
-            if len(frames) > 1:
-                frames.remove(frames[0])
-        else:
-            #print("sending blank frame")
-            blank_image = np.zeros((480,640,3), np.uint8)
-            frame = VideoFrame.from_ndarray(blank_image)
-        
+        ret, cv_frame = cap.read()
+        corrected = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
+        frame = VideoFrame.from_ndarray(corrected)
         frame.pts = pts
         frame.time_base = time_base
+        
+        print("Returned Frame", time.time() - startTime)
         return frame
 
 # Website posts an offer to python server
 async def offer(request):
-    '''
-    if not get_webrtc_state() == 'closed':
-        print("Testing")
-        return web.Response(
-            content_type="application/json",
-            text=json.dumps(
-                {"error": "Robot not available."}
-            ),
-        )
-    '''
     params = await request.json()
     print("Received Params")
     print(params)
@@ -257,7 +264,6 @@ async def offer(request):
             for send_message in status_messages:
                channel.send(send_message)
             status_messages = []
-            #send_rtc("I Really Like Turtles!")
 
 
     @pc.on("connectionstatechange")

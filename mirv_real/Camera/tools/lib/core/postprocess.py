@@ -121,6 +121,7 @@ def if_y(samples_x):
     
 def fitlane(mask, sel_labels, labels, stats):
     H, W = mask.shape
+    lines = []
     for label_group in sel_labels:
         states = [stats[k] for k in label_group]
         x, y, w, h, _ = states[0]
@@ -135,62 +136,64 @@ def fitlane(mask, sel_labels, labels, stats):
         
         samples_x = [np.where(labels[int(sample_y)]==t)[0] for sample_y in samples_y]
 
-        if if_y(samples_x):
-            samples_x = [int(np.mean(sample_x)) if len(sample_x) else -1 for sample_x in samples_x]
-            samples_x = np.array(samples_x)
-            samples_y = np.array(samples_y)
-            samples_y = samples_y[samples_x != -1]
-            samples_x = samples_x[samples_x != -1]
-            func = np.polyfit(samples_y, samples_x, 2)
-            x_limits = np.polyval(func, H-1)
-            # if (y_max + h - 1) >= 720:
-            if x_limits < 0 or x_limits > W:
-            # if (y_max + h - 1) > 720:
-                # draw_y = np.linspace(y, 720-1, 720-y)
-                draw_y = np.linspace(y, y+h-1, h)
-            else:
-                # draw_y = np.linspace(y, y+h-1, y+h-y)
-                draw_y = np.linspace(y, H-1, H-y)
-            draw_x = np.polyval(func, draw_y)
-            # draw_y = draw_y[draw_x < W]
-            # draw_x = draw_x[draw_x < W]
-            draw_points = (np.asarray([draw_x, draw_y]).T).astype(np.int32)
-            cv2.polylines(mask, [draw_points], False, 1, thickness=15)
+        # if if_y(samples_x):
+        samples_x = [int(np.mean(sample_x)) if len(sample_x) else -1 for sample_x in samples_x]
+        samples_x = np.array(samples_x)
+        samples_y = np.array(samples_y)
+        samples_y = samples_y[samples_x != -1]
+        samples_x = samples_x[samples_x != -1]
+        func = np.polyfit(samples_y, samples_x, 2)
+        x_limits = np.polyval(func, H-1)
+        # if (y_max + h - 1) >= 720:
+        if x_limits < 0 or x_limits > W:
+        # if (y_max + h - 1) > 720:
+            # draw_y = np.linspace(y, 720-1, 720-y)
+            draw_y = np.linspace(y, y+h-1, h)
         else:
-            # if ( + w - 1) >= 1280:
-            samples_x = np.linspace(x, W-1, 30)
-            # else:
-            #     samples_x = np.linspace(x, x_max+w-1, 30)
-            samples_y = [np.where(labels[:, int(sample_x)]==t)[0] for sample_x in samples_x]
-            samples_y = [int(np.mean(sample_y)) if len(sample_y) else -1 for sample_y in samples_y]
-            samples_x = np.array(samples_x)
-            samples_y = np.array(samples_y)
-            samples_x = samples_x[samples_y != -1]
-            samples_y = samples_y[samples_y != -1]
-            try:
-                func = np.polyfit(samples_x, samples_y, 2)
-            except:
-                pass
-            # y_limits = np.polyval(func, 0)
-            # if y_limits > 720 or y_limits < 0:
-            # if (x + w - 1) >= 1280:
-            #     draw_x = np.linspace(x, 1280-1, 1280-x)
-            # else:
-            y_limits = np.polyval(func, 0)
-            if y_limits >= H or y_limits < 0:
-                draw_x = np.linspace(x, x+w-1, w+x-x)
-            else:
-                y_limits = np.polyval(func, W-1)
-                if y_limits >= H or y_limits < 0:
-                    draw_x = np.linspace(x, x+w-1, w+x-x)
-                # if x+w-1 < 640:
-                #     draw_x = np.linspace(0, x+w-1, w+x-x)
-                else:
-                    draw_x = np.linspace(x, W-1, W-x)
-            draw_y = np.polyval(func, draw_x)
-            draw_points = (np.asarray([draw_x, draw_y]).T).astype(np.int32)
-            cv2.polylines(mask, [draw_points], False, 1, thickness=15)
-    return mask
+            # draw_y = np.linspace(y, y+h-1, y+h-y)
+            draw_y = np.linspace(y, H-1, H-y)
+        draw_x = np.polyval(func, draw_y)
+        # draw_y = draw_y[draw_x < W]
+        # draw_x = draw_x[draw_x < W]
+        draw_points = (np.asarray([draw_x, draw_y]).T).astype(np.int32)
+        lines.append(draw_points)
+        cv2.polylines(mask, [draw_points], False, 255, thickness=4)
+        # else:
+        #     # if ( + w - 1) >= 1280:
+        #     samples_x = np.linspace(x, W-1, 30)
+        #     # else:
+        #     #     samples_x = np.linspace(x, x_max+w-1, 30)
+        #     samples_y = [np.where(labels[:, int(sample_x)]==t)[0] for sample_x in samples_x]
+        #     samples_y = [int(np.mean(sample_y)) if len(sample_y) else -1 for sample_y in samples_y]
+        #     samples_x = np.array(samples_x)
+        #     samples_y = np.array(samples_y)
+        #     samples_x = samples_x[samples_y != -1]
+        #     samples_y = samples_y[samples_y != -1]
+        #     try:
+        #         func = np.polyfit(samples_x, samples_y, 2)
+        #     except:
+        #         pass
+        #     # y_limits = np.polyval(func, 0)
+        #     # if y_limits > 720 or y_limits < 0:
+        #     # if (x + w - 1) >= 1280:
+        #     #     draw_x = np.linspace(x, 1280-1, 1280-x)
+        #     # else:
+        #     y_limits = np.polyval(func, 0)
+        #     if y_limits >= H or y_limits < 0:
+        #         draw_x = np.linspace(x, x+w-1, w+x-x)
+        #     else:
+        #         y_limits = np.polyval(func, W-1)
+        #         if y_limits >= H or y_limits < 0:
+        #             draw_x = np.linspace(x, x+w-1, w+x-x)
+        #         # if x+w-1 < 640:
+        #         #     draw_x = np.linspace(0, x+w-1, w+x-x)
+        #         else:
+        #             draw_x = np.linspace(x, W-1, W-x)
+        #     draw_y = np.polyval(func, draw_x)
+        #     draw_points = (np.asarray([draw_x, draw_y]).T).astype(np.int32)
+        #     lines.append(draw_points)
+        #     cv2.polylines(mask, [draw_points], False, 255, thickness=4)
+    return mask, lines
 
 def connect_lane(image, shadow_height=0):
     if len(image.shape) == 3:
@@ -210,11 +213,11 @@ def connect_lane(image, shadow_height=0):
         if area > 400:
             selected_label.append(t)
     if len(selected_label) == 0:
-        return mask
+        return mask, []
     else:
         split_labels = [[label,] for label in selected_label]
-        mask_post = fitlane(mask, split_labels, labels, stats)
-        return mask_post
+        mask_post, lines = fitlane(mask, split_labels, labels, stats)
+        return mask_post, lines
 
 
 

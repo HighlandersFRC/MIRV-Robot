@@ -189,7 +189,7 @@ def generate_pi_lit_locations(start_point, heading, lane_width, distances):
                                pi_lit_angle, pi_lit_distance)
 
         # Save value to array
-        loc_rev = [round(location[0], 2), round(location[1], 2)]
+        loc_rev = [float(location[0]), float(location[1])]
         pi_lit_locations.append(loc_rev)
     return pi_lit_locations
 

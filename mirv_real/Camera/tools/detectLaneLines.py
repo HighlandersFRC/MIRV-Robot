@@ -4,6 +4,7 @@ from std_msgs.msg import Float64
 import actionlib
 import mirv_control.msg as ASmsg
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import GeneratePlacementLocationsResult
 import ros_numpy
 from cv_bridge import CvBridge
 from std_msgs.msg import Float64MultiArray, String
@@ -55,7 +56,7 @@ img_width = 640/img_scale
 shapes = ((img_height, img_width),
           ((0.5333333333333333, img_scale), (0.0, 12.0)))
 device = torch.device('cuda')
-weights = "weights/End-to-end.pth"
+weights = "/home/nvidia/mirv_ws/src/MIRV-Robot/mirv_real/Camera/tools/weights/End-to-end.pth"
 
 CAMERA_HEIGHT = 7.75 * .0254
 CAMERA_ANGLE = -15
@@ -74,7 +75,7 @@ detections = 0
 runningNeuralNetwork = True
 
 i = 0
-startTime = time.time()
+startTime = round(time.time())
 
 frame = None
 depthFrame = None
@@ -104,31 +105,34 @@ def execute_cb():
     heading = goal.heading
     lane_type = goal.formation_type
 
-    if frame == None:
-        print("ERROR: NO FRAME")
-        actionServer.set_aborted()
-        return
+    # if frame == None:
+    #     print("ERROR: NO FRAME")
+    #     actionServer.set_aborted()
+    #     return
 
     lane_heading, detections, lane_width = process_frame(
         frame, position_x, position_y, heading)
 
-    print("LANE LINE DETECTIONS: {detections}")
-    print("LANE HEADING DETECTION: {lane_heading}")
-    print("LANE WIDTH DETECTION: {lane_width}")
+    print(f"LANE LINE DETECTIONS: {detections}")
+    print(f"LANE HEADING DETECTION: {lane_heading}")
+    print(f"LANE WIDTH DETECTION: {lane_width}")
 
     placements = placement.generate_pi_lit_formation(
         detections, lane_heading, lane_width, lane_type)
-    # print(placsements)
-    msg = Float64MultiArray()
-    msg.data = placements
+    placement_locations = []
+    for i in placements:
+        msg = Float64MultiArray()
+        msg.data = i
+        placement_locations.append(msg)
+    print(placements)
 
-    result.placement_locations = msg
+    result.placement_locations = placement_locations
     actionServer.set_succeeded(result)
 
 
 # callback function when receiving a frame
 def gotFrame(data):
-    print("GOT A FRAME")
+    # print("GOT A FRAME")
     # print(cv2.imwrite(r'camera_image.jpg', ros_numpy.numpify(data.color_frame)))
     # print(print(ros_numpy.numpify(data.color_frame)))
     # print(f"WRITING IMAGE")
@@ -170,6 +174,7 @@ def process_frame(frame, rover_position_x, rover_position_y, rover_heading):
 
 def get_lane_points(img):
     frame = img
+    frame_orig = img
     img = transform(img).to(device)
     if img.ndimension() == 3:
         img = img.unsqueeze(0)
@@ -207,11 +212,12 @@ def get_lane_points(img):
     ll_seg_mask, lines = connect_lane(ll_seg_mask)
     global i
     image_dir = "/media/nvidia/SSD/lane_pictures"
-    print(cv2.imwrite(f'{image_dir}/img_det_{startTime}_{i}.jpg', img_det))
+    print(cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame_orig))
+    print(cv2.imwrite(f'{image_dir}/img_det_{startTime}_{i}.png', img_det))
     print(cv2.imwrite(
-        f'{image_dir}/da_seg_mask_{startTime}_{i}.jpg', da_seg_mask))
+        f'{image_dir}/da_seg_mask_{startTime}_{i}.png', da_seg_mask))
     print(cv2.imwrite(
-        f'{image_dir}/ll_seg_mask_{startTime}_{i}.jpg', ll_seg_mask))
+        f'{image_dir}/ll_seg_mask_{startTime}_{i}.png', ll_seg_mask))
     i += 1
     return lines
 

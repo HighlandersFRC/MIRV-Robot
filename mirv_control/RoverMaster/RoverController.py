@@ -39,11 +39,12 @@ class RoverController():
 
     def main(self):
         print("RoverController MAIN")
-        self.interface.changeNeuralNetworkSelected("lanes")
-        self.interface.setPiLits("wave")
+        # self.interface.changeNeuralNetworkSelected("lanes")
+        # self.interface.setPiLits("wave")
+        # self.macros.placeAllPiLits((0, 0), 0, "taper_right_5")
         #time.sleep(60)
-        #points = self.interface.Lane_Lines_goal("taper_right_5")
-        #print(f"GENERATED POINTS: {points}")
+        # points = self.interface.Lane_Lines_goal("taper_right_5")
+        # print(f"GENERATED POINTS: {points}")
         
         #self.interface.pickup_client_goal("switch_right", 0)
 
