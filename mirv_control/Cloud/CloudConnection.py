@@ -42,20 +42,19 @@ PASSWORD = rospy.get_param('api_password', PASSWORD)
 GARAGE_ID = rospy.get_param('garage_id', GARAGE_ID)
 
 
+input_vars = [CLOUD_HOST,ROVER_COMMON_NAME,USERNAME,PASSWORD,GARAGE_ID]
+env_vars = ['API_HOST', 'MIRV_COMMON_NAME', 'API_PASSWORD', 'GARAGE_ID']
+ros_params = ['api_host', 'mirv_common_name', 'api_username','api_password', 'garage_id']
 
-
-
-if CLOUD_HOST is None:
-    rospy.logerr("Please set the API_HOST Environment Variable to the IP of the cloud server")
-    exit()
+for var, env_var_name, ros_param_name in zip(input_vars, env_vars, ros_params):
+    if var is None:
+        rospy.logerr("{env_var_name} variable is not set. Please set the f{env_var_name} environment variable or the {ros_param_name} ros param.")
+        exit()
 
 if CLOUD_PORT is None:
-    rospy.logerr("Please set the API_PORT Environment Variable to the PORT of the cloud server")
-    exit()
-
-if ROVER_COMMON_NAME is None:
-    rospy.logerr("Please set the ROVER_COMMON_NAME Environment Variable to the proper Rover ID in order to connect to cloud resources")
-    exit()
+    endpoint = f"{CLOUD_HOST}"
+else:
+    endpoint = f"{CLOUD_HOST}:{CLOUD_PORT}"    
 
 
 DEFAULT_STATUS_MESSAGE = {
@@ -99,15 +98,13 @@ def get_webrtc_state():
         return "closed"
 
 
-# Tries to connect to Cloud API and form Socket Connection
+# Tries to connect to API and form Socket Connection
 def connect_to_api():
     try:
-        #sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover"}, auth={"token": token}, socketio_path="/ws/socket.io")
-        sio.connect(f"ws://{CLOUD_HOST}:{CLOUD_PORT}/ws", headers={"ID": ROVER_COMMON_NAME, "device_type": "rover", "token": token}, socketio_path="/ws/socket.io")
- 
+        sio.connect(f"ws://{endpoint}/ws", headers={"ID": ROVER_COMMON_NAME, "device-type": "rover", "token": token}, socketio_path="/ws/socket.io")
         rospy.loginfo("Cloud Connection Succeeded")
     except socketio.exceptions.ConnectionError as e:
-        rospy.logwarn(f"Unable to Connect to API: {CLOUD_HOST}:{CLOUD_PORT}")
+        rospy.logwarn(f"Unable to Connect to API: {endpoint}")
         rospy.logwarn(e)
 
 # Sends a Message to the API
@@ -117,6 +114,7 @@ def send_to_api(message, type="data"):
             sio.emit(type, message)
         else:
             rospy.logwarn("API Disconnected. Cannot Send Message")
+            connect_to_api()
     except socketio.exceptions.BadNamespaceError:
         rospy.logwarn("Unable to send message to socket server")
 
@@ -164,7 +162,7 @@ def garageSubscriber(data):
         headers= {'Authorization': f'Bearer {token}'}
         body = {"command": cmd}
         print("Sending Command")
-        response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/garages/{GARAGE_ID}/command",json = body, headers=headers)
+        response = requests.post(f"https://{endpoint}/garages/{GARAGE_ID}/command",json = body, headers=headers)
         print(response.status_code, response.text)
 
 
@@ -292,11 +290,10 @@ async def offer(request):
     )
 
 def get_token():
-
     login_data = {'username': USERNAME, 'password': PASSWORD}
     print(login_data)
     try:
-        response = requests.post(f"http://{CLOUD_HOST}:{CLOUD_PORT}/token", data=login_data,timeout=20)
+        response = requests.post(f"https://{endpoint}/token", data=login_data,timeout=20)
         contents = json.loads(response.content.decode('utf-8'))
         token = contents.get('access_token')
         print(token)
@@ -310,7 +307,7 @@ def get_token():
 def get_garage_state(token):
     try:
         headers= {'Authorization': f'Bearer {token}'}
-        response = requests.get(f"http://{CLOUD_HOST}:{CLOUD_PORT}/garages/{GARAGE_ID}",headers=headers)
+        response = requests.get(f"https://{endpoint}/garages/{GARAGE_ID}",headers=headers)
 
         if response.status_code ==200:
             contents = json.loads(response.content.decode('utf-8'))
@@ -377,7 +374,7 @@ def connect():
 
 @sio.event
 def disconnect():
-    print("API connection lost")
+    rospy.logwarn("API connection lost")
     global api_connected
     api_connected = False
 

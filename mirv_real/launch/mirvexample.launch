@@ -1,38 +1,62 @@
 <launch>
-    <arg name="wheel_base_width" default="0.42037"/>
-    <arg name="wheel_radius" default="0.09460"/>
+    <arg name="wheel_base_width" default="0.483"/>
+    <arg name="wheel_radius" default="0.1905"/>
     <arg name="param_file_name" default="mirv"/>
     <arg name="param_file_dir" default="$(find mirv_real)/GPS/config"/>
-    <param name="api_host" type="String" value="20.242.243.56"/>
-    <param name="api_port" type="String" value="8080"/>
-    <param name="mirv_common_name" type="String" value="rover_1"/>
-    <param name="api_username" type="String" value="rover_dev"/>
-    <param name="api_password" type="String" value="1234"/>
+
+    <param name="mirv_common_name" type="String" value=""/>
+    <param name="garage_id" type="String" value=""/>
+    
+
+    <!-- API Params for Production environment -->
+    <param name="api_host" type="String" value=""/>
+    <param name="api_username" type="String" value=""/>
+    <param name="api_password" type="String" value=""/>
+
+    
+
+
+    <!-- API Params for Development Environment -->
+    <!-- <param name="api_host" type="String" value=""/>
+    <param name="api_port" type="String" value=""/>
+    <param name="api_username" type="String" value=""/>
+    <param name="api_password" type="String" value=""/> -->
+
+
+    <arg name="respawn_delay" default="5" />
+    <arg name="respawn" value="true"/>
+    <arg name="clear_params" default="true" />
+    <!-- RTK GPS Start -->
+    <remap from="/ublox_gps/fix" to="/gps/fix"/>
+    <remap from="/ublox_gps/navpvt" to="/ublox/navpvt"/>
+    <include file="$(find ublox_gps)/launch/ublox_device.launch">
+        <arg name="node_name" value="ublox_gps"/>
+        <arg name="param_file_name" value="zed-f9p"/>
+        <arg name="output" value="screen"/>
+        <arg name="respawn" value="true"/>
+        <arg name="respawn_delay" value="30"/>
+        <arg name="clear_params" value="false"/>
+    </include>
 
     <!-- start control nodes -->
 
     <!-- Transforms Stack -->
     <param name="robot_description" textfile="$(find mirv_control)/urdf/mirv_real.urdf"/>
+    <node name="statusManager" pkg="mirv_control" type="StatusManager.py"/>
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"/>
 
+
     <!-- Start real-world/simulation agnostic nodes -->
-    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true"/>
-    <include file="$(find mirv_control)/launch/cloud_nodes.launch" pass_all_args="true"/>
+    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true" output = "screen"/>
+    <include file="$(find mirv_control)/launch/cloud_nodes.launch" pass_all_args="true" output = "screen"/>
 
     <!-- start real-world nodes -->
-    <!-- <node name="control" pkg="mirv_real" type="control"/> -->
-    <!-- <node name="Cloud" pkg="mirv_control" type="roverClient.py"/> -->
-    <node name="DIOControl" pkg="mirv_real" type="DIOControl.py"/>
     <node name="Canbus" pkg="mirv_real" type="canbus"/>
-    <!-- <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/> -->
-    <!-- <node name="camera" pkg="mirv_real" type="backCameraPublisher.py"/> -->
-    <!-- <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"/> -->
-    <node name="EKF" pkg="mirv_control" type="EKF.py"/>
-    <node name="TruckCoordinateConversion" pkg="mirv_control" type="globalToTruck.py"/>
-    <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"/>
+    <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"
+        respawn="$(arg respawn)" 
+        respawn_delay="$(arg respawn_delay)"/>
     <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py"/>
-    <!--<node name="CloudAlServer" pkg="mirv_control" type="CloudAlServer.py" output="screen"/> -->
-    <!-- <node name="OdometyDataUnfiltered" pkg="mirv_control" type="controllerFormatting.py"/> -->
-    <!-- <node name="GPSCoordinates" pkg="mirv_real" type="RTKInput.py"/> -->
-    <!-- <node name="camera" pkg="mirv_real" type="cameraPublisher.py"/> -->
+    <node name="laneLineDetector" pkg="mirv_real" type="detectLaneLines.py"/>
+    <node name="PiLitModuleController" pkg="mirv_real" type="PiLitModuleController.py" output = "screen"/>
+    
 </launch>

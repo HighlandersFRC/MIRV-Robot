@@ -1,8 +1,8 @@
 #goal definition
-float64 latitude
-float64 longitude
-float64 heading
 string formation_type
+float64 position_x
+float64 position_y
+float64 heading
 ---
 #result definition
 float64[] placement_locations

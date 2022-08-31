@@ -15,6 +15,7 @@
     <node name="DriveDistanceALServer" pkg="mirv_control" type="driveDistance.py"/>
     <node name="garageDocking" pkg="mirv_control" type="moveToGarage.py"/>
     <node name="detectGarage" pkg="mirv_control" type="detectGarage.py" output="screen"/>
+    
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_broadcaster"  args="0 0 0 0 0 0 /map /odom 1"/>
 
     <!-- Start RViz for visualization -->

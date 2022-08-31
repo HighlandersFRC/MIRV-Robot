@@ -5,6 +5,6 @@
 
 
 # Change the metric on the ppp0 route to prioritize it over the router
-sudo ip route replace 0.0.0.0/0 via 0.255.80.0 dev ppp0 metric 1 
+sudo ip route replace 0.0.0.0/0 via 172.250.250.104 dev eth1 metric 0 
 
 

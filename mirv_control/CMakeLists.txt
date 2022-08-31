@@ -62,6 +62,7 @@ add_message_files(
    camera_calibration.msg
    aruco_detection.msg
    aruco_detections.msg
+   pilit_state.msg
  )
 
 ## Generate services in the 'srv' folder

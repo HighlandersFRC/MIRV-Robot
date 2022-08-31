@@ -6,14 +6,20 @@ import rospy
 from std_msgs.msg import String, Bool
 
 # Pin Definitions
-#                    function|      HI       |    LO 
-DO0=320 ## tp4       reverse | Rev enable    | Rev Disable
-DO1=321 ## header 6  inhibit | Flash disable | Flash enable 
-DO2=322 ## header 7  reset   | active low reset with low pulse
-DO3=323 ## tp5       pattern | Simultaneous  | Wave
-DI1=325
+# Pins have negative Logic
+# A value of 0 in the file, is output HIGH
+# A value of 1 in the file is outpput LOW
+
+
+
+#                    function       |      HI (0)               |    LO (1)
+DO0=320 ## tp4       reverse        | Rev enable                | Rev Disable
+DO1=321 ## header 6  inhibit        | Flash disable             | Flash enable 
+DO2=322 ## header 7  reset          | active low reset with low pulse
+DO3=323 ## tp5       pattern        | Simultaneous              | Wave
+DI1=325 
 DI2=331
-DI3=326
+DI3=326 ##           Connection     | 
 ## note: Control board is wired so binary LOW is HIGH, and binary HIGH is LOW 
 outputsDict = {"DO0": DO0, "DO1": DO1, "DO2": DO2, "DO3": DO3}
 def digitalRead(pin):
