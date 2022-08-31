@@ -13,13 +13,8 @@ from numpy import asarray
 import depthai
 
 from lib.core.postprocess import morphological_process, connect_lane
-from lib.core.function import AverageMeter
-from lib.utils import plot_one_box, show_seg_result
-from lib.core.general import non_max_suppression, scale_coords
-from lib.dataset import LoadImages, LoadStreams
+from lib.utils import show_seg_result
 from lib.models import get_net
-from lib.utils.utils import create_logger, select_device, time_synchronized
-from lib.config import update_config
 from lib.config import cfg
 import numpy as np
 import torch
@@ -39,6 +34,8 @@ sys.path.append(BASE_DIR)
 
 
 br = CvBridge()
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 normalize = transforms.Normalize(
     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -60,6 +57,9 @@ shapes = ((img_height, img_width),
 device = torch.device('cuda')
 weights = "weights/End-to-end.pth"
 
+CAMERA_HEIGHT = 7.75 * .0254
+CAMERA_ANGLE = -15
+
 # Load model
 model = get_net(cfg)
 checkpoint = torch.load(weights, map_location=device)
@@ -73,6 +73,12 @@ detections = 0
 
 runningNeuralNetwork = True
 
+i = 0
+startTime = time.time()
+
+frame = None
+depthFrame = None
+
 
 def allowNeuralNetRun(msg):
     cmd = msg.data
@@ -81,11 +87,6 @@ def allowNeuralNetRun(msg):
         runningNeuralNetwork = True
     else:
         runningNeuralNetwork = False
-
-
-def updateIMU(msg):
-    global theta
-    theta = msg.data
 
 
 def updateTruckCoordinates(msg):
@@ -98,10 +99,22 @@ def updateTruckCoordinates(msg):
 def execute_cb():
     print("GOT ACTION SERVER GOAL FOR LANES")
     goal = actionServer.accept_new_goal()
-    # latitude = goal.latitude
-    # longitude = goal.latitude
-    # heading = goal.heading
+    position_x = goal.position_x
+    position_y = goal.position_y
+    heading = goal.heading
     lane_type = goal.formation_type
+
+    if frame == None:
+        print("ERROR: NO FRAME")
+        actionServer.set_aborted()
+        return
+
+    lane_heading, detections, lane_width = process_frame(
+        frame, position_x, position_y, heading)
+
+    print("LANE LINE DETECTIONS: {detections}")
+    print("LANE HEADING DETECTION: {lane_heading}")
+    print("LANE WIDTH DETECTION: {lane_width}")
 
     placements = placement.generate_pi_lit_formation(
         detections, lane_heading, lane_width, lane_type)
@@ -121,31 +134,38 @@ def gotFrame(data):
     # print(f"WRITING IMAGE")
 
     if(runningNeuralNetwork):
+
+        global frame, depthFrame
         initTime = time.time()
         frame = ros_numpy.numpify(data.color_frame)
         depthFrame = ros_numpy.numpify(data.depth_frame)
-        lane_points = get_lane_points(frame)
-        left_lane, right_lane = retrieve_lanes(lane_points)
-        angle = 0
-        lanes = {}
-        if left_lane and right_lane:
-            angle = (left_lane[2] + right_lane[2]) / 2
-            lanes['left'] = (left_lane[3], left_lane[4])
-            lanes['right'] = (right_lane[3], right_lane[4])
-        elif left_lane:
-            angle = left_lane[2]
-            lanes['left'] = (left_lane[3], left_lane[4])
-        elif right_lane:
-            angle = right_lane[2]
-            lanes['right'] = (right_lane[3], right_lane[4])
-        else:
-            angle = None
-            lanes = {}
 
-        global lane_heading, detections, lane_width
-        lane_heading = angle
-        detections = lanes
-        lane_width = 3
+
+def process_frame(frame, rover_position_x, rover_position_y, rover_heading):
+    lane_points = get_lane_points(frame)
+    left_lane, right_lane = retrieve_lanes(
+        lane_points, (rover_position_x, rover_position_y), rover_heading)
+    angle = 0
+    lanes = {}
+    if left_lane and right_lane:
+        angle = (left_lane[2] + right_lane[2]) / 2
+        lanes['left'] = (left_lane[3], left_lane[4])
+        lanes['right'] = (right_lane[3], right_lane[4])
+    elif left_lane:
+        angle = left_lane[2]
+        lanes['left'] = (left_lane[3], left_lane[4])
+    elif right_lane:
+        angle = right_lane[2]
+        lanes['right'] = (right_lane[3], right_lane[4])
+    else:
+        angle = None
+        lanes = {}
+
+    lane_heading = angle
+    detections = lanes
+    lane_width = 3
+
+    return lane_heading, detections, lane_width
 
 
 def get_lane_points(img):
@@ -178,24 +198,31 @@ def get_lane_points(img):
     _, ll_seg_mask = torch.max(ll_seg_mask, 1)
     ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
 
-    # img_det = show_seg_result(
-    #     frame, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
+    img_det = show_seg_result(
+        frame, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
     # Lane line post-processing
     ll_seg_mask = morphological_process(
         ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
     ll_seg_mask, lines = connect_lane(ll_seg_mask)
+    global i
+    image_dir = "/media/nvidia/SSD/lane_pictures"
+    print(cv2.imwrite(f'{image_dir}/img_det_{startTime}_{i}.jpg', img_det))
+    print(cv2.imwrite(f'{image_dir}/da_seg_mask_{startTime}_{i}.jpg', da_seg_mask))
+    print(cv2.imwrite(
+        f'{image_dir}/ll_seg_mask_{startTime}_{i}.jpg', ll_seg_mask))
+    i += 1
     return lines
 
 
 # Identify and generate left and right lane line positions + angles
-def retrieve_lanes(lines):
+def retrieve_lanes(lines, rover_position, rover_heading):
     left_lane = None
     right_lane = None
     for line in lines:
         line = list(line)
         x_intercept, dx_sign, angle, x0, y0 = pixel_angles.get_line_equations(
-            line, 0, (0, 0), (0, -15), 0.15)
+            line, rover_heading, rover_position, (0, CAMERA_ANGLE), CAMERA_HEIGHT)
 
         print(x_intercept, dx_sign, angle, x0, y0)
 
@@ -220,7 +247,6 @@ def retrieve_lanes(lines):
 
 rospy.init_node('laneLineDetector')
 rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame)
-rospy.Subscriber('CameraIMU', Float64, updateIMU)
 
 placementPublisher = rospy.Publisher(
     'pathingPointInput', Float64MultiArray, queue_size=1)

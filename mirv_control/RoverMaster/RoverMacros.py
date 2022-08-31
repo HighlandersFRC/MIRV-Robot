@@ -179,9 +179,10 @@ class roverMacros():
         time.sleep(5)
         print("Global Heading", (math.degrees(self.interface.globalHeading) - 180)%360, "Rough Heading", roughHeading)
         
-        points = placement.generate_pi_lit_formation(
-            detected_lanes, 0 , 3, formation_type)
-        #points = self.interface.Lane_Lines_goal(formation_type)
+
+        # points = placement.generate_pi_lit_formation(
+        #     detected_lanes, 0 , 3, formation_type)
+        points = self.interface.Lane_Lines_goal(formation_type)
         print("GENERATED POINTS: ", points)
         #return True
         # print("Calculated Placement Points: ", points)
