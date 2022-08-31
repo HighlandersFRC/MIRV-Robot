@@ -2,13 +2,13 @@
 from __future__ import print_function
 import queue
 import rospy
-from PiLitController import PiLitControl
 # Brings in the SimpleActionClient
 import actionlib
 import time
 from std_msgs.msg import Float64, Float64MultiArray, String
 from mirv_control.msg import garage_state_msg
 from mirv_control.msg import garage_position as GaragePosition
+from mirv_control.msg import pilit_state
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import NavSatFix
 from geometry_msgs.msg import Twist
@@ -93,8 +93,6 @@ class RoverInterface():
         # self.PlacementGeneratorClient.wait_for_server()
         # print("connected to placement generator")
 
-        self.pilit_controller = PiLitControl()
-
         self.isJoystickControl = True
         self.isPurePursuitControl = False
         self.purePursuitTarget = []
@@ -115,6 +113,7 @@ class RoverInterface():
         self.startingHeading = 0
         self.globalHeading = 0
         self.cancelled = False
+        self.pilit_state = pilit_state()
 
         self.imu_buffer = []
         self.imu = 0
@@ -149,6 +148,9 @@ class RoverInterface():
             "RoverState", String, queue_size=5)
         self.neuralNetworkSelector = rospy.Publisher(
             "neuralNetworkSelector", String, queue_size=1)
+        
+        self.pilit_state_publisher = rospy.Publisher(
+            "PilitControl", pilit_state, queue_size=1)
         # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
 
     # def setPiLitSequence(self, is_wave: bool):
@@ -183,6 +185,7 @@ class RoverInterface():
         rospy.loginfo("Rover Macros loaded into Rover Interface")
 
     def garage_location_callback(self, msg):
+        print("Updating Garage Location", msg)
         self.garageLocation = msg
 
     def garage_state_callback(self, msg):
@@ -282,7 +285,8 @@ class RoverInterface():
         if self.startingHeading != 0:
             self.globalHeading = math.radians(math.degrees(
                 self.startingHeading - math.pi/2 + self.heading) % 360)
-
+        #print("Global Heading", math.degrees(self.globalHeading))
+        
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
 
@@ -369,6 +373,7 @@ class RoverInterface():
         goal = mirv_control.msg.GeneratePlacementLocationsGoal
         self.laneLineClient.send_goal(goal)
         self.laneLineClient.wait_for_result()
+        print("GOT A RESULT FROM LANES")
         return self.laneLineClient.get_result().placement_locations
 
     def Calibrate_client_goal(self):
@@ -503,21 +508,23 @@ class RoverInterface():
     def setPiLits(self, command):
         self.cancelled = False
         if command == "simultaneous":
-            self.pilit_controller.inhibit(False)
-            self.pilit_controller.patternType(False)
+            self.pilit_state.wave = False
+            self.pilit_state.inhibit = False
         elif command == "wave_reverse":
-            self.pilit_controller.inhibit(False)
-            self.pilit_controller.patternType(True)
-            self.pilit_controller.reversePattern(True)
+            self.pilit_state.wave = True
+            self.pilit_state.inhibit = False
+            self.pilit_state.reverse = True
         elif command == "wave":
-            self.pilit_controller.inhibit(False)
-            self.pilit_controller.patternType(True)
-            self.pilit_controller.reversePattern(False)
+            self.pilit_state.wave = True
+            self.pilit_state.inhibit = False
+            self.pilit_state.reverse = False
         elif command == "idle":
-            self.pilit_controller.inhibit(True)
+            self.pilit_state.inhibit = True
         else:
             rospy.logwarn(
                 "Received Unrecognized Light Command type: " + str(command))
+            
+        self.pilit_state_publisher.publish(self.pilit_state)
 
     def driveToPoint(self, lat, long):
         self.cancelled = False
@@ -562,8 +569,11 @@ class RoverInterface():
     def dock(self):
         self.cancelled = False
         self.roverState = self.AUTONOMOUS
-        self.RoverMacro.dock()
-        self.roverState = self.CONNECTED_DISABLED
+        success = self.RoverMacro.dock()
+        if success:
+            self.roverState = self.CONNECTED_DISABLED
+        else:
+            self.roverState = self.CONNECTED_ENABLED
 
     def cloud_callback(self, message):
 

@@ -72,13 +72,14 @@ def updateTruckCoordinates(msg):
     currentTruckCoordY = msg.pose.pose.position.y
 
 def execute_cb():
+    print("GOT ACTION SERVER GOAL FOR LANES")
     goal = actionServer.accept_new_goal()
     # latitude = goal.latitude
     # longitude = goal.latitude
     # heading = goal.heading
     lane_type = goal.formation_type
 
-    placements = placement.generate_pi_lit_formation(detections, heading, lane_width, lane_type)
+    placements = placement.generate_pi_lit_formation(detections, lane_heading, lane_width, lane_type)
     # print(placsements)
     msg = Float64MultiArray()
     msg.data = placements
@@ -88,7 +89,11 @@ def execute_cb():
 
 # callback function when receiving a frame
 def gotFrame(data):
-    #print("GOT A FRAME")
+    print("GOT A FRAME")
+    print(cv2.imwrite(r'camera_image.jpg', ros_numpy.numpify(data.color_frame)))
+    # print(print(ros_numpy.numpify(data.color_frame)))
+    print(f"WRITING IMAGE")
+        
     if(runningNeuralNetwork):
         initTime = time.time()
         frame = ros_numpy.numpify(data.color_frame)
@@ -97,7 +102,7 @@ def gotFrame(data):
         tensorImg = transform(frame).to(device)
         if tensorImg.ndimension() == 3:
             tensorImg = tensorImg.unsqueeze(0)
-        detections = laneLineDetect(tensorImg, frame, depthFrame)
+        laneLineDetect(tensorImg, frame, depthFrame)
 
 # detect lane lines and determine which lane MIRV is in
 def laneLineDetect(img, frame, depthFrame):
@@ -140,7 +145,7 @@ def laneLineDetect(img, frame, depthFrame):
     numLines = 0
     piLitLocations = None
     laneType = "CENTER"
-    if(len(lines) != 0):
+    if(lines is not None):
         if(len(lines)%2 == 0):
             mirvLeftLaneNum = (len(lines)/2)
             mirvRightLaneNum = (len(lines)/2) + 1
@@ -155,7 +160,7 @@ def laneLineDetect(img, frame, depthFrame):
         lane_width, detections, lane_heading = generateLines(depthFrame, leftLane, rightLane)
         print("LANE WIDTH: ", lane_width, " LANE HEADING: ", lane_heading, "LANES: ", detections)
     else:
-        global lane_width
+        # global lane_width
         lane_width = 3
         print("COULD NOT FIND LANE LINES, TRYING AGAIN")
 

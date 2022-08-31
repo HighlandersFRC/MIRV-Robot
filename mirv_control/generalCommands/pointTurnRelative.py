@@ -119,7 +119,7 @@ class pointTurnRelative():
             if abs(self.imu - targetAngle) < successThreshold:
                 numberPointsWithinTolerance += 1
             else:
-                numberPointsWithinTolerance  = 0
+                numberPointsWithinTolerance = 0
 
             if numberPointsWithinTolerance > 10000:
                 print("SUCCESSFULLY POINT TURNED")

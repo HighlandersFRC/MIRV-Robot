@@ -13,13 +13,15 @@ class PiLitControl():
     DI1 = False
     piLitRestartTimeout = 60
     networkFailCount = 0
-    reveresState = 0
+    reverseState = 0
     inhibitState = 0
     patternState = 0
+    
+    
     def __init__(self):
         self.pub = rospy.Publisher("DOControl", String, queue_size=10)
         self.sub = rospy.Subscriber("/DIO/DI1", Bool, self.callback)
-        #rospy.init_node("PiLitController", anonymous=True)
+        rospy.init_node("PiLitController", anonymous=True)
         self.rate = rospy.Rate(1)
         WatchdogThread = threading.Thread(target = self.watchDog, name = "thread2")
         print("Starting PiLit watchdog")
@@ -27,7 +29,7 @@ class PiLitControl():
         
     def reversePattern(self, isReversed):
         self.pub.publish("{},{}".format(patternPin, int(isReversed)))
-        self.reveresState = int(isReversed)
+        self.reverseState = int(isReversed)
     def callback(self, data):
         self.DI1 = data
 
@@ -43,11 +45,11 @@ class PiLitControl():
         self.patternState = int(isWave)
 
     def reset(self):
-        self.pub.publish("{},1".format(resetPin))
-        time.sleep(0.5)
         self.pub.publish("{},0".format(resetPin))
         time.sleep(0.5)
         self.pub.publish("{},1".format(resetPin))
+        time.sleep(0.5)
+        self.pub.publish("{},0".format(resetPin))
 
     def watchDog(self):
         while not rospy.is_shutdown():
@@ -59,10 +61,11 @@ class PiLitControl():
                 self.networkFailCount = 0
             self.pub.publish("{},{}".format(patternPin, int(self.patternState)))
             self.pub.publish("{},{}".format(inhibitPin, int(self.inhibitState)))
-            self.pub.publish("{},{}".format(patternPin, int(self.reveresState)))
+            self.pub.publish("{},{}".format(patternPin, int(self.reverseState)))
             self.rate.sleep()
-
 
 
 if __name__ == '__main__':
     piLitCtrl = PiLitControl()
+    piLitCtrl.reset()
+    piLitCtrl.inhibit(True)

@@ -5,7 +5,6 @@ import rospy
 import mirv_control.msg
 import actionlib
 import threading
-from PiLitController import PiLitControl as PiLitController
 from std_msgs.msg import String, Float64MultiArray
 import time
 import numpy as np
@@ -36,10 +35,10 @@ class roverMacros():
 
         # # Step 2: Drive to front of garage
         # print(f"Step 2: Driving to front of garage")
-        # lineUpPoint1 = [3, 0]
-        # lineUpPoint2 = [1, 0]
-        # lineUpPoints = [lineUpPoint1, lineUpPoint2]
-        # self.interface.PP_client_goal(lineUpPoints)
+        lineUpPoint1 = [3, 0]
+        lineUpPoint2 = [1.5, 0]
+        lineUpPoints = [lineUpPoint1, lineUpPoint2]
+        self.interface.PP_client_goal(lineUpPoints)
 
         # ## TODO: Cancel
         # if self.interface.cancelled:
@@ -48,12 +47,16 @@ class roverMacros():
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
         time.sleep(5)
-        garage_angle = self.interface.garageLocation.angle_to_garage
+        if self.interface.garageLocation is not None:
+            garage_angle = self.interface.garageLocation.angle_to_garage
+        else:
+            rospy.logerr("Unable to Dock. No Garage Location Present")
+            return False
         print(f"Step 3: Turning to relative angle of {garage_angle} degrees")
         if not garage_angle:
             rospy.logerr("Garage was not found in frame - Step 2")
             self.interface.changeNeuralNetworkSelected("none")
-            return
+            return False
         self.interface.pointTurn(garage_angle, 5)
 
         # Step 4: itentify offsets to aruco tag
@@ -63,7 +66,7 @@ class roverMacros():
         if not x or not y:
             rospy.logerr("Garage was not found in frame - Step 3")
             self.interface.changeNeuralNetworkSelected("none")
-            return
+            return False
 
         theta_1 = (180 / math.pi) * math.atan2(y, x)
         theta_2 = (90 - abs(theta_1))*theta_1/abs(theta_1)
@@ -95,7 +98,7 @@ class roverMacros():
         if not garage_angle:
             rospy.logerr("Garage was not found in frame - Step 8")
             self.interface.changeNeuralNetworkSelected("none")
-            return
+            return False
         self.interface.pointTurn(garage_angle, 5)
 
         # Step 9: Drive directly towards back of garage
@@ -108,6 +111,7 @@ class roverMacros():
 
         # # Step 10: Disable camera neural network
         # self.interface.changeNeuralNetworkSelected("none")
+        return True
 
     def dockNoPathing(self):
         self.interface.changeNeuralNetworkSelected("aruco")
@@ -153,36 +157,58 @@ class roverMacros():
         self.interface.PP_client_goal(startingTarget)
         detected_lanes = {
             'right': (firstPointTruckCoord[0], firstPointTruckCoord[1])}
+        
+        time.sleep(5)
+        print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
+        
+        #targetHeading = -roughHeading - math.degrees(self.interface.globalHeading)-180
+        targetForwardHeading = -roughHeading 
+        globalForwardHeading = (math.degrees(self.interface.globalHeading) - 180)%360
+        deltaAngle = (globalForwardHeading - targetForwardHeading) % 360
+        
+        print("Target Forward Heading", targetForwardHeading)
+        print("global Forward Heading", globalForwardHeading)
+        print("Delta Angle", deltaAngle)
+        
+        
+        
+        #print("Target Heading", targetHeading)
+        #self.interface.pointTurn((targetHeading + self.interface.heading)%360 ,5)
+        self.interface.pointTurn(deltaAngle, 5)
+        
+        time.sleep(5)
+        print("Global Heading", (math.degrees(self.interface.globalHeading) - 180)%360, "Rough Heading", roughHeading)
+        
         points = placement.generate_pi_lit_formation(
-            detected_lanes, 0, 3, formation_type)
-        # points = self.interface.Lane_Lines_goal(formation_type)
-        print("Calculated Placement Points: ", points)
+            detected_lanes, 0 , 3, formation_type)
+        #points = self.interface.Lane_Lines_goal(formation_type)
+        print("GENERATED POINTS: ", points)
+        #return True
+        # print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
-
-        for pnt in points:
-            # point = self.interface.CoordConversion_client_goal(pnt)
-            # print("Converting Point")
-            point = [pnt[0], pnt[1]]
-            target = [point]
-            if self.interface.cancelled:
-                return
-            self.interface.PP_client_goal(target)
-            print("Going to PP target")
-            if self.interface.cancelled:
-                return
-            self.placePiLitFromSide(6, intakeSide)
-            if self.interface.cancelled:
-                return
-            self.interface.intake_command_pub.publish(String("reset"))
-            self.interface.loadPointToSQL("deploy", intakeSide)
-            if(intakeSide == "switch_right"):
-                intakeSide = "switch_left"
-            else:
-                intakeSide = "switch_right"
-            time.sleep(2)
-        return True
+        
+        # for pnt in points:
+        #     #point = [pnt[0], pnt[1]]
+        #     target = [pnt]
+        #     if self.interface.cancelled:
+        #         return
+        #     self.interface.PP_client_goal(target)
+        #     print("Going to PP target")
+        #     if self.interface.cancelled:
+        #         return
+        #     self.placePiLitFromSide(6, intakeSide)
+        #     if self.interface.cancelled:
+        #         return
+        #     self.interface.intake_command_pub.publish(String("reset"))
+        #     self.interface.loadPointToSQL("deploy", intakeSide)
+        #     if(intakeSide == "switch_right"):
+        #         intakeSide = "switch_left"
+        #     else:
+        #         intakeSide = "switch_right"
+        #     time.sleep(2)
+        # return True
 
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"
