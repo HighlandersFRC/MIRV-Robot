@@ -114,6 +114,7 @@ def send_to_api(message, type="data"):
             sio.emit(type, message)
         else:
             rospy.logwarn("API Disconnected. Cannot Send Message")
+            connect_to_api()
     except socketio.exceptions.BadNamespaceError:
         rospy.logwarn("Unable to send message to socket server")
 
@@ -373,7 +374,7 @@ def connect():
 
 @sio.event
 def disconnect():
-    print("API connection lost")
+    rospy.logwarn("API connection lost")
     global api_connected
     api_connected = False
 
