@@ -35,7 +35,7 @@ sys.path.append(BASE_DIR)
 
 br = CvBridge()
 
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 normalize = transforms.Normalize(
     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -208,7 +208,8 @@ def get_lane_points(img):
     global i
     image_dir = "/media/nvidia/SSD/lane_pictures"
     print(cv2.imwrite(f'{image_dir}/img_det_{startTime}_{i}.jpg', img_det))
-    print(cv2.imwrite(f'{image_dir}/da_seg_mask_{startTime}_{i}.jpg', da_seg_mask))
+    print(cv2.imwrite(
+        f'{image_dir}/da_seg_mask_{startTime}_{i}.jpg', da_seg_mask))
     print(cv2.imwrite(
         f'{image_dir}/ll_seg_mask_{startTime}_{i}.jpg', ll_seg_mask))
     i += 1
