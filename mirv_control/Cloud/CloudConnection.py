@@ -128,7 +128,7 @@ def connect_to_api():
         sio.reconnection_delay_max = 1
         sio.reconnection_attempts = 0
         sio.handle_sigint = True
-        sio.connect(f"ws://{endpoint}/ws", headers={"ID": ROVER_COMMON_NAME, "device-type": "rover", "token": token}, socketio_path="/ws/socket.io")
+        sio.connect(f"ws://{endpoint}/ws", headers={"ID": ROVER_COMMON_NAME, "device-type": "rover", "token": token}, socketio_path="/ws/socket.io", wait_timeout = 30)
         rospy.loginfo("Cloud Connection Succeeded")
     except socketio.exceptions.ConnectionError as e:
         global api_connected
