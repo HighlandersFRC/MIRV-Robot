@@ -93,8 +93,25 @@ frames = []
 status_messages = []
 
 cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 
+def get_token():
+    login_data = {'username': USERNAME, 'password': PASSWORD}
+    print(login_data)
+    try:
+        response = requests.post(f"https://{endpoint}/token", data=login_data,timeout=20)
+        contents = json.loads(response.content.decode('utf-8'))
+        token = contents.get('access_token')
+        print(token)
+        return token
+    except requests.exceptions.ReadTimeout:
+        print("Unable to Acquire Token")
+        return ""
+    except requests.exceptions.ConnectionError as e:
+        print("Unable to Acquire Token", e)
+        return ""
 
 def get_webrtc_state():
     if len(pcs) > 0:
@@ -106,20 +123,26 @@ def get_webrtc_state():
 # Tries to connect to API and form Socket Connection
 def connect_to_api():
     try:
+        sio.reconnection = True
+        sio.reconnection_delay = 0.5
+        sio.reconnection_delay_max = 1
+        sio.reconnection_attempts = 0
+        sio.handle_sigint = True
         sio.connect(f"ws://{endpoint}/ws", headers={"ID": ROVER_COMMON_NAME, "device-type": "rover", "token": token}, socketio_path="/ws/socket.io")
         rospy.loginfo("Cloud Connection Succeeded")
     except socketio.exceptions.ConnectionError as e:
+        global api_connected
+        api_connected = False
         rospy.logwarn(f"Unable to Connect to API: {endpoint}")
         rospy.logwarn(e)
 
 # Sends a Message to the API
 def send_to_api(message, type="data"):
     try:
-        if api_connected:
+        if sio.connected:
             sio.emit(type, message)
         else:
             rospy.logwarn("API Disconnected. Cannot Send Message")
-            connect_to_api()
     except socketio.exceptions.BadNamespaceError:
         rospy.logwarn("Unable to send message to socket server")
 
@@ -127,9 +150,9 @@ def send_to_api(message, type="data"):
 # Send a Message on Webrtc Channel
 def send_to_webrtc(message):
     try:
-        str_msg = json.dumps(msg)
+        str_msg = json.dumps(msg)   
         for channel in channels:
-            rospy.loginfo("Sending", + str_msg)
+            #rospy.loginfo("Sending", + str_msg)
             channel.send(str_msg)
     except Exception as e:
         print("Unable to send message to webrtc")
@@ -147,10 +170,15 @@ def frameSubscriber(data):
 def statusSubscriber(data):
     if data is not None and len(str(data.data)) > 0:
         status = json.loads(str(data.data))
-        rospy.loginfo(status)
-        if api_connected:
+        global token
+        if token == "":
+            token = get_token()
+        
+        if sio.connected:
             send_to_api(status)
-            get_garage_state(token)        
+            get_garage_state(token)
+        #else:
+        #    connect_to_api()       
         if get_webrtc_state == "connected":
             send_to_webrtc(status)
         #if len(status_messages) == 0:
@@ -173,18 +201,18 @@ def garageSubscriber(data):
 
     
 
-def update_remote():
-    while True:
-        global socket_connection
-        if socket_connection is None:
-            print("Retrying Connection")
-            socket_connection = connect_to_api()
-        elif not socket_connection.connected:
-            print("Connection to API has been lost")
-        else:
-            pass
-        print("test")
-        sleep(5)
+# def update_remote():
+#     while True:
+#         global socket_connection
+#         if socket_connection is None:
+#             print("Retrying Connection")
+#             socket_connection = connect_to_api()
+#         elif not socket_connection.connected:
+#             print("Connection to API has been lost")
+#         else:
+#             pass
+#         print("test")
+#         sleep(5)
 
     
 
@@ -225,7 +253,7 @@ class RobotVideoStreamTrack(VideoStreamTrack):
         
     #     frame.pts = pts
     #     frame.time_base = time_base
-    #    return frame
+    #     return frame
     
     async def recv(self):
         startTime = time.time()
@@ -236,7 +264,7 @@ class RobotVideoStreamTrack(VideoStreamTrack):
         frame.pts = pts
         frame.time_base = time_base
         
-        print("Returned Frame", time.time() - startTime)
+        #print("Returned Frame", time.time() - startTime, cv_frame.shape)
         return frame
 
 # Website posts an offer to python server
@@ -295,24 +323,9 @@ async def offer(request):
         ),
     )
 
-def get_token():
-    login_data = {'username': USERNAME, 'password': PASSWORD}
-    print(login_data)
+def get_garage_state(tkn):
     try:
-        response = requests.post(f"https://{endpoint}/token", data=login_data,timeout=20)
-        contents = json.loads(response.content.decode('utf-8'))
-        token = contents.get('access_token')
-        print(token)
-        return token
-    except requests.exceptions.ReadTimeout:
-        print("Unable to Acquire Token")
-        return ""
-    except requests.exceptions.ConnectionError as e:
-        print("Unable to Acquire Token", e)
-
-def get_garage_state(token):
-    try:
-        headers= {'Authorization': f'Bearer {token}'}
+        headers= {'Authorization': f'Bearer {tkn}'}
         response = requests.get(f"https://{endpoint}/garages/{GARAGE_ID}",headers=headers)
 
         if response.status_code ==200:
@@ -326,7 +339,9 @@ def get_garage_state(token):
             state.health = contents.get("health","unavailable")
             state.health_details = contents.get("health_description","unavailable")
             garage_pub.publish(state)
-
+        elif response.status_code ==401:
+            global token
+            token = get_token()
         else:
             print(f"Received Status Code: {response.status_code}, Details: {response.text}")
     except Exception as e:
@@ -348,7 +363,6 @@ async def update_garage(token):
     print("Started Garage")
     while True:
         get_garage_state(token)
-
         print("test")
         await asyncio.sleep(5)
 '''

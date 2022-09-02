@@ -161,10 +161,10 @@ def get_center_coordinates(detected_lanes, heading, lane_width):
                 [0])/2, (detected_lanes['left'][1] + detected_lanes['right'][1])/2)
     elif detected_lanes.get('left'):
         return getEndPoint(
-            detected_lanes['left'][0], detected_lanes['left'][1], heading + 90, lane_width/2)
+            detected_lanes['left'][0], detected_lanes['left'][1], heading - 90, lane_width/2)
     elif detected_lanes.get('right'):
         return getEndPoint(
-            detected_lanes['right'][0], detected_lanes['right'][1], heading - 90, lane_width/2)
+            detected_lanes['right'][0], detected_lanes['right'][1], heading + 90, lane_width/2)
     else:
         return (None, None)
 

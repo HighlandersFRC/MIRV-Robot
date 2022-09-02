@@ -39,6 +39,7 @@ class RoverController():
 
     def main(self):
         print("RoverController MAIN")
+        #self.interface.pointTurn(-90,2)
         # self.interface.changeNeuralNetworkSelected("lanes")
         # self.interface.setPiLits("wave")
         # self.macros.placeAllPiLits((0, 0), 0, "taper_right_5")

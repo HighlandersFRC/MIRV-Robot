@@ -28,7 +28,7 @@ class pointTurnRelative():
 
         self.powerdrive_pub = rospy.Publisher(
             "PowerDrive", Float64MultiArray, queue_size=10)
-        self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU)
+        self.imu_sub = rospy.Subscriber('pigeonIMU', Float64, self.updateIMU)
         self.velocitydrive_pub = rospy.Publisher(
             "cmd_vel", Twist, queue_size=5)
 
@@ -38,7 +38,7 @@ class pointTurnRelative():
 
         self.imu = 0
 
-        self.kP = 0.02
+        self.kP = 0.08
         self.kI = 0.000002
         self.kD = 2
         self.setPoint = 0

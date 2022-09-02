@@ -6,6 +6,7 @@
 #include "ctre/phoenix/cci/PDP_CCI.h"
 #include "ctre/phoenix/cci/CCI.h"
 #include "ctre/phoenix/ErrorCode.h"
+#include <ctre/phoenix/sensors/Pigeon2.h>
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -33,6 +34,7 @@ using namespace ctre::phoenix;
 using namespace ctre::phoenix::platform;
 using namespace ctre::phoenix::motorcontrol;
 using namespace ctre::phoenix::motorcontrol::can;
+using namespace ctre::phoenix::sensors;
 using namespace std;
 double getTicksPer100MSFromVelocity(double velocity);
 /* make some talons for drive train */
@@ -47,6 +49,8 @@ ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(11);
 ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(9);
 ctre::phoenix::motorcontrol::can::TalonSRX leftConvMotor(10);
 ctre::phoenix::motorcontrol::can::TalonSRX rightConvMotor(12);
+
+Pigeon2 pigeon(0, interface);
 
 
 double pdpVoltage = 0.0;
@@ -272,6 +276,8 @@ class Publisher {
 	ros::Publisher intakeLSPub;
 	ros::Publisher touchSensorPub;
 	ros::Publisher encoderPositionPub;
+	ros::Publisher imuPub;
+
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -330,6 +336,23 @@ class Publisher {
 		positions.data.push_back(getDistanceFromTicks(frontRightDrive.GetSelectedSensorPosition()));
 		positions.data.push_back(getDistanceFromTicks(frontLeftDrive.GetSelectedSensorPosition()));
 		encoderPositionPub.publish(positions);
+	}
+
+	void publishIMU(){
+		float yaw = pigeon.GetYaw();
+		yaw= fmod(yaw, 360);
+
+		//Ensure yaw is positive
+		if (yaw < 0){
+			yaw +=360.0;
+		}
+
+		//Flip Yaw between left and right handed coordinate systems
+		yaw = 360 - yaw;
+
+		std_msgs::Float64 pubYaw;
+		pubYaw.data = yaw;
+		imuPub.publish(pubYaw);
 	}
 };
 
@@ -690,6 +713,9 @@ int main(int argc, char **argv) {
 
 	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 10);
 	ros::Timer encoderPositionTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderPosition, publisher));
+
+	publisher.imuPub = n.advertise<std_msgs::Float64>("pigeonIMU", 10);
+	ros::Timer imuTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishIMU, publisher));
 
 	initializeDriveMotors();
 	initializeIntakeMotors();

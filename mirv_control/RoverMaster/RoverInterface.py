@@ -27,6 +27,15 @@ from mirv_control.msg import pilit_db_msg
 from sensor_msgs.msg import NavSatFix
 
 
+def cancellable(func):
+    def method(self):
+        if not self.cancelled:
+            func(self)
+            
+    return method
+        
+            
+
 class RoverInterface():
     RoverMacro = None
     stateMsg = String
@@ -160,6 +169,9 @@ class RoverInterface():
     # def setPiLitSequenceReversed(self, reversed: bool):
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
+
+
+        
 
     def updateIMU(self, data):
         self.imu_buffer.append(data.data)

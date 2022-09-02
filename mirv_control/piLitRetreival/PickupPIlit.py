@@ -32,7 +32,7 @@ class PickupPilit():
         self.allowSearch = False
         self.intakeSide = "switch_left"
 
-        self.piLitPID = PID(0.02, 0.000001, 2, 0)
+        self.piLitPID = PID(0.08, 0.000002, 2, 0)
         self.piLitPID.setMaxMinOutput(0.5)
         self.piLitPID.setContinuous(360,0)
         self.piLitPID.setIZone(8)
@@ -43,7 +43,7 @@ class PickupPilit():
 
         self.intake_command_pub = rospy.Publisher("intake/command", String, queue_size = 10)
         self.pilit_location_sub = rospy.Subscriber("piLitLocation", Float64MultiArray, self.updatePiLitLocation)
-        self.imu_sub = rospy.Subscriber('CameraIMU', Float64, self.updateIMU) 
+        self.imu_sub = rospy.Subscriber('pigeonIMU', Float64, self.updateIMU) 
         self.velocitydrive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 5)
         self.intake_limit_switch_sub = rospy.Subscriber("intake/limitswitches", Float64MultiArray, self.limit_switch_callback)
     
