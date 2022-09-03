@@ -4,7 +4,9 @@ from std_msgs.msg import Float64
 import actionlib
 import mirv_control.msg as ASmsg
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
-from mirv_control.msg import GeneratePlacementLocationsResult
+from mirv_control.msg import single_lane_detection
+from mirv_control.msg import lane_detections
+from mirv_control.msg import DetectLanesResult
 import ros_numpy
 from cv_bridge import CvBridge
 from std_msgs.msg import Float64MultiArray, String
@@ -58,7 +60,7 @@ shapes = ((img_height, img_width),
 device = torch.device('cuda')
 weights = "/home/nvidia/mirv_ws/src/MIRV-Robot/mirv_real/Camera/tools/weights/End-to-end.pth"
 
-CAMERA_HEIGHT = 7.75 * .0254
+CAMERA_HEIGHT = 0.175
 CAMERA_ANGLE = -15
 
 # Load model
@@ -105,11 +107,6 @@ def execute_cb():
     heading = goal.heading
     lane_type = goal.formation_type
 
-    # if frame == None:
-    #     print("ERROR: NO FRAME")
-    #     actionServer.set_aborted()
-    #     return
-
     lane_heading, detections, lane_width = process_frame(
         frame, position_x, position_y, heading)
 
@@ -117,16 +114,11 @@ def execute_cb():
     print(f"LANE HEADING DETECTION: {lane_heading}")
     print(f"LANE WIDTH DETECTION: {lane_width}")
 
-    placements = placement.generate_pi_lit_formation(
-        detections, lane_heading, lane_width, lane_type)
-    placement_locations = []
-    for i in placements:
-        msg = Float64MultiArray()
-        msg.data = i
-        placement_locations.append(msg)
-    print(placements)
-
-    result.placement_locations = placement_locations
+    # placements = placement.generate_pi_lit_formation(
+    #     detections, lane_heading, lane_width, lane_type)
+    result.net_heading = lane_heading
+    result.width = lane_width
+    result.lane_detections = detections
     actionServer.set_succeeded(result)
 
 
@@ -145,25 +137,37 @@ def gotFrame(data):
         depthFrame = ros_numpy.numpify(data.depth_frame)
 
 
+def format_lane_detection(type, angle, x0, y0, x1, y1):
+    lane = single_lane_detection()
+    lane.heading = angle
+    lane.start_x = x0
+    lane.start_y = y0
+    lane.end_x = x1
+    lane.end_y = y1
+    lane.lane_type = type
+    return lane
+
+
 def process_frame(frame, rover_position_x, rover_position_y, rover_heading):
     lane_points = get_lane_points(frame)
     left_lane, right_lane = retrieve_lanes(
         lane_points, (rover_position_x, rover_position_y), rover_heading)
     angle = 0
-    lanes = {}
+    lanes = []
     if left_lane and right_lane:
         angle = (left_lane[2] + right_lane[2]) / 2
+        lanes.append(format_lane_detection('left', *left_lane[2:]))
+        lanes.append(format_lane_detection('right', *right_lane[2:]))
         lanes['left'] = (left_lane[3], left_lane[4])
         lanes['right'] = (right_lane[3], right_lane[4])
     elif left_lane:
         angle = left_lane[2]
-        lanes['left'] = (left_lane[3], left_lane[4])
+        lanes.append(format_lane_detection('left', *left_lane[2:]))
     elif right_lane:
         angle = right_lane[2]
-        lanes['right'] = (right_lane[3], right_lane[4])
+        lanes.append(format_lane_detection('right', *right_lane[2:]))
     else:
         angle = None
-        lanes = {}
 
     lane_heading = angle
     detections = lanes
@@ -236,13 +240,13 @@ def retrieve_lanes(lines, rover_position, rover_heading):
         if not angle or not x_intercept:  # No points on road, or horizontal
             continue
 
-        elif x_intercept < 320 and dx_sign >= 0:  # Left side, pointing right
+        elif x_intercept <= 320/img_scale and dx_sign >= 0:  # Left side, pointing right
             if left_lane:
                 if x_intercept > left_lane[0]:  # Find closest to center
                     left_lane = (x_intercept, dx_sign, angle, x0, y0)
             else:
                 left_lane = (x_intercept, dx_sign, angle, x0, y0)
-        if x_intercept > 320 and dx_sign <= 0:  # Right side, pointing left
+        if x_intercept > 320/img_scale and dx_sign <= 0:  # Right side, pointing left
             if right_lane:
                 if x_intercept < right_lane[0]:  # Find closest to center
                     right_lane = (x_intercept, dx_sign, angle, x0, y0)
@@ -263,10 +267,10 @@ laneBoundPublisher = rospy.Publisher(
 rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
 _action_name = "LaneLineAS"
-result = ASmsg.GeneratePlacementLocationsResult()
+result = ASmsg.DetectLanesResult()
 global actionServer
 actionServer = actionlib.SimpleActionServer(
-    _action_name, ASmsg.GeneratePlacementLocationsAction, auto_start=False)
+    _action_name, ASmsg.DetectLanesAction, auto_start=False)
 actionServer.register_goal_callback(execute_cb)
 actionServer.start()
 
