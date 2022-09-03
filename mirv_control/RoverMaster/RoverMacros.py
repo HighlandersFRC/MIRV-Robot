@@ -9,7 +9,7 @@ from std_msgs.msg import String, Float64MultiArray
 import time
 import numpy as np
 import placement
-from RoverInterface import RoverInterface
+from RoverInterface import RoverInterface, cancellable
 from sensor_msgs.msg import NavSatFix
 
 
@@ -25,7 +25,6 @@ class roverMacros():
 
     # Initiate docking procedure. Requires Rover to be more than 5 meters from the garage
     def dock(self):
-
         # Step 0: Enable garage detection
         self.interface.changeNeuralNetworkSelected("aruco")
         time.sleep(5)
@@ -119,6 +118,7 @@ class roverMacros():
         self.interface.drive_into_garage(0)
         self.interface.changeNeuralNetworkSelected("none")
 
+    @cancellable
     def placePiLitFromSide(self, timeout, intakeSide):
         start_time = time.time()
         if self.interface.cancelled:
@@ -133,6 +133,7 @@ class roverMacros():
         self.interface.loadPointToSQL("deploy", intakeSide)
         return True
 
+    @cancellable
     def placePiLit(self):
         stored = self.interface.getPiLitsStored()
         if not stored or len(stored) != 2:
@@ -149,7 +150,7 @@ class roverMacros():
             return
         self.interface.intake_command_pub.publish(String("reset"))
         
-
+    @cancellable
     def placeAllPiLits(self, firstPoint, roughHeading, formation_type):
         self.interface.changeNeuralNetworkSelected("lanes")
         firstPointTruckCoord = self.interface.CoordConversion_client_goal(
@@ -160,7 +161,7 @@ class roverMacros():
         detected_lanes = {
             'right': (firstPointTruckCoord[0], firstPointTruckCoord[1])}
         
-        time.sleep(5)
+        self.interface.wait(5)
         print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
         
         #targetHeading = -roughHeading - math.degrees(self.interface.globalHeading)-180
@@ -178,13 +179,13 @@ class roverMacros():
         #self.interface.pointTurn((targetHeading + self.interface.heading)%360 ,5)
         self.interface.pointTurn(deltaAngle, 5)
         
-        time.sleep(5)
+        self.interface.wait(5)
         print("Global Heading", (math.degrees(self.interface.globalHeading) - 180)%360, "Rough Heading", roughHeading)
         
 
         #points = placement.generate_pi_lit_formation(
         #    detected_lanes, 0 , 3, formation_type)
-        time.sleep(10)
+        self.interface.wait(10)
         points = self.interface.Lane_Lines_goal(formation_type)
         placement_points = []
         for i in points:
@@ -215,7 +216,7 @@ class roverMacros():
             # else:
             #     intakeSide = "switch_right"
             # time.sleep(2)
-            time.sleep(2)
+            self.interface.wait(2)
         return True
 
     def placeAllPiLitsNoMovement(self, count):
@@ -227,7 +228,7 @@ class roverMacros():
                 intakeSide = "switch_left"
             else:
                 intakeSide = "switch_right"
-            time.sleep(4)
+            self.interface.wait(4)
 
     def interceptPoint(self, finalPoint):
         currentPoint = np.array(self.interface.getCurrentTruckOdom())
@@ -333,7 +334,7 @@ class roverMacros():
                 self.interface.driveDistance(
                     distanceToPlacement - 1.5, 0.25, 0.1)
 
-            time.sleep(2)
+            self.interface.wait(2)
             currentLocationConverted = self.interface.CoordConversion_client_goal(
                 [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
 
@@ -362,6 +363,6 @@ class roverMacros():
             if result.finished:
                 print("Recovery Successful")
                 self.interface.loadPointToSQL("retrieve", side)
-            time.sleep(2)
+            self.interface.wait(2)
 
         self.interface.changeNeuralNetworkSelected("none")

@@ -32,8 +32,7 @@ def cancellable(func):
         if not self.cancelled:
             func(self)
             
-    return method
-        
+    return method   
             
 
 class RoverInterface():
@@ -226,11 +225,13 @@ class RoverInterface():
         while self.garage_state != "deployed":
             time.sleep(0.1)
 
+    @cancellable
     def retractGarage(self):
         self.garage_pub.publish(String("retract"))
         while self.garage_state != "retracted_latched":
             time.sleep(0.1)
 
+    @cancellable
     def drive(self, vel, seconds):
         twist = Twist()
         twist.linear.x = vel
@@ -242,6 +243,7 @@ class RoverInterface():
         stop.linear.x = 0
         self.simpleDrivePub.publish(stop)
 
+    @cancellable
     def turn(self, radians, seconds):
         if seconds == 0:
             return False
@@ -255,6 +257,13 @@ class RoverInterface():
             pass
         self.simpleDrivePub.publish(stop)
         return True
+
+    @cancellable
+    def wait(self, seconds):
+        start = time.time()
+        while time.time() - start < seconds and not self.cancelled:
+            time.sleep(0.01)
+            
 
     def updatePlacementPoints(self, data):
         self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
@@ -380,6 +389,7 @@ class RoverInterface():
     def getIsPickupControl(self):
         return self.isPickupControl
     
+    @cancellable
     def Lane_Lines_goal(self, formationType):
         mirv_control.msg.GeneratePlacementLocationsGoal.formation_type = formationType
         mirv_control.msg.GeneratePlacementLocationsGoal.position_x = self.xPos
@@ -392,6 +402,7 @@ class RoverInterface():
         print("GOT A RESULT FROM LANES")
         return self.laneLineClient.get_result().placement_locations
 
+    @cancellable
     def Calibrate_client_goal(self):
         mirv_control.msg.IMUCalibrationGoal.calibrate = True
         goal = mirv_control.msg.IMUCalibrationGoal
@@ -403,6 +414,7 @@ class RoverInterface():
     def PP_client_cancel(self):
         self.PPclient.cancel_all_goals()
 
+    @cancellable
     def PP_client_goal(self, targetPoints2D):
         rospy.loginfo("running pure pursuit")
         try:
@@ -418,6 +430,7 @@ class RoverInterface():
         except:
             rospy.logerr("Failed to run pure pursuit action")
 
+    @cancellable
     def pickup_client_goal(self, intakeSide, angleToTarget):
         # mirv_control.msg.MovementToPiLitGoal.runPID = True
         # mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
@@ -437,6 +450,7 @@ class RoverInterface():
 
         return self.pickupClient.get_result()
 
+    @cancellable
     def drive_into_garage(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
         mirv_control.msg.GarageGoal.estimatedGarageAngle = angleToTarget
@@ -686,6 +700,7 @@ class RoverInterface():
             rospy.logerr("Unknown subsystem: " + str(subsystem))
         self.lastmsg = pickle.dumps(msg)
 
+    @cancellable
     def pointTurn(self, targetAngle, successThreshold):
         print(f"INITIATING POINT TURN WITH {targetAngle} and {successThreshold}")
         mirv_control.msg.PointTurnGoal.targetAngle = targetAngle
@@ -695,6 +710,7 @@ class RoverInterface():
         self.pointTurnClient.wait_for_result()
         return self.pointTurnClient.get_result()
 
+    @cancellable
     def driveDistance(self, targetDistance, velocityMPS, successThreshold):
         mirv_control.msg.DriveDistanceGoal.targetDistanceMeters = targetDistance
         mirv_control.msg.DriveDistanceGoal.velocityMPS = velocityMPS
