@@ -94,7 +94,7 @@ add_action_files(
   DIRECTORY action
   FILES general.action
   DIRECTORY action
-  FILES GeneratePlacementLocations.action
+  FILES DetectLanes.action
 )
 
 # Generate added messages and services with any dependencies listed here

@@ -31,9 +31,15 @@ def cancellable(func):
     def method(self):
         if not self.cancelled:
             func(self)
+<<<<<<< HEAD
             
     return method   
             
+=======
+
+    return method
+
+>>>>>>> 10fc04275eed705b29ed2ca9c0db6e599915dab7
 
 class RoverInterface():
     RoverMacro = None
@@ -95,9 +101,9 @@ class RoverInterface():
         self.driveDistanceClient.wait_for_server()
         print("connected to driveDistance Server")
         self.laneLineClient = actionlib.SimpleActionClient(
-            "LaneLineAS", mirv_control.msg.GeneratePlacementLocationsAction)
+            "LaneLineAS", mirv_control.msg.DetectLanesAction)
         self.pickupClient.wait_for_server()
-        # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.GeneratePlacementLocationsAction)
+        # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.DetectLanesAction)
         # self.PlacementGeneratorClient.wait_for_server()
         # print("connected to placement generator")
 
@@ -156,7 +162,7 @@ class RoverInterface():
             "RoverState", String, queue_size=5)
         self.neuralNetworkSelector = rospy.Publisher(
             "neuralNetworkSelector", String, queue_size=1)
-        
+
         self.pilit_state_publisher = rospy.Publisher(
             "PilitControl", pilit_state, queue_size=1)
         # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
@@ -168,9 +174,6 @@ class RoverInterface():
     # def setPiLitSequenceReversed(self, reversed: bool):
     #     self.pilit_controller.reversePattern(reversed)
     #     self.pilit_controller.reset()
-
-
-        
 
     def updateIMU(self, data):
         self.imu_buffer.append(data.data)
@@ -307,7 +310,7 @@ class RoverInterface():
             self.globalHeading = math.radians(math.degrees(
                 self.startingHeading - math.pi/2 + self.heading) % 360)
         #print("Global Heading", math.degrees(self.globalHeading))
-        
+
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
 
@@ -331,7 +334,6 @@ class RoverInterface():
 
         navSatFixMsg = NavSatFix()
 
-
         # if hasattr(self, "globalHeading") and self.globalHeading != 0:
         #     print("Global Heading", self.globalHeading)
         #     offset_meters =  0.3048
@@ -346,14 +348,13 @@ class RoverInterface():
         #     dLat = dn/R
         #     dLon = de/(R*math.cos(math.radians(self.latitude)))
 
-            
-        #     navSatFixMsg.latitude = self.latitude + math.degrees(dLat) 
+        #     navSatFixMsg.latitude = self.latitude + math.degrees(dLat)
         #     navSatFixMsg.longitude = self.longitude + math.degrees(dLon)
 
         # else:
         navSatFixMsg.latitude = self.latitude
         navSatFixMsg.longitude = self.longitude
-        
+
         navSatFixMsg.altitude = self.altitude
 
         msg.gps_pos = navSatFixMsg
@@ -388,19 +389,25 @@ class RoverInterface():
 
     def getIsPickupControl(self):
         return self.isPickupControl
+<<<<<<< HEAD
     
     @cancellable
+=======
+
+>>>>>>> 10fc04275eed705b29ed2ca9c0db6e599915dab7
     def Lane_Lines_goal(self, formationType):
-        mirv_control.msg.GeneratePlacementLocationsGoal.formation_type = formationType
-        mirv_control.msg.GeneratePlacementLocationsGoal.position_x = self.xPos
-        mirv_control.msg.GeneratePlacementLocationsGoal.position_y = self.yPos
-        mirv_control.msg.GeneratePlacementLocationsGoal.heading = math.degrees(self.heading) % 360
-        print(f"INITIAL CONDITIONS: {self.xPos}, {self.yPos}, {math.degrees(self.heading) % 360}")
-        goal = mirv_control.msg.GeneratePlacementLocationsGoal
+        mirv_control.msg.DetectLanesGoal.formation_type = formationType
+        mirv_control.msg.DetectLanesGoal.position_x = self.xPos
+        mirv_control.msg.DetectLanesGoal.position_y = self.yPos
+        mirv_control.msg.DetectLanesGoal.heading = math.degrees(
+            self.heading) % 360
+        print(
+            f"INITIAL CONDITIONS: {self.xPos}, {self.yPos}, {math.degrees(self.heading) % 360}")
+        goal = mirv_control.msg.DetectLanesGoal
         self.laneLineClient.send_goal(goal)
         self.laneLineClient.wait_for_result()
         print("GOT A RESULT FROM LANES")
-        return self.laneLineClient.get_result().placement_locations
+        return self.laneLineClient.get_result()
 
     @cancellable
     def Calibrate_client_goal(self):
@@ -446,7 +453,6 @@ class RoverInterface():
         self.pickupClient.send_goal(goal)
         self.pickupClient.wait_for_result()
         print("Pickup Returned", self.pickupClient.get_result())
-
 
         return self.pickupClient.get_result()
 
@@ -553,7 +559,7 @@ class RoverInterface():
         else:
             rospy.logwarn(
                 "Received Unrecognized Light Command type: " + str(command))
-            
+
         self.pilit_state_publisher.publish(self.pilit_state)
 
     def driveToPoint(self, lat, long):
@@ -702,7 +708,8 @@ class RoverInterface():
 
     @cancellable
     def pointTurn(self, targetAngle, successThreshold):
-        print(f"INITIATING POINT TURN WITH {targetAngle} and {successThreshold}")
+        print(
+            f"INITIATING POINT TURN WITH {targetAngle} and {successThreshold}")
         mirv_control.msg.PointTurnGoal.targetAngle = targetAngle
         mirv_control.msg.PointTurnGoal.successThreshold = successThreshold
         goal = mirv_control.msg.PointTurnGoal

@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 FEET_TO_METERS = 0.3048
 RADIANS_TO_DEGREES = 180 / math.pi
@@ -156,17 +157,29 @@ def spear_7(detected_lanes, heading, lane_width, left_side=False):
 
 
 def get_center_coordinates(detected_lanes, heading, lane_width):
-    if len(detected_lanes.values()) == 2:
-        return ((detected_lanes['left'][0] + detected_lanes['right']
-                [0])/2, (detected_lanes['left'][1] + detected_lanes['right'][1])/2)
-    elif detected_lanes.get('left'):
-        return getEndPoint(
-            detected_lanes['left'][0], detected_lanes['left'][1], heading - 90, lane_width/2)
-    elif detected_lanes.get('right'):
-        return getEndPoint(
-            detected_lanes['right'][0], detected_lanes['right'][1], heading + 90, lane_width/2)
-    else:
-        return (None, None)
+    centers = []
+    for lane in detected_lanes:
+        distance = lane_width/2
+        if lane.type == "left":
+            angle = heading - 90
+        elif lane.type == "right":
+            angle = heading + 90
+        else:
+            angle = heading
+            distance = 0
+        centers.append(getEndPoint(
+            lane.start_x, lane.start_y, angle, distance))
+
+    l = len(centers)
+    center = (0, 0)
+    for c in centers:
+        center[0] += c[0]/l
+        center[1] += c[1]/l
+
+    if center == (0, 0):
+        center = (None, None)
+
+    return center
 
 
 def generate_pi_lit_locations(start_point, heading, lane_width, distances):

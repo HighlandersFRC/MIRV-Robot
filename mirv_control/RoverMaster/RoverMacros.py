@@ -27,7 +27,7 @@ class roverMacros():
     def dock(self):
         # Step 0: Enable garage detection
         self.interface.changeNeuralNetworkSelected("aruco")
-        time.sleep(5)
+        self.interface.wait(5)
 
         # Step 1: Deploy garage
         self.interface.deployGarage()
@@ -45,7 +45,7 @@ class roverMacros():
 
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
-        time.sleep(5)
+        self.interface.wait(5)
         if self.interface.garageLocation is not None:
             garage_angle = self.interface.garageLocation.angle_to_garage
         else:
@@ -59,7 +59,7 @@ class roverMacros():
         self.interface.pointTurn(garage_angle, 5)
 
         # Step 4: itentify offsets to aruco tag
-        time.sleep(5)
+        self.interface.wait(5)
         x = self.interface.garageLocation.rover_position_x_from_garage
         y = self.interface.garageLocation.rover_position_y_from_garage
         if not x or not y:
@@ -75,23 +75,23 @@ class roverMacros():
         print(f"Distance: {distance_meters}")
 
         # Step 5: Turn towards perpendicular vector of garage
-        time.sleep(5)
+        self.interface.wait(5)
         print(
             f"Step 5: Turning to relative angle of {angle_to_perpendicular_degrees} degrees")
         self.interface.pointTurn(angle_to_perpendicular_degrees, 5)
 
         # Step 6: Drive to directly in front of garage
-        time.sleep(5)
+        self.interface.wait(5)
         print(f"Step 6: Moving distance of {distance_meters} meters")
         self.interface.driveDistance(distance_meters, 0.25, 0.1)
 
         # Step 7: Turn to face garage
-        time.sleep(5)
+        self.interface.wait(5)
         print(f"Step 7: Turning to relative angle of {90} degrees")
         self.interface.pointTurn(-90*theta_1/abs(theta_1), 5)
 
         # Step 8: Turn towards tag
-        time.sleep(5)
+        self.interface.wait(5)
         garage_angle = self.interface.garageLocation.angle_to_garage
         print(f"Step 8: Turning to relative angle of {garage_angle} degrees")
         if not garage_angle:
@@ -129,7 +129,7 @@ class roverMacros():
             if time.time() - start_time > timeout:
                 print("Timed out - Deposit")
                 return False
-        time.sleep(1)
+        self.interface.wait(1)
         self.interface.loadPointToSQL("deploy", intakeSide)
         return True
 
@@ -167,55 +167,76 @@ class roverMacros():
         #targetHeading = -roughHeading - math.degrees(self.interface.globalHeading)-180
         targetForwardHeading = -roughHeading 
         globalForwardHeading = (math.degrees(self.interface.globalHeading) - 180)%360
+        self.interface.wait(5)
+        print("Global Heading", math.degrees(
+            self.interface.globalHeading), "Rough Heading", roughHeading)
+
+        targetForwardHeading = -roughHeading
+        globalForwardHeading = (math.degrees(
+            self.interface.globalHeading) - 180) % 360
         deltaAngle = (globalForwardHeading - targetForwardHeading) % 360
-        
+
         print("Target Forward Heading", targetForwardHeading)
         print("global Forward Heading", globalForwardHeading)
         print("Delta Angle", deltaAngle)
-        
-        
-        
-        # #print("Target Heading", targetHeading)
-        #self.interface.pointTurn((targetHeading + self.interface.heading)%360 ,5)
-        self.interface.pointTurn(deltaAngle, 5)
-        
-        self.interface.wait(5)
-        print("Global Heading", (math.degrees(self.interface.globalHeading) - 180)%360, "Rough Heading", roughHeading)
-        
 
-        #points = placement.generate_pi_lit_formation(
-        #    detected_lanes, 0 , 3, formation_type)
+        self.interface.pointTurn(deltaAngle, 5)
+
+        self.interface.wait(5)
+        print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
+              360, "Rough Heading", roughHeading)
+
         self.interface.wait(10)
-        points = self.interface.Lane_Lines_goal(formation_type)
+        lane_detections = self.interface.Lane_Lines_goal(formation_type)
+        print(f"LANE DETECTIONS: {lane_detections.lane_detections}")
+        print(f"LANE HEADING: {lane_detections.net_heading}")
+        print(f"LANE WIDTH: {lane_detections.width}")
+
+        heading_error = (lane_detections.net_heading - math.degrees(self.interface.heading)) % 360
+        while abs(heading_error) > 10:
+            print("Heading of {heading_error} is off by more than ")
+            self.interface.pointTurn(deltaAngle, 5)
+            self.interface.wait(5)
+            print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
+                360, "Rough Heading", roughHeading)
+            self.interface.wait(10)
+            lane_detections = self.interface.Lane_Lines_goal(formation_type)
+            print(f"LANE DETECTIONS: {lane_detections.lane_detections}")
+            print(f"LANE HEADING: {lane_detections.net_heading}")
+            print(f"LANE WIDTH: {lane_detections.width}")
+            heading_error = (lane_detections.net_heading - math.degrees(self.interface.heading)) % 360
+
+        points = placement.generate_pi_lit_formation(
+            lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width, formation_type)
         placement_points = []
         for i in points:
             placement_points.append(i.data)
         print("GENERATED POINTS: ", placement_points)
-        #return True
+        # return True
         # print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
         intakeSide = "switch_right"
-        
+
         for pnt in points:
             point = [pnt.data[0], pnt.data[1]]
             target = [point]
             if self.interface.cancelled:
                 return
-            
+
             print("Target", target)
             self.interface.PP_client_goal(target)
             print("Going to PP target")
-            
+
             self.placePiLit()
             #self.placePi(6, intakeSide)
-            #self.interface.intake_command_pub.publish(String("reset"))
+            # self.interface.intake_command_pub.publish(String("reset"))
             #self.interface.loadPointToSQL("deploy", intakeSide)
             # if(intakeSide == "switch_right"):
             #     intakeSide = "switch_left"
             # else:
             #     intakeSide = "switch_right"
-            # time.sleep(2)
+            # self.interface.wait(2)
             self.interface.wait(2)
         return True
 
