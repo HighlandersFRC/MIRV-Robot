@@ -28,18 +28,10 @@ from sensor_msgs.msg import NavSatFix
 
 
 def cancellable(func):
-    def method(self):
+    def method(self, *args, **kwargs):
         if not self.cancelled:
-            func(self)
-<<<<<<< HEAD
-            
-    return method   
-            
-=======
-
+            func(self, *args, **kwargs)
     return method
-
->>>>>>> 10fc04275eed705b29ed2ca9c0db6e599915dab7
 
 class RoverInterface():
     RoverMacro = None
@@ -389,12 +381,8 @@ class RoverInterface():
 
     def getIsPickupControl(self):
         return self.isPickupControl
-<<<<<<< HEAD
     
     @cancellable
-=======
-
->>>>>>> 10fc04275eed705b29ed2ca9c0db6e599915dab7
     def Lane_Lines_goal(self, formationType):
         mirv_control.msg.DetectLanesGoal.formation_type = formationType
         mirv_control.msg.DetectLanesGoal.position_x = self.xPos

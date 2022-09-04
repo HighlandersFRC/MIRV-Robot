@@ -5,8 +5,6 @@ import actionlib
 import mirv_control.msg as ASmsg
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from mirv_control.msg import single_lane_detection
-from mirv_control.msg import lane_detections
-from mirv_control.msg import DetectLanesResult
 import ros_numpy
 from cv_bridge import CvBridge
 from std_msgs.msg import Float64MultiArray, String
@@ -100,6 +98,7 @@ def updateTruckCoordinates(msg):
 
 
 def execute_cb():
+    global actionServer
     print("GOT ACTION SERVER GOAL FOR LANES")
     goal = actionServer.accept_new_goal()
     position_x = goal.position_x
@@ -116,9 +115,12 @@ def execute_cb():
 
     # placements = placement.generate_pi_lit_formation(
     #     detections, lane_heading, lane_width, lane_type)
-    result.net_heading = lane_heading
-    result.width = lane_width
+    result.net_heading = float(lane_heading)
+    result.width = float(lane_width)
     result.lane_detections = detections
+    print("PRINT DETECT LANE RESULT")
+    print(result)
+    print(result.lane_detections)
     actionServer.set_succeeded(result)
 
 
@@ -139,11 +141,11 @@ def gotFrame(data):
 
 def format_lane_detection(type, angle, x0, y0, x1, y1):
     lane = single_lane_detection()
-    lane.heading = angle
-    lane.start_x = x0
-    lane.start_y = y0
-    lane.end_x = x1
-    lane.end_y = y1
+    lane.heading = float(angle)
+    lane.start_x = float(x0)
+    lane.start_y = float(y0)
+    lane.end_x = float(x1)
+    lane.end_y = float(y1)
     lane.lane_type = type
     return lane
 
@@ -158,16 +160,12 @@ def process_frame(frame, rover_position_x, rover_position_y, rover_heading):
         angle = (left_lane[2] + right_lane[2]) / 2
         lanes.append(format_lane_detection('left', *left_lane[2:]))
         lanes.append(format_lane_detection('right', *right_lane[2:]))
-        lanes['left'] = (left_lane[3], left_lane[4])
-        lanes['right'] = (right_lane[3], right_lane[4])
     elif left_lane:
         angle = left_lane[2]
         lanes.append(format_lane_detection('left', *left_lane[2:]))
     elif right_lane:
         angle = right_lane[2]
         lanes.append(format_lane_detection('right', *right_lane[2:]))
-    else:
-        angle = None
 
     lane_heading = angle
     detections = lanes
@@ -232,9 +230,8 @@ def retrieve_lanes(lines, rover_position, rover_heading):
     right_lane = None
     for line in lines:
         line = list(line)
-        x_intercept, dx_sign, angle, x0, y0 = pixel_angles.get_line_equations(
+        x_intercept, dx_sign, angle, x0, y0, x1, y1 = pixel_angles.get_line_equations(
             line, rover_heading, rover_position, (0, CAMERA_ANGLE), CAMERA_HEIGHT)
-
         print(x_intercept, dx_sign, angle, x0, y0)
 
         if not angle or not x_intercept:  # No points on road, or horizontal
@@ -243,17 +240,25 @@ def retrieve_lanes(lines, rover_position, rover_heading):
         elif x_intercept <= 320/img_scale and dx_sign >= 0:  # Left side, pointing right
             if left_lane:
                 if x_intercept > left_lane[0]:  # Find closest to center
-                    left_lane = (x_intercept, dx_sign, angle, x0, y0)
+                    left_lane = (x_intercept, dx_sign, angle, x0, y0, x1, y1)
             else:
-                left_lane = (x_intercept, dx_sign, angle, x0, y0)
+                left_lane = (x_intercept, dx_sign, angle, x0, y0, x1, y1)
         if x_intercept > 320/img_scale and dx_sign <= 0:  # Right side, pointing left
             if right_lane:
                 if x_intercept < right_lane[0]:  # Find closest to center
-                    right_lane = (x_intercept, dx_sign, angle, x0, y0)
+                    right_lane = (x_intercept, dx_sign, angle, x0, y0, x1, y1)
             else:
-                right_lane = (x_intercept, dx_sign, angle, x0, y0)
+                right_lane = (x_intercept, dx_sign, angle, x0, y0, x1, y1)
 
     return left_lane, right_lane
+
+
+def preemptedAS():
+    global actionServer
+    if(actionServer.is_new_goal_available()):
+        actionServer.set_preempted()
+    else:
+        actionServer.set_aborted()
 
 
 rospy.init_node('laneLineDetector')
@@ -266,15 +271,19 @@ laneBoundPublisher = rospy.Publisher(
     "laneBound", Float64MultiArray, queue_size=1)
 rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
+print("Started Detect Lane Lines Server")
 _action_name = "LaneLineAS"
 result = ASmsg.DetectLanesResult()
 global actionServer
 actionServer = actionlib.SimpleActionServer(
     _action_name, ASmsg.DetectLanesAction, auto_start=False)
 actionServer.register_goal_callback(execute_cb)
+actionServer.register_preempt_callback(preemptedAS)
 actionServer.start()
 
 try:
     rospy.spin()
 except KeyboardInterrupt:
     cv2.destroyAllWindows()
+
+print("Lane Line Server Ending")
