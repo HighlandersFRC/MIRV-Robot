@@ -7,7 +7,7 @@ import mirv_control.msg as msg
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float64MultiArray, String, Float64
 from PID import PID
-
+from threading import Thread
 
 class PickupPilit():
     def __init__(self):
@@ -20,6 +20,7 @@ class PickupPilit():
             self._action_name, msg.PickupPilitAction, auto_start=False)
         self._as.register_goal_callback(self.pickupPilit)
         self._as.register_preempt_callback(self.preemptedPickupPilit)
+        self._as
         self._as.start()
 
         self.velocityMsg = Twist()
@@ -31,6 +32,7 @@ class PickupPilit():
         self.foundPiLit = False
         self.allowSearch = False
         self.intakeSide = "switch_left"
+        self.tasks = []
 
         self.piLitPID = PID(0.08, 0.000002, 2, 0)
         self.piLitPID.setMaxMinOutput(0.5)
@@ -96,7 +98,7 @@ class PickupPilit():
         self.allowSearch = True
         print("Searching For Pilits")
         searchStartTime = time.time()
-        while abs(searchStartTime - time.time()) < 10: #and not self.foundPiLit:
+        while abs(searchStartTime - time.time()) < 10 and self._as.is_active():
             self.drive(0,0)
 
             
@@ -115,7 +117,7 @@ class PickupPilit():
                 error = error + 360
         
         self.piLitPID.setSetPoint(angle)
-        while abs(error) > 5 or result > 0.05:
+        while abs(error) > 5 or result > 0.05 and self._as.is_active():
             error = angle - self.imu
             if abs(error) > 180:
                 if error > 0:
@@ -138,7 +140,11 @@ class PickupPilit():
         self.intakeSide = goal.intakeSide
         self.set_intake_state(self.intakeSide)
         
+        t = Thread(target=self.pickup)
+        t.start()
+        self.tasks.append(t)
         
+    def pickup(self):   
         self.foundPiLit = False
 
         self.searchForPilits()
@@ -169,7 +175,7 @@ class PickupPilit():
 
             # Send Intake Down
             intakeInitTime = time.time()
-            while(time.time() - intakeInitTime < 3):
+            while time.time() - intakeInitTime < 3 and self._as.is_active():
                 self.drive(0,0)
                 self.set_intake_state("intake")
                 self.set_intake_state(self.intakeSide)
@@ -177,7 +183,7 @@ class PickupPilit():
             print("Picking Up", self.imu, self.setPoint)
             movementInitTime = time.time()
             self.movementPID.setSetPoint(self.setPoint)
-            while time.time() - movementInitTime < (self.piLitDepth*1.5)/0.25  and self.limit_switches[2] != 1 and self.limit_switches[3] != 1:
+            while time.time() - movementInitTime < (self.piLitDepth*1.5)/0.25  and self.limit_switches[2] != 1 and self.limit_switches[3] != 1 and self._as.is_active():
                 result = self.movementPID.updatePID(self.imu) # this returns in radians/sec
                 result = -result # This should be negative
                 self.drive(0.25,result)
@@ -191,7 +197,7 @@ class PickupPilit():
                 success = False
 
             storeInitTime = time.time()
-            while(time.time() - storeInitTime < 3):
+            while(time.time() - storeInitTime < 3 and self._as.is_active()):
                     self.set_intake_state("store")
                     self.drive(0,0)
             
@@ -204,21 +210,27 @@ class PickupPilit():
             self._result.finished = False
 
         print("Succeeded", self._result)
-        self._as.set_succeeded(self._result)
+        if self._as.is_active():
+            self._as.set_succeeded(self._result)
 
-
+    def cancelCallback(self):
+        self.drive(0,0)
+        print("PILitPickup Active", self._as.is_active())
+        self._as.set_aborted()
+        print("PILitPickup Active", self._as.is_active())
+        self.tasks = []
 
     def preemptedPickupPilit(self):
+        print("PI-lit Pickup Prempted")
         if(self._as.is_new_goal_available()):
             print("Pickup Pilit preempt received")
             self._as.set_preempted()
         else:
-            print("aborting point turn")
-            self.velocityMsg.linear.x = 0
-            self.velocityMsg.angular.z = 0
-            self.velocitydrive_pub.publish(self.velocityMsg)
-            rospy.loginfo('%s: Preempted' % self._action_name)
-            self._as.set_aborted()
+            print("PI-lit Pickup Cancelled")
+            self.cancelCallback()
+            
+    
+
 
     def run(self):
         rospy.spin()

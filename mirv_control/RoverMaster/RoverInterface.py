@@ -58,10 +58,6 @@ class RoverInterface():
             'PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
-        # self.pickupClient = actionlib.SimpleActionClient(
-        #     "PickupAS", mirv_control.msg.MovementToPiLitAction)
-        # self.pickupClient.wait_for_server()
-        # print("connected to PiLit pickup Server")
 
         self.pickupClient = actionlib.SimpleActionClient(
             "PickupAS", mirv_control.msg.PickupPilitAction)
@@ -427,21 +423,13 @@ class RoverInterface():
 
     @cancellable
     def pickup_client_goal(self, intakeSide, angleToTarget):
-        # mirv_control.msg.MovementToPiLitGoal.runPID = True
-        # mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
-        # mirv_control.msg.MovementToPiLitGoal.estimatedPiLitAngle = angleToTarget
-        # goal = mirv_control.msg.MovementToPiLitGoal
-        # self.pickupClient.send_goal(goal)
-        # self.pickupClient.wait_for_result()
         self.changeNeuralNetworkSelected("piLit")
         print("Pickup Client Goal", intakeSide, type(intakeSide))
         mirv_control.msg.PickupPilitGoal.intakeSide = intakeSide
         goal = mirv_control.msg.PickupPilitGoal
-        print(goal)
         self.pickupClient.send_goal(goal)
         self.pickupClient.wait_for_result()
         print("Pickup Returned", self.pickupClient.get_result())
-
         return self.pickupClient.get_result()
 
     @cancellable
@@ -503,7 +491,6 @@ class RoverInterface():
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
 
     def cancelAllCommands(self, runIntake):
-        print("Cancelling All")
         self.PP_client_cancel()
         self.disableTeleopDrive()
         self.pickup_client_cancel()
@@ -600,7 +587,6 @@ class RoverInterface():
             self.roverState = self.CONNECTED_ENABLED
 
     def cloud_callback(self, message):
-
         self.heartBeatTime = rospy.get_time()
         msg = json.loads(message.data)
 

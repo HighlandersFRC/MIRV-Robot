@@ -275,6 +275,7 @@ class roverMacros():
         TP = currentPoint - UV*d2
         return TP
 
+    @cancellable
     def pickupPiLit(self):
         self.interface.changeNeuralNetworkSelected("piLit")
         stored = self.interface.getPiLitsStored()
@@ -287,7 +288,7 @@ class roverMacros():
             side = "switch_left"
 
         result = self.interface.pickup_client_goal(side, 0)
-        if result.finished:
+        if result and result.finished:
             self.interface.loadPointToSQL("retrieve", side)
         self.interface.changeNeuralNetworkSelected("none")
 
