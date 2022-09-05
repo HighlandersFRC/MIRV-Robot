@@ -6,17 +6,21 @@ import mirv_control.msg
 import actionlib
 import threading
 from std_msgs.msg import String, Float64MultiArray
+from mirv_control.msg import single_lane_detection
+from mirv_control.msg import DetectLanesResult
 import time
 import numpy as np
 import placement
 from RoverInterface import RoverInterface
 from sensor_msgs.msg import NavSatFix
 
+
 def cancellable(func):
     def method(self, *args, **kwargs):
         if not self.interface.cancelled:
             func(self, *args, **kwargs)
     return method
+
 
 class roverMacros():
     def __init__(self, Interface: RoverInterface):
@@ -154,10 +158,12 @@ class roverMacros():
         if self.interface.cancelled:
             return
         self.interface.intake_command_pub.publish(String("reset"))
-        
+
     @cancellable
     def placeAllPiLits(self, firstPoint, roughHeading, formation_type):
         self.interface.changeNeuralNetworkSelected("lanes")
+
+        # TODO: Uncomment
         # firstPointTruckCoord = self.interface.CoordConversion_client_goal(
         #     firstPoint)
         # startingTarget = [firstPointTruckCoord]
@@ -165,12 +171,12 @@ class roverMacros():
         # self.interface.PP_client_goal(startingTarget)
         # detected_lanes = {
         #     'right': (firstPointTruckCoord[0], firstPointTruckCoord[1])}
-        
+
         # self.interface.wait(5)
         # print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
-        
+
         # #targetHeading = -roughHeading - math.degrees(self.interface.globalHeading)-180
-        # targetForwardHeading = -roughHeading 
+        # targetForwardHeading = -roughHeading
         # globalForwardHeading = (math.degrees(self.interface.globalHeading) - 180)%360
         # self.interface.wait(5)
         # print("Global Heading", math.degrees(
@@ -191,17 +197,37 @@ class roverMacros():
         # print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
         #       360, "Rough Heading", roughHeading)
 
-        self.interface.wait(10)
-        lane_detections = self.interface.Lane_Lines_goal(formation_type)
+        # self.interface.wait(10)
+        # lane_detections = self.interface.Lane_Lines_goal(formation_type)
+
+        lane_detections = DetectLanesResult()
+        lane_detections.net_heading = float(
+            math.degrees(self.interface.heading))
+        lane_detections.width = float(3)
+
+        detections = []
+        lane = single_lane_detection()
+        lane.heading = float(self.interface.heading)
+        end_point = placement.getEndPoint(
+            self.interface.xPos, self.interface.yPos, lane.heading - 90, lane_detections.width/2)
+        lane.start_x = float(end_point[0])
+        lane.start_y = float(end_point[1])
+        lane.end_x = float(0)
+        lane.end_y = float(0)
+        lane.lane_type = 'left'
+        detections.append(lane)
+        lane_detections.lane_detections = detections
+
         print(lane_detections)
         print(f"LANE DETECTIONS: {lane_detections.lane_detections}")
         print(f"LANE HEADING: {lane_detections.net_heading}")
         print(f"LANE WIDTH: {lane_detections.width}")
-        
+
         if len(lane_detections.lane_detections) == 0:
             print("NO LANES DETECTED, RETURNING")
             return
 
+        # TODO: Uncomment
         # heading_error = (lane_detections.net_heading - math.degrees(self.interface.heading)) % 360
         # while abs(heading_error) > 10:
         #     print("Heading of {heading_error} is off by more than ")
@@ -228,6 +254,7 @@ class roverMacros():
         self.interface.changeNeuralNetworkSelected("none")
         # intakeSide = "switch_right"
 
+        # TODO: Uncomment
         # for pnt in points:
         #     point = [pnt.data[0], pnt.data[1]]
         #     target = [point]
