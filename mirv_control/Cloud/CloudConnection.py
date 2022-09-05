@@ -152,7 +152,7 @@ def send_to_webrtc(message):
     try:
         str_msg = json.dumps(msg)   
         for channel in channels:
-            #rospy.loginfo("Sending", + str_msg)
+            rospy.loginfo("Sending", + str_msg)
             channel.send(str_msg)
     except Exception as e:
         print("Unable to send message to webrtc")
@@ -183,8 +183,6 @@ def statusSubscriber(data):
             send_to_webrtc(status)
         #if len(status_messages) == 0:
         status_messages.append(data.data)
-        #else:
-        #    status_messages[0] = data.data
     else:
         print("Received Data with Type None", data)
 
@@ -222,9 +220,9 @@ api_connected = False
 
 
 # Activate ROS Nodes
-rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
-rospy.Subscriber("RoverStatus", String, statusSubscriber)
-rospy.Subscriber("GarageCommands", String, garageSubscriber)
+rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber, queue_size = 1)
+rospy.Subscriber("RoverStatus", String, statusSubscriber, queue_size =1)
+rospy.Subscriber("GarageCommands", String, garageSubscriber, queue_size = 1)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 garage_pub = rospy.Publisher('GarageStatus', garage_state, queue_size=1)
 
@@ -290,7 +288,8 @@ async def offer(request):
             print(message)
             command_pub.publish(message)
             for send_message in status_messages:
-               channel.send(send_message)
+                print("Sending Message", send_message)
+                channel.send(send_message)
             status_messages = []
 
 
