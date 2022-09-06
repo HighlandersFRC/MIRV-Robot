@@ -7,6 +7,8 @@ import time
 import actionlib
 import mirv_control.msg as msg
 
+DB_PATH = "/media/nvidia/SSD/Database/mirv.db"
+
 garage_table_cmd = """ CREATE TABLE IF NOT EXISTS garage (
     timestamp double PRIMARY KEY,
     latitude double NOT NULL,
@@ -112,7 +114,7 @@ pilit_table_columns = (
 
 def pilit_callback(pilit_event: pilit_db_msg):
     t = TableManager()
-    t.connect(r"/mnt/SSD/mirv.db")
+    t.connect(DB_PATH)
     if pilit_event.deploy_or_retrieve.data == "deploy":
         rospy.loginfo(f"Deployed pili at lat: {pilit_event.gps_pos.latitude} long: {pilit_event.gps_pos.longitude} alt: {pilit_event.gps_pos.altitude}t")
         t.deployed_pilit(pilit_event.gps_pos, pilit_event.side.data, pilit_table_columns)
@@ -123,14 +125,14 @@ def pilit_callback(pilit_event: pilit_db_msg):
 
 def garage_callback(gps_pos: NavSatFix):
     t = TableManager()
-    t.connect(r"/mnt/SSD/mirv.db")
+    t.connect(DB_PATH)
     rospy.loginfo(f"Recorded garage position at lat: {gps_pos.latitude} long: {gps_pos.longitude} alt: {gps_pos.altitude}")
     t.append_row("garage", garage_table_columns, (time.time(), gps_pos.latitude, gps_pos.longitude, gps_pos.altitude))
     t.close()
 
 def publish_garage_location(time):
     t = TableManager()
-    t.connect(r"/mnt/SSD/mirv.db")
+    t.connect(DB_PATH)
     data = t.get_last_row("garage")
     t.close()
     if None in data:
@@ -146,7 +148,7 @@ def query_callback():
     feedback = msg.DatabaseFeedback()
     result = msg.DatabaseResult()
     t = TableManager()
-    t.connect(r"/mnt/SSD/mirv.db")
+    t.connect(DB_PATH)
     print(f"QUERY: {goal.table}")
     if goal.table == "pilits":
         data = t.get_last_row("pilits")
@@ -170,7 +172,7 @@ def query_callback():
 
 def publish_pilit_info(time):
     t = TableManager()
-    t.connect(r"/mnt/SSD/mirv.db")
+    t.connect(DB_PATH)
     data = t.get_last_row("pilits")
     t.close()
     status = pilit_status_msg()
@@ -202,7 +204,7 @@ action_server.register_goal_callback(query_callback)
 action_server.start()
 
 tm = TableManager()
-tm.connect(r"/mnt/SSD/mirv.db")
+tm.connect(DB_PATH)
 tm.create_table(pilit_table_cmd)
 tm.create_table(garage_table_cmd)
 tm.append_row("pilits", pilit_table_columns, (time.time(), 4, 4, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None, 0, "stored", None, None, None))

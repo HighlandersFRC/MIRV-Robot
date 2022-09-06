@@ -199,21 +199,6 @@ def garageSubscriber(data):
 
     
 
-# def update_remote():
-#     while True:
-#         global socket_connection
-#         if socket_connection is None:
-#             print("Retrying Connection")
-#             socket_connection = connect_to_api()
-#         elif not socket_connection.connected:
-#             print("Connection to API has been lost")
-#         else:
-#             pass
-#         print("test")
-#         sleep(5)
-
-    
-
 # Setup Socket Connection with the cloud
 sio = socketio.Client()
 api_connected = False
@@ -285,10 +270,8 @@ async def offer(request):
         @channel.on("message")
         def on_message(message):
             global status_messages
-            print(message)
             command_pub.publish(message)
             for send_message in status_messages:
-                print("Sending Message", send_message)
                 channel.send(send_message)
             status_messages = []
 
