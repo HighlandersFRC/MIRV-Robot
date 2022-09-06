@@ -162,54 +162,53 @@ class roverMacros():
     @cancellable
     def placeAllPiLits(self, firstPoint, roughHeading, formation_type):
         self.interface.changeNeuralNetworkSelected("lanes")
+        self.interface.setPiLits("idle")
 
         # TODO: Uncomment
-        # firstPointTruckCoord = self.interface.CoordConversion_client_goal(
-        #     firstPoint)
-        # startingTarget = [firstPointTruckCoord]
-        # print("Starting Target", startingTarget)
-        # self.interface.PP_client_goal(startingTarget)
-        # detected_lanes = {
-        #     'right': (firstPointTruckCoord[0], firstPointTruckCoord[1])}
+        firstPointTruckCoord = self.interface.CoordConversion_client_goal(
+            firstPoint)
+        startingTarget = [firstPointTruckCoord]
+        print("Starting Target", startingTarget)
+        self.interface.PP_client_goal(startingTarget)
 
-        # self.interface.wait(5)
-        # print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
+        self.interface.wait(5)
+        print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
 
-        # #targetHeading = -roughHeading - math.degrees(self.interface.globalHeading)-180
-        # targetForwardHeading = -roughHeading
-        # globalForwardHeading = (math.degrees(self.interface.globalHeading) - 180)%360
-        # self.interface.wait(5)
-        # print("Global Heading", math.degrees(
-        #     self.interface.globalHeading), "Rough Heading", roughHeading)
+        targetForwardHeading = -roughHeading
+        globalForwardHeading = (math.degrees(self.interface.globalHeading) - 180)%360
+        self.interface.wait(5)
+        print("Global Heading", math.degrees(
+            self.interface.globalHeading), "Rough Heading", roughHeading)
 
-        # targetForwardHeading = -roughHeading
-        # globalForwardHeading = (math.degrees(
-        #     self.interface.globalHeading) - 180) % 360
-        # deltaAngle = (globalForwardHeading - targetForwardHeading) % 360
+        targetForwardHeading = -roughHeading
+        globalForwardHeading = (math.degrees(
+            self.interface.globalHeading) - 180) % 360
+        deltaAngle = (globalForwardHeading - targetForwardHeading) % 360
 
-        # print("Target Forward Heading", targetForwardHeading)
-        # print("global Forward Heading", globalForwardHeading)
-        # print("Delta Angle", deltaAngle)
+        print("Target Forward Heading", targetForwardHeading)
+        print("global Forward Heading", globalForwardHeading)
+        print("Delta Angle", deltaAngle)
 
-        # self.interface.pointTurn(deltaAngle, 5)
+        self.interface.pointTurn(deltaAngle, 5)
 
-        # self.interface.wait(5)
-        # print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
-        #       360, "Rough Heading", roughHeading)
+        self.interface.wait(5)
+        print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
+              360, "Rough Heading", roughHeading)
+        
+        print("Local Heading", math.degrees(self.interface.heading))
 
-        # self.interface.wait(10)
-        # lane_detections = self.interface.Lane_Lines_goal(formation_type)
+        #lane_detections = self.interface.Lane_Lines_goal(formation_type)
 
+        ## Logic to Create Fake Lane Lines 
         lane_detections = DetectLanesResult()
-        lane_detections.net_heading = float(
-            math.degrees(self.interface.heading))
+        lane_detections.net_heading = float(math.degrees(self.interface.heading))
         lane_detections.width = float(3)
 
         detections = []
         lane = single_lane_detection()
-        lane.heading = float(self.interface.heading)
+        lane.heading = float(math.degrees(self.interface.heading))
         end_point = placement.getEndPoint(
-            self.interface.xPos, self.interface.yPos, lane.heading - 90, lane_detections.width/2)
+            self.interface.xPos + 1.5 * math.cos(self.interface.heading) + 3 * math.sin(self.interface.heading), self.interface.yPos + 1.5 * math.sin(self.interface.heading) + 3 * math.cos(self.interface.heading), lane.heading - 90, lane_detections.width/2)
         lane.start_x = float(end_point[0])
         lane.start_y = float(end_point[1])
         lane.end_x = float(0)
@@ -230,8 +229,8 @@ class roverMacros():
         # TODO: Uncomment
         # heading_error = (lane_detections.net_heading - math.degrees(self.interface.heading)) % 360
         # while abs(heading_error) > 10:
-        #     print("Heading of {heading_error} is off by more than ")
-        #     self.interface.pointTurn(deltaAngle, 5)
+        #     print("Heading of {heading_error} is off by more than threshold")
+        #     self.interface.pointTurn(heading_error, 5)
         #     self.interface.wait(5)
         #     print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
         #         360, "Rough Heading", roughHeading)
@@ -244,37 +243,37 @@ class roverMacros():
 
         points = placement.generate_pi_lit_formation(
             lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width, formation_type)
-        placement_points = []
-        for i in points:
-            placement_points.append(i.data)
-        print("GENERATED POINTS: ", placement_points)
         # return True
-        # print("Calculated Placement Points: ", points)
+        print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
         # intakeSide = "switch_right"
 
         # TODO: Uncomment
-        # for pnt in points:
-        #     point = [pnt.data[0], pnt.data[1]]
-        #     target = [point]
-        #     if self.interface.cancelled:
-        #         return
+        for pnt in points:
+            point = [pnt[0], pnt[1]]
+            target = [point]
+            if self.interface.cancelled:
+                return
+        
+            currentLocationConverted = self.interface.CoordConversion_client_goal(
+                [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
+            print("Current Location", currentLocationConverted)
+            deltaX = pnt[0] - currentLocationConverted[0]
+            deltaY = -(pnt[1] - currentLocationConverted[1])
 
-        #     print("Target", target)
-        #     self.interface.PP_client_goal(target)
-        #     print("Going to PP target")
+            absAngleToPlacement = math.atan2(deltaY, deltaX)
+            angleToPlacement = absAngleToPlacement + self.interface.heading
+            self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
 
-        #     self.placePiLit()
-        #     #self.placePi(6, intakeSide)
-        #     # self.interface.intake_command_pub.publish(String("reset"))
-        #     #self.interface.loadPointToSQL("deploy", intakeSide)
-        #     # if(intakeSide == "switch_right"):
-        #     #     intakeSide = "switch_left"
-        #     # else:
-        #     #     intakeSide = "switch_right"
-        #     # self.interface.wait(2)
-        #     self.interface.wait(2)
+            print("Target", target)
+            self.interface.PP_client_goal(target)
+            print("Going to PP target")
+
+            self.placePiLit()
+            self.interface.wait(2)
+        if not self.interface.cancelled:
+            self.interface.setPiLits("simultaneous")
         return True
 
     def placeAllPiLitsNoMovement(self, count):
@@ -306,6 +305,7 @@ class roverMacros():
     def pickupPiLit(self):
         self.interface.changeNeuralNetworkSelected("piLit")
         stored = self.interface.getPiLitsStored()
+        print("Stored Pi-lits", stored)
         if not stored or len(stored) != 2:
             rospy.logerr("Invalid number of stored Pi-Lits")
             return
@@ -315,8 +315,12 @@ class roverMacros():
             side = "switch_left"
 
         result = self.interface.pickup_client_goal(side, 0)
-        if result and result.finished:
+        print(result)
+        print(result.finished)
+        if result is not None and result.finished:
             self.interface.loadPointToSQL("retrieve", side)
+        else:
+            print("Pickup Failed")
         self.interface.changeNeuralNetworkSelected("none")
 
     def testPointTurn(self):
@@ -327,6 +331,7 @@ class roverMacros():
 
     def pickupAllPiLits(self, reverse):
         self.interface.changeNeuralNetworkSelected("piLit")
+        self.interface.setPiLits("idle")
         intakeSide = "switch_right"
 
         # if(reverse):
@@ -365,7 +370,8 @@ class roverMacros():
             distanceToPlacement = math.sqrt(deltaX**2 + deltaY**2)
 
             # Start By Turning in the general direction of the target
-            self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
+            if distanceToPlacement > 1:
+                self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
 
             if distanceToPlacement > 3:
                 distanceBeforePiLit = distanceToPlacement - 1
@@ -392,6 +398,9 @@ class roverMacros():
             elif distanceToPlacement > 2:
                 self.interface.driveDistance(
                     distanceToPlacement - 1.5, 0.25, 0.1)
+                
+            elif distanceToPlacement < 1:
+                self.interface.driveDistance( -1, 0.25, 0.1)
 
             self.interface.wait(2)
             currentLocationConverted = self.interface.CoordConversion_client_goal(
@@ -409,19 +418,6 @@ class roverMacros():
             distanceToPlacement = math.sqrt(deltaX**2 + deltaY**2)
             self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
 
-            stored = self.interface.getPiLitsStored()
-            if not stored or len(stored) != 2:
-                rospy.logerr("Invalid number of stored Pi-Lits")
-                return
-            if stored[0] < stored[1]:
-                side = "switch_right"
-            else:
-                side = "switch_left"
-
-            result = self.interface.pickup_client_goal(side, 0)
-            if result.finished:
-                print("Recovery Successful")
-                self.interface.loadPointToSQL("retrieve", side)
-            self.interface.wait(2)
+            self.pickupPiLit()
 
         self.interface.changeNeuralNetworkSelected("none")

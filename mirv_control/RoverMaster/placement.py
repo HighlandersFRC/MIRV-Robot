@@ -160,9 +160,9 @@ def get_center_coordinates(detected_lanes, heading, lane_width):
     centers = []
     for lane in detected_lanes:
         distance = lane_width/2
-        if lane.type == "left":
+        if lane.lane_type == "left":
             angle = heading - 90
-        elif lane.type == "right":
+        elif lane.lane_type == "right":
             angle = heading + 90
         else:
             angle = heading
@@ -171,12 +171,12 @@ def get_center_coordinates(detected_lanes, heading, lane_width):
             lane.start_x, lane.start_y, angle, distance))
 
     l = len(centers)
-    center = (0, 0)
+    center = [0, 0]
     for c in centers:
         center[0] += c[0]/l
         center[1] += c[1]/l
 
-    if center == (0, 0):
+    if center[0] == 0 and center[1] == 0:
         center = (None, None)
 
     return center

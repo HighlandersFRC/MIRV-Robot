@@ -66,7 +66,7 @@ class driveDistance:
 
     def getDistanceError(self, timeStart, velocity, targetDistance):
         # timeDelta: seconds, velocity: meters per second, targeDistance: meters
-        timeDelta = time.time() - timeStart
+        timeDelta = time.time() - timeStart        
         return targetDistance - timeDelta * velocity
 
     def driveDistance(self):
@@ -102,7 +102,7 @@ class driveDistance:
                 print(f"Setting Velocity to {velocityMPS * direction}")
                 print(f"ERROR: {distanceError}")
 
-            if abs(distanceError) < successThreshold:
+            if abs(targetDistanceMeters) - (time.time()-timeStart)*velocityMPS < successThreshold:
                 reachedTarget = True
                 self.velocityMsg.linear.x = 0
                 self.velocityMsg.angular.z = 0

@@ -30,7 +30,7 @@ from sensor_msgs.msg import NavSatFix
 def cancellable(func):
     def method(self, *args, **kwargs):
         if not self.cancelled:
-            func(self, *args, **kwargs)
+            return func(self, *args, **kwargs)
     return method
 
 class RoverInterface():
@@ -297,7 +297,6 @@ class RoverInterface():
         if self.startingHeading != 0:
             self.globalHeading = math.radians(math.degrees(
                 self.startingHeading - math.pi/2 + self.heading) % 360)
-        #print("Global Heading", math.degrees(self.globalHeading))
 
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
@@ -429,7 +428,6 @@ class RoverInterface():
         goal = mirv_control.msg.PickupPilitGoal
         self.pickupClient.send_goal(goal)
         self.pickupClient.wait_for_result()
-        print("Pickup Returned", self.pickupClient.get_result())
         return self.pickupClient.get_result()
 
     @cancellable
@@ -530,7 +528,7 @@ class RoverInterface():
             self.pilit_state.inhibit = False
             self.pilit_state.reverse = False
         elif command == "idle":
-            self.pilit_state.inhibit = True
+            self.pilit_state.inhibit = True            
         else:
             rospy.logwarn(
                 "Received Unrecognized Light Command type: " + str(command))
@@ -605,7 +603,11 @@ class RoverInterface():
         if command == "e_stop":
             self.eSTOP()
         elif subsystem == "pi_lit":
-            self.setPiLits(command)
+            if command == "set_number_pi_lits":
+                print("Set Number of Pi lits: ", command)
+                pass
+            else:
+                self.setPiLits(command)
         elif subsystem == "general":
             if command == "disable":
                 self.roverState = self.CONNECTED_DISABLED
