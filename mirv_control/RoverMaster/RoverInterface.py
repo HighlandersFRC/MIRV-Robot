@@ -33,6 +33,7 @@ def cancellable(func):
             return func(self, *args, **kwargs)
     return method
 
+
 class RoverInterface():
     RoverMacro = None
     stateMsg = String
@@ -254,7 +255,6 @@ class RoverInterface():
         start = time.time()
         while time.time() - start < seconds and not self.cancelled:
             time.sleep(0.01)
-            
 
     def updatePlacementPoints(self, data):
         self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
@@ -376,7 +376,7 @@ class RoverInterface():
 
     def getIsPickupControl(self):
         return self.isPickupControl
-    
+
     @cancellable
     def Lane_Lines_goal(self, formationType):
         mirv_control.msg.DetectLanesGoal.formation_type = formationType
@@ -390,7 +390,9 @@ class RoverInterface():
         self.laneLineClient.send_goal(goal)
         self.laneLineClient.wait_for_result()
         print("GOT A RESULT FROM LANES")
-        return self.laneLineClient.get_result()
+        res = self.laneLineClient.get_result()
+        print(res)
+        return res
 
     @cancellable
     def Calibrate_client_goal(self):
