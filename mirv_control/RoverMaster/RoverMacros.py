@@ -158,98 +158,87 @@ class roverMacros():
         if self.interface.cancelled:
             return
         self.interface.intake_command_pub.publish(String("reset"))
+        
+        
+    def get_angle_error(self, a1, a2):
+        heading_error = (a1 - a2) % 360
+        if heading_error > 180:
+            heading_error -= 360
+        return heading_error
+            
 
     @cancellable
     def placeAllPiLits(self, firstPoint, roughHeading, formation_type):
         self.interface.changeNeuralNetworkSelected("lanes")
         self.interface.setPiLits("idle")
 
-        # TODO: Uncomment
         firstPointTruckCoord = self.interface.CoordConversion_client_goal(
             firstPoint)
         startingTarget = [firstPointTruckCoord]
         print("Starting Target", startingTarget)
         self.interface.PP_client_goal(startingTarget)
 
-        self.interface.wait(5)
+        self.interface.wait(1)
         print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
+        self.interface.pointTurn((math.degrees(self.interface.globalHeading) - roughHeading) % 360, 5)
 
-        targetForwardHeading = -roughHeading
-        globalForwardHeading = (math.degrees(self.interface.globalHeading) - 180)%360
-        self.interface.wait(5)
-        print("Global Heading", math.degrees(
-            self.interface.globalHeading), "Rough Heading", roughHeading)
-
-        targetForwardHeading = -roughHeading
-        globalForwardHeading = (math.degrees(
-            self.interface.globalHeading) - 180) % 360
-        deltaAngle = (globalForwardHeading - targetForwardHeading) % 360
-
-        print("Target Forward Heading", targetForwardHeading)
-        print("global Forward Heading", globalForwardHeading)
-        print("Delta Angle", deltaAngle)
-
-        self.interface.pointTurn(deltaAngle, 5)
-
-        self.interface.wait(5)
-        print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
-              360, "Rough Heading", roughHeading)
-        
+        self.interface.wait(1)
         print("Local Heading", math.degrees(self.interface.heading))
-
-        #lane_detections = self.interface.Lane_Lines_goal(formation_type)
-
-        ## Logic to Create Fake Lane Lines 
-        lane_detections = DetectLanesResult()
-        lane_detections.net_heading = float(math.degrees(self.interface.heading))
-        lane_detections.width = float(3)
-
-        detections = []
-        lane = single_lane_detection()
-        lane.heading = float(math.degrees(self.interface.heading))
-        end_point = placement.getEndPoint(
-            self.interface.xPos + 1.5 * math.cos(self.interface.heading) + 3 * math.sin(self.interface.heading), self.interface.yPos + 1.5 * math.sin(self.interface.heading) + 3 * math.cos(self.interface.heading), lane.heading - 90, lane_detections.width/2)
-        lane.start_x = float(end_point[0])
-        lane.start_y = float(end_point[1])
-        lane.end_x = float(0)
-        lane.end_y = float(0)
-        lane.lane_type = 'left'
-        detections.append(lane)
-        lane_detections.lane_detections = detections
-
-        print(lane_detections)
-        print(f"LANE DETECTIONS: {lane_detections.lane_detections}")
-        print(f"LANE HEADING: {lane_detections.net_heading}")
-        print(f"LANE WIDTH: {lane_detections.width}")
+        
+        ##########################
+        # Detect Lane Lines
+        ##########################
+        detectedLane = self.laneLineSearchSequence()
+        if not detectedLane:
+            print("NO LANES DETECTED, RETURNING")
+            return
+         
+        heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
+        if abs(heading_error) > 10:
+            print("Heading of {heading_error} is off by more than threshold")
+            self.interface.pointTurn(heading_error, 5)
+            self.interface.wait(5)
+            new_lane_detections = self.interface.Lane_Lines_goal(formation_type)
+            if len(lane_detections.lane_detections) != 0:
+                lane_detections = new_lane_detections
+                heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
 
         if len(lane_detections.lane_detections) == 0:
             print("NO LANES DETECTED, RETURNING")
             return
+        
+        print(f"LANES DETECTED: {lane_detections.lane_detections}")
+        print(f"LANE HEADING: {lane_detections.net_heading}")
+        print(f"LANE WIDTH: {lane_detections.width}")
 
-        # TODO: Uncomment
-        # heading_error = (lane_detections.net_heading - math.degrees(self.interface.heading)) % 360
-        # while abs(heading_error) > 10:
-        #     print("Heading of {heading_error} is off by more than threshold")
-        #     self.interface.pointTurn(heading_error, 5)
-        #     self.interface.wait(5)
-        #     print("Global Heading", (math.degrees(self.interface.globalHeading) - 180) %
-        #         360, "Rough Heading", roughHeading)
-        #     self.interface.wait(10)
-        #     lane_detections = self.interface.Lane_Lines_goal(formation_type)
-        #     print(f"LANE DETECTIONS: {lane_detections.lane_detections}")
-        #     print(f"LANE HEADING: {lane_detections.net_heading}")
-        #     print(f"LANE WIDTH: {lane_detections.width}")
-        #     heading_error = (lane_detections.net_heading - math.degrees(self.interface.heading)) % 360
+        ##########################
+        # Mock Lane Line Detection
+        ##########################
+        # ## Logic to Create Fake Lane Lines 
+        # lane_detections = DetectLanesResult()
+        # lane_detections.net_heading = float(math.degrees(self.interface.heading))
+        # lane_detections.width = float(3)
+
+        # detections = []
+        # lane = single_lane_detection()
+        # lane.heading = float(math.degrees(self.interface.heading))
+        # end_point = placement.getEndPoint(
+        #     self.interface.xPos + 1.5 * math.cos(self.interface.heading) + 3 * math.sin(self.interface.heading), self.interface.yPos + 1.5 * math.sin(self.interface.heading) + 3 * math.cos(self.interface.heading), lane.heading - 90, lane_detections.width/2)
+        # lane.start_x = float(end_point[0])
+        # lane.start_y = float(end_point[1])
+        # lane.end_x = float(0)
+        # lane.end_y = float(0)
+        # lane.lane_type = 'left'
+        # detections.append(lane)
+        # lane_detections.lane_detections = detections
 
         points = placement.generate_pi_lit_formation(
             lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width, formation_type)
-        # return True
+
         print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
-        # intakeSide = "switch_right"
-
-        # TODO: Uncomment
+        
         for pnt in points:
             point = [pnt[0], pnt[1]]
             target = [point]
@@ -275,6 +264,32 @@ class roverMacros():
         if not self.interface.cancelled:
             self.interface.setPiLits("simultaneous")
         return True
+    
+    
+    def laneLineSearchSequence(self):
+        self.interface.changeNeuralNetworkSelected("lanes")
+        
+        detections = []        
+        
+        initial_angle = math.degrees(self.interface.heading)
+        positions = [
+            0, 25, 50, -25, -50
+        ]
+        
+        for target_angle in positions:
+            self.interface.wait(5)
+            curr_angle = math.degrees(self.interface.heading)
+            self.interface.pointTurn((initial_angle - curr_angle + target_angle), 5)
+            lane_detections = self.interface.Lane_Lines_goal()
+            
+            # could use this to return all 
+            detections.append((curr_angle, lane_detections))
+            
+            if lane_detections and len(lane_detections.lane_detections) != 0:
+                return lane_detections
+        
+        return None
+        
 
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"

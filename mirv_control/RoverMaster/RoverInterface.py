@@ -295,8 +295,11 @@ class RoverInterface():
             data.pose.pose.orientation)[0]
 
         if self.startingHeading != 0:
-            self.globalHeading = math.radians(math.degrees(
-                self.startingHeading - math.pi/2 + self.heading) % 360)
+            print("Starting Heading:", math.degrees(self.startingHeading), math.degrees(self.heading))
+            #self.globalHeading = math.radians(math.degrees(180 - (-self.startingHeading - self.heading)) % 360)
+            self.globalHeading = math.radians((360 - (math.degrees(self.heading - (self.startingHeading))%360))%360)
+            
+        print(math.degrees(self.globalHeading))
 
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
@@ -378,8 +381,7 @@ class RoverInterface():
         return self.isPickupControl
 
     @cancellable
-    def Lane_Lines_goal(self, formationType):
-        mirv_control.msg.DetectLanesGoal.formation_type = formationType
+    def Lane_Lines_goal(self):
         mirv_control.msg.DetectLanesGoal.position_x = self.xPos
         mirv_control.msg.DetectLanesGoal.position_y = self.yPos
         mirv_control.msg.DetectLanesGoal.heading = math.degrees(
