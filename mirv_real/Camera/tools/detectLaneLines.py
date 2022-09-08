@@ -1,29 +1,19 @@
 #!/usr/bin/env python3
-import placement
-from std_msgs.msg import Float64
 import actionlib
 import mirv_control.msg as ASmsg
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 from mirv_control.msg import single_lane_detection
 import ros_numpy
-from cv_bridge import CvBridge
 from std_msgs.msg import Float64MultiArray, String
 import rospy
 import torchvision.transforms as transforms
-from numpy import asarray
-import depthai
 
 from lib.core.postprocess import morphological_process, connect_lane
 from lib.utils import show_seg_result
 from lib.models import get_net
 from lib.config import cfg
-import numpy as np
 import torch
-from cmath import pi
-import math
 import cv2
-import os
-import sys
 import time
 import pixel_angles
 
@@ -41,10 +31,7 @@ class detectLaneLines():
         self._as.register_preempt_callback(self.preemptedAS)
         self._as.start()
 
-        self.intakeCameraSub = rospy.Subscriber("IntakeCameraFrames",
-                                                depthAndColorFrame, self.gotFrame)
-        self.networkSub = rospy.Subscriber("neuralNetworkSelector",
-                                           String, self.allowNeuralNetRun)
+        
 
         self.normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -62,7 +49,7 @@ class detectLaneLines():
 
         # TODO: verify this value
         self.shapes = ((self.img_height, self.img_width),
-                       ((0.5333333333333333, self.img_scale), (0.0, 12.0)))
+                       ((0.0, self.img_scale), (0.0, 0.0)))
         self.device = torch.device('cuda')
         self.weights = "/home/nvidia/mirv_ws/src/MIRV-Robot/mirv_real/Camera/tools/weights/End-to-end.pth"
 
@@ -86,6 +73,11 @@ class detectLaneLines():
 
         self.frame = None
         self.depthFrame = None
+        
+        self.intakeCameraSub = rospy.Subscriber("IntakeCameraFrames",
+                                                depthAndColorFrame, self.gotFrame)
+        self.networkSub = rospy.Subscriber("neuralNetworkSelector",
+                                           String, self.allowNeuralNetRun)
 
     def allowNeuralNetRun(self, msg):
         cmd = msg.data
@@ -100,7 +92,6 @@ class detectLaneLines():
         position_x = goal.position_x
         position_y = goal.position_y
         heading = goal.heading
-        lane_type = goal.formation_type
 
         lane_heading, detections, lane_width = self.process_frame(
             self.frame, position_x, position_y, heading)
@@ -114,10 +105,9 @@ class detectLaneLines():
         self._result.lane_detections = detections
 
         self._as.set_succeeded(self._result)
-        self.setAllZeros()
 
     def gotFrame(self, data):
-        if(runningNeuralNetwork):
+        if(self.runningNeuralNetwork):
 
             self.initTime = time.time()
             self.frame = ros_numpy.numpify(data.color_frame)
@@ -172,16 +162,14 @@ class detectLaneLines():
         pad_h = int(pad_h)
         ratio = self.shapes[1][0][1]
 
-        da_predict = da_seg_out[:, :, pad_h:(
-            height-pad_h), pad_w:(width-pad_w)]
+        da_predict = da_seg_out[:, :, 0:height, 0:width]
         da_seg_mask = torch.nn.functional.interpolate(
             da_predict, scale_factor=int(1/ratio), mode='bilinear')
         _, da_seg_mask = torch.max(da_seg_mask, 1)
         da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
         # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
 
-        ll_predict = ll_seg_out[:, :, pad_h:(
-            height-pad_h), pad_w:(width-pad_w)]
+        ll_predict = ll_seg_out[:, :, 0:height, 0:width]
         ll_seg_mask = torch.nn.functional.interpolate(
             ll_predict, scale_factor=int(1/ratio), mode='bilinear')
         _, ll_seg_mask = torch.max(ll_seg_mask, 1)
@@ -194,7 +182,6 @@ class detectLaneLines():
         ll_seg_mask = morphological_process(
             ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
         ll_seg_mask, lines = connect_lane(ll_seg_mask)
-        global i
         image_dir = "/media/nvidia/SSD/lane_pictures"
         print(cv2.imwrite(
             f'{image_dir}/img_{self.startTime}_{self.i}.png', frame_orig))
@@ -204,7 +191,7 @@ class detectLaneLines():
             f'{image_dir}/da_seg_mask_{self.startTime}_{self.i}.png', da_seg_mask))
         print(cv2.imwrite(
             f'{image_dir}/ll_seg_mask_{self.startTime}_{self.i}.png', ll_seg_mask))
-        i += 1
+        self.i += 1
         return lines
 
     # Identify and generate left and right lane line positions + angles

@@ -36,7 +36,7 @@ class roverMacros():
     def dock(self):
         # Step 0: Enable garage detection
         self.interface.changeNeuralNetworkSelected("aruco")
-        self.interface.wait(5)
+        self.interface.wait(0.5)
 
         # Step 1: Deploy garage
         self.interface.deployGarage()
@@ -54,7 +54,7 @@ class roverMacros():
 
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
-        self.interface.wait(5)
+        self.interface.wait(0.5)
         if self.interface.garageLocation is not None:
             garage_angle = self.interface.garageLocation.angle_to_garage
         else:
@@ -84,23 +84,23 @@ class roverMacros():
         print(f"Distance: {distance_meters}")
 
         # Step 5: Turn towards perpendicular vector of garage
-        self.interface.wait(5)
+        self.interface.wait(0.5)
         print(
             f"Step 5: Turning to relative angle of {angle_to_perpendicular_degrees} degrees")
         self.interface.pointTurn(angle_to_perpendicular_degrees, 5)
 
         # Step 6: Drive to directly in front of garage
-        self.interface.wait(5)
+        self.interface.wait(0.5)
         print(f"Step 6: Moving distance of {distance_meters} meters")
         self.interface.driveDistance(distance_meters, 0.25, 0.1)
 
         # Step 7: Turn to face garage
-        self.interface.wait(5)
+        self.interface.wait(0.5)
         print(f"Step 7: Turning to relative angle of {90} degrees")
         self.interface.pointTurn(-90*theta_1/abs(theta_1), 5)
 
         # Step 8: Turn towards tag
-        self.interface.wait(5)
+        self.interface.wait(0.5)
         garage_angle = self.interface.garageLocation.angle_to_garage
         print(f"Step 8: Turning to relative angle of {garage_angle} degrees")
         if not garage_angle:
@@ -139,6 +139,9 @@ class roverMacros():
                 print("Timed out - Deposit")
                 return False
         self.interface.wait(1)
+        self.interface.intake_command_pub.publish(String("reset"))
+        print("Stopping Drive")
+        self.interface.drive(0,0.5)
         self.interface.loadPointToSQL("deploy", intakeSide)
         return True
 
@@ -188,49 +191,50 @@ class roverMacros():
         ##########################
         # Detect Lane Lines
         ##########################
-        detectedLane = self.laneLineSearchSequence()
-        if not detectedLane:
-            print("NO LANES DETECTED, RETURNING")
-            return
-         
-        heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
-        if abs(heading_error) > 10:
-            print("Heading of {heading_error} is off by more than threshold")
-            self.interface.pointTurn(heading_error, 5)
-            self.interface.wait(5)
-            new_lane_detections = self.interface.Lane_Lines_goal(formation_type)
-            if len(lane_detections.lane_detections) != 0:
-                lane_detections = new_lane_detections
-                heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
-
-        if len(lane_detections.lane_detections) == 0:
-            print("NO LANES DETECTED, RETURNING")
-            return
         
-        print(f"LANES DETECTED: {lane_detections.lane_detections}")
-        print(f"LANE HEADING: {lane_detections.net_heading}")
-        print(f"LANE WIDTH: {lane_detections.width}")
+        # detectedLane = self.laneLineSearchSequence()
+        # if not detectedLane:
+        #     print("NO LANES DETECTED, RETURNING")
+        #     return
+         
+        # heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
+        # if abs(heading_error) > 10:
+        #     print("Heading of {heading_error} is off by more than threshold")
+        #     self.interface.pointTurn(heading_error, 5)
+        #     self.interface.wait(5)
+        #     new_lane_detections = self.interface.Lane_Lines_goal(formation_type)
+        #     if len(lane_detections.lane_detections) != 0:
+        #         lane_detections = new_lane_detections
+        #         heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
+
+        # if len(lane_detections.lane_detections) == 0:
+        #     print("NO LANES DETECTED, RETURNING")
+        #     return
+        
+        # print(f"LANES DETECTED: {lane_detections.lane_detections}")
+        # print(f"LANE HEADING: {lane_detections.net_heading}")
+        # print(f"LANE WIDTH: {lane_detections.width}")
 
         ##########################
         # Mock Lane Line Detection
         ##########################
-        # ## Logic to Create Fake Lane Lines 
-        # lane_detections = DetectLanesResult()
-        # lane_detections.net_heading = float(math.degrees(self.interface.heading))
-        # lane_detections.width = float(3)
+        ## Logic to Create Fake Lane Lines 
+        lane_detections = DetectLanesResult()
+        lane_detections.net_heading = float(math.degrees(self.interface.heading))
+        lane_detections.width = float(3)
 
-        # detections = []
-        # lane = single_lane_detection()
-        # lane.heading = float(math.degrees(self.interface.heading))
-        # end_point = placement.getEndPoint(
-        #     self.interface.xPos + 1.5 * math.cos(self.interface.heading) + 3 * math.sin(self.interface.heading), self.interface.yPos + 1.5 * math.sin(self.interface.heading) + 3 * math.cos(self.interface.heading), lane.heading - 90, lane_detections.width/2)
-        # lane.start_x = float(end_point[0])
-        # lane.start_y = float(end_point[1])
-        # lane.end_x = float(0)
-        # lane.end_y = float(0)
-        # lane.lane_type = 'left'
-        # detections.append(lane)
-        # lane_detections.lane_detections = detections
+        detections = []
+        lane = single_lane_detection()
+        lane.heading = float(math.degrees(self.interface.heading))
+        end_point = placement.getEndPoint(
+            self.interface.xPos + 1.5 * math.cos(self.interface.heading) + 3 * math.sin(self.interface.heading), self.interface.yPos + 1.5 * math.sin(self.interface.heading) + 3 * math.cos(self.interface.heading), lane.heading - 90, lane_detections.width/2)
+        lane.start_x = float(end_point[0])
+        lane.start_y = float(end_point[1])
+        lane.end_x = float(0)
+        lane.end_y = float(0)
+        lane.lane_type = 'left'
+        detections.append(lane)
+        lane_detections.lane_detections = detections
 
         points = placement.generate_pi_lit_formation(
             lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width, formation_type)

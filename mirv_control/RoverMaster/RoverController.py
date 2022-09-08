@@ -34,6 +34,7 @@ class RoverController():
     def main(self):
         print("RoverController MAIN")
         self.interface.setPiLits("idle")
+        #self.macros.placePiLitFromSide(7,"switch_right")
         #self.interface.driveDistance( 1, 0.25, 0.1)
 
 

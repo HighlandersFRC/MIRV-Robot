@@ -473,13 +473,13 @@ class Intake {
 				rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				startTime = time(NULL);
-				//double reverseSpeed = getTicksPer100MSFromVelocity(-0.2);
+				double reverseSpeed = getTicksPer100MSFromVelocity(-0.2);
 
-				//frontRightDrive.Set(ControlMode::Velocity, -reverseSpeed);
-				//backRightDrive.Set(ControlMode::Velocity, -reverseSpeed*0.91);
+				frontRightDrive.Set(ControlMode::Velocity, -reverseSpeed);
+				backRightDrive.Set(ControlMode::Velocity, -reverseSpeed*0.91);
 
-				//frontLeftDrive.Set(ControlMode::Velocity, reverseSpeed);
-				//backLeftDrive.Set(ControlMode::Velocity, reverseSpeed*0.91);
+				frontLeftDrive.Set(ControlMode::Velocity, reverseSpeed);
+				backLeftDrive.Set(ControlMode::Velocity, reverseSpeed*0.91);
 			} else {
 				//stopDrive();
 				if (side > 0){
@@ -492,6 +492,7 @@ class Intake {
 						rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, -0.5);
+						cout << "Right Limit Switch Pressed" << "\n";
 					} else {
 						if (time(NULL) - startTime > 4){
 							intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
@@ -699,22 +700,22 @@ int main(int argc, char **argv) {
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
 	//ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
 
-	publisher.intakeLSPub = n.advertise<std_msgs::Float64MultiArray>("intake/limitswitches", 10);
+	publisher.intakeLSPub = n.advertise<std_msgs::Float64MultiArray>("intake/limitswitches", 1);
 	ros::Timer intakeLSTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishIntakeLimitSwitches, publisher));
 
-	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
+	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 1);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
-	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
+	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 1);
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
 
-	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 10);
+	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 1);
 	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishTouchSensor, publisher));
 
-	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 10);
+	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 1);
 	ros::Timer encoderPositionTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderPosition, publisher));
 
-	publisher.imuPub = n.advertise<std_msgs::Float64>("pigeonIMU", 10);
+	publisher.imuPub = n.advertise<std_msgs::Float64>("pigeonIMU", 1);
 	ros::Timer imuTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishIMU, publisher));
 
 	initializeDriveMotors();
