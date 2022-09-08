@@ -375,7 +375,7 @@ class Intake {
 	//mag_out: move magazine outwards
 
 	double intakeUpPercent = 0.8;
-	double wheelIntakePercent = 0.6;
+	double wheelIntakePercent = 0.75;
 
 	//limit switches: fwd - up, rev - down
 
@@ -701,7 +701,7 @@ int main(int argc, char **argv) {
 	//ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
 
 	publisher.intakeLSPub = n.advertise<std_msgs::Float64MultiArray>("intake/limitswitches", 1);
-	ros::Timer intakeLSTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishIntakeLimitSwitches, publisher));
+	ros::Timer intakeLSTimer = n.createTimer(ros::Duration(1.0 / 10.0), std::bind(&Publisher::publishIntakeLimitSwitches, publisher));
 
 	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 1);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
@@ -710,7 +710,7 @@ int main(int argc, char **argv) {
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
 
 	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 1);
-	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishTouchSensor, publisher));
+	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 10.0), std::bind(&Publisher::publishTouchSensor, publisher));
 
 	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 1);
 	ros::Timer encoderPositionTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderPosition, publisher));
@@ -721,7 +721,7 @@ int main(int argc, char **argv) {
 	initializeDriveMotors();
 	initializeIntakeMotors();
 
-	ros::Rate rate(100);
+	ros::Rate rate(20);
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(500);
 

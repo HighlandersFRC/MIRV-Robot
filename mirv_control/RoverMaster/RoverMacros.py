@@ -181,12 +181,13 @@ class roverMacros():
         print("Starting Target", startingTarget)
         self.interface.PP_client_goal(startingTarget)
 
-        self.interface.wait(1)
+        self.interface.wait(5)
         print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
-        self.interface.pointTurn((math.degrees(self.interface.globalHeading) - roughHeading) % 360, 5)
+        self.interface.pointTurn(roughHeading - (math.degrees(self.interface.globalHeading)) % 360, 5)
 
-        self.interface.wait(1)
-        print("Local Heading", math.degrees(self.interface.heading))
+        self.interface.wait(5)
+        print("Updated Global Heading", math.degrees(self.interface.globalHeading))
+        print("Local Heading", self.interface.heading)
         
         ##########################
         # Detect Lane Lines
