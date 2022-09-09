@@ -56,6 +56,7 @@ def getEndPointLatLng(lat1, lon1, bearing, d):
     lon2 = math.degrees(lon2)
     return lat2, lon2
 
+
 # >
 # |   \
 # |       \
@@ -63,13 +64,21 @@ def getEndPointLatLng(lat1, lon1, bearing, d):
 # width: lane width / (num Pi-lits - 1)
 # height: 10 feet
 # andle from longitudinal direction: +math.atan2(10ft, lane_width/(num_pi_lits - 1)) (negative if on right side of spear)
-
-
 def getEndPoint(x, y, bearing, d):
     angle = math.radians(bearing)  # convert degrees to radians
     dx = d*math.cos(angle)
     dy = d*math.sin(angle)
     return x + dx, y + dy
+
+
+# Robot coordinates
+def get_angle_robot_frame(p1, p2):
+    x0 = p1[0]
+    x1 = p1[-1]
+    y0 = p2[0]
+    y1 = p2[-1]
+
+    return math.degrees(math.atan2(y1 - y0, x1 - x0))
 
 
 ###
@@ -78,10 +87,14 @@ def getEndPoint(x, y, bearing, d):
 # lane_width: Width of lane, in meters
 # formation_type: enum of pi-lit formation type (taper_right_3, taper_left_3, taper_right_5, taper_left_5, spear_7)
 def generate_pi_lit_formation(detected_lanes, heading, lane_width, formation_type):
-    if formation_type == "taper_right_3":
-        return taper_3(detected_lanes, heading, lane_width)
-    elif formation_type == "taper_left_3":
-        return taper_3(detected_lanes, heading, lane_width, left_side=True)
+    if formation_type == "taper_right_3_start":
+        return taper_3(detected_lanes, heading, lane_width, start=True)
+    if formation_type == "taper_right_3_end":
+        return taper_3(detected_lanes, heading, lane_width, start=False)
+    elif formation_type == "taper_left_3_start":
+        return taper_3(detected_lanes, heading, lane_width, start=True, left_side=True)
+    elif formation_type == "taper_left_3_end":
+        return taper_3(detected_lanes, heading, lane_width, start=False, left_side=True)
     elif formation_type == "taper_right_5":
         return taper_5(detected_lanes, heading, lane_width)
     elif formation_type == "taper_left_5":
@@ -90,7 +103,7 @@ def generate_pi_lit_formation(detected_lanes, heading, lane_width, formation_typ
         return spear_7(detected_lanes, heading, lane_width)
 
 
-def taper_3(detected_lanes, heading, lane_width, left_side=False):
+def taper_3(detected_lanes, heading, lane_width, start=False, left_side=False):
     start_point = get_center_coordinates(
         detected_lanes, heading, lane_width)
     if start_point == (None, None):
@@ -101,11 +114,16 @@ def taper_3(detected_lanes, heading, lane_width, left_side=False):
 
     # longitudinal_dist: longitudal distance from start point to pi-lit, in feet
     # lateral_dist: lateral (sideways) distance from the edge of the lane, in lane widths
-    PI_LIT_LOCATIONS = [
-        {'longitudinal_dist': 0, 'lateral_dist': -0.375 * sign},
-        {'longitudinal_dist': 100, 'lateral_dist': 0.0 * sign},
-        {'longitudinal_dist': 200, 'lateral_dist': 0.0 * sign},
-    ]
+    if start:
+        PI_LIT_LOCATIONS = [
+            {'longitudinal_dist': 0, 'lateral_dist': -0.375 * sign},
+        ]
+    else:
+        # NOTE: Should be 100 and 200, but these are generated from 20 feet down the lane
+        PI_LIT_LOCATIONS = [
+            {'longitudinal_dist': 80, 'lateral_dist': 0.0 * sign},
+            {'longitudinal_dist': 180, 'lateral_dist': 0.0 * sign},
+        ]
 
     return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 

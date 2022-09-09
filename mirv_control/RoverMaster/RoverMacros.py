@@ -47,13 +47,14 @@ class roverMacros():
         lineUpPoint2 = [2, 0]
         lineUpPoints = [lineUpPoint1, lineUpPoint2]
         self.interface.PP_client_goal(lineUpPoints)
-        
+
         self.interface.wait(0.5)
         currentLocationConverted = self.interface.CoordConversion_client_goal(
-                [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
+            [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
         print("Current Location", currentLocationConverted)
 
-        absAngleToPlacement = math.atan2(currentLocationConverted[1], currentLocationConverted[0])
+        absAngleToPlacement = math.atan2(
+            currentLocationConverted[1], currentLocationConverted[0])
         angleToPlacement = absAngleToPlacement + self.interface.heading
         self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
 
@@ -150,9 +151,9 @@ class roverMacros():
         self.interface.wait(1)
         self.interface.intake_command_pub.publish(String("reset"))
         print("Stopping Drive")
-        self.interface.drive(0,0.5)
+        self.interface.drive(0, 0.5)
         self.interface.wait(0.5)
-        self.interface.drive(0.2,2)
+        self.interface.drive(0.2, 2)
         self.interface.loadPointToSQL("deploy", intakeSide)
         return True
 
@@ -172,14 +173,12 @@ class roverMacros():
         if self.interface.cancelled:
             return
         self.interface.intake_command_pub.publish(String("reset"))
-        
-        
+
     def get_angle_error(self, a1, a2):
         heading_error = (a1 - a2) % 360
         if heading_error > 180:
             heading_error -= 360
         return heading_error
-            
 
     @cancellable
     def placeAllPiLits(self, firstPoint, roughHeading, formation_type):
@@ -193,60 +192,82 @@ class roverMacros():
         self.interface.PP_client_goal(startingTarget)
 
         self.interface.wait(5)
-        print("Global Heading", math.degrees(self.interface.globalHeading), "Rough Heading", roughHeading)
-        self.interface.pointTurn(roughHeading - (math.degrees(self.interface.globalHeading)) % 360, 5)
+        print("Global Heading", math.degrees(
+            self.interface.globalHeading), "Rough Heading", roughHeading)
+        self.interface.pointTurn(
+            roughHeading - (math.degrees(self.interface.globalHeading)) % 360, 5)
 
         self.interface.wait(5)
-        print("Updated Global Heading", math.degrees(self.interface.globalHeading))
+        print("Updated Global Heading", math.degrees(
+            self.interface.globalHeading))
         print("Local Heading", self.interface.heading)
-        
+
+        # self.interface.wait(1)
+        # print("Global Heading", math.degrees(
+        #     self.interface.globalHeading), "Rough Heading", roughHeading)
+        # self.interface.pointTurn(
+        #     (math.degrees(self.interface.globalHeading) - roughHeading) % 360, 5)
+
+        # self.interface.wait(1)
+        # print("Local Heading", math.degrees(self.interface.heading))
+
+        # If 3 pi-lits, send to other method. This one is long, so needs a different algorithm
+        if formation_type in ['taper_right_3', 'taper_left_3']:
+            self.long_pilit_placement(formation_type)
+            self.interface.changeNeuralNetworkSelected("none")
+            return
+
         ##########################
         # Detect Lane Lines
         ##########################
-        
-        # detectedLane = self.laneLineSearchSequence()
-        # if not detectedLane:
-        #     print("NO LANES DETECTED, RETURNING")
-        #     return
-         
-        # heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
-        # if abs(heading_error) > 10:
-        #     print("Heading of {heading_error} is off by more than threshold")
-        #     self.interface.pointTurn(heading_error, 5)
-        #     self.interface.wait(5)
-        #     new_lane_detections = self.interface.Lane_Lines_goal(formation_type)
-        #     if len(lane_detections.lane_detections) != 0:
-        #         lane_detections = new_lane_detections
-        #         heading_error = self.get_angle_error(math.degrees(self.interface.heading), lane_detections.net_heading)
+        detectedLane = self.laneLineSearchSequence()
+        if not detectedLane:
+            print("NO LANES DETECTED, RETURNING")
+            self.interface.changeNeuralNetworkSelected("none")
+            return
 
-        # if len(lane_detections.lane_detections) == 0:
-        #     print("NO LANES DETECTED, RETURNING")
-        #     return
-        
-        # print(f"LANES DETECTED: {lane_detections.lane_detections}")
-        # print(f"LANE HEADING: {lane_detections.net_heading}")
-        # print(f"LANE WIDTH: {lane_detections.width}")
+        heading_error = self.get_angle_error(math.degrees(
+            self.interface.heading), lane_detections.net_heading)
+        if abs(heading_error) > 10:
+            print("Heading of {heading_error} is off by more than threshold")
+            self.interface.pointTurn(heading_error, 5)
+            self.interface.wait(5)
+            new_lane_detections = self.interface.Lane_Lines_goal(
+                formation_type)
+            if len(lane_detections.lane_detections) != 0:
+                lane_detections = new_lane_detections
+                heading_error = self.get_angle_error(math.degrees(
+                    self.interface.heading), lane_detections.net_heading)
+
+        if len(lane_detections.lane_detections) == 0:
+            print("NO LANES DETECTED, RETURNING")
+            self.interface.changeNeuralNetworkSelected("none")
+            return
+
+        print(f"LANES DETECTED: {lane_detections.lane_detections}")
+        print(f"LANE HEADING: {lane_detections.net_heading}")
+        print(f"LANE WIDTH: {lane_detections.width}")
 
         ##########################
         # Mock Lane Line Detection
         ##########################
-        ## Logic to Create Fake Lane Lines 
-        lane_detections = DetectLanesResult()
-        lane_detections.net_heading = float(math.degrees(self.interface.heading))
-        lane_detections.width = float(3)
+        # ## Logic to Create Fake Lane Lines
+        # lane_detections = DetectLanesResult()
+        # lane_detections.net_heading = float(math.degrees(self.interface.heading))
+        # lane_detections.width = float(3)
 
-        detections = []
-        lane = single_lane_detection()
-        lane.heading = float(math.degrees(self.interface.heading))
-        end_point = placement.getEndPoint(
-            self.interface.xPos + 1.5 * math.cos(self.interface.heading) + 3 * math.sin(self.interface.heading), self.interface.yPos + 1.5 * math.sin(self.interface.heading) + 3 * math.cos(self.interface.heading), lane.heading - 90, lane_detections.width/2)
-        lane.start_x = float(end_point[0])
-        lane.start_y = float(end_point[1])
-        lane.end_x = float(0)
-        lane.end_y = float(0)
-        lane.lane_type = 'left'
-        detections.append(lane)
-        lane_detections.lane_detections = detections
+        # detections = []
+        # lane = single_lane_detection()
+        # lane.heading = float(math.degrees(self.interface.heading))
+        # end_point = placement.getEndPoint(
+        #     self.interface.xPos + 1.5 * math.cos(self.interface.heading) + 3 * math.sin(self.interface.heading), self.interface.yPos + 1.5 * math.sin(self.interface.heading) + 3 * math.cos(self.interface.heading), lane.heading - 90, lane_detections.width/2)
+        # lane.start_x = float(end_point[0])
+        # lane.start_y = float(end_point[1])
+        # lane.end_x = float(0)
+        # lane.end_y = float(0)
+        # lane.lane_type = 'left'
+        # detections.append(lane)
+        # lane_detections.lane_detections = detections
 
         points = placement.generate_pi_lit_formation(
             lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width, formation_type)
@@ -254,13 +275,17 @@ class roverMacros():
         print("Calculated Placement Points: ", points)
 
         self.interface.changeNeuralNetworkSelected("none")
-        
+
+        return self.placeMultiplePiLits(points)
+
+    @cancellable
+    def placeMultiplePiLits(self, points):
         for pnt in points:
             point = [pnt[0], pnt[1]]
             target = [point]
             if self.interface.cancelled:
                 return
-        
+
             currentLocationConverted = self.interface.CoordConversion_client_goal(
                 [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
             print("Current Location", currentLocationConverted)
@@ -280,32 +305,75 @@ class roverMacros():
         if not self.interface.cancelled:
             self.interface.setPiLits("simultaneous")
         return True
-    
-    
+
+    @cancellable
     def laneLineSearchSequence(self):
-        self.interface.changeNeuralNetworkSelected("lanes")
-        
-        detections = []        
-        
+        detections = []
+
         initial_angle = math.degrees(self.interface.heading)
         positions = [
             0, 25, 50, -25, -50
         ]
-        
+
         for target_angle in positions:
             self.interface.wait(5)
             curr_angle = math.degrees(self.interface.heading)
-            self.interface.pointTurn((initial_angle - curr_angle + target_angle), 5)
+            self.interface.pointTurn(
+                (initial_angle - curr_angle + target_angle), 5)
             lane_detections = self.interface.Lane_Lines_goal()
-            
-            # could use this to return all 
+
+            # could use this to return all
             detections.append((curr_angle, lane_detections))
-            
+
             if lane_detections and len(lane_detections.lane_detections) != 0:
                 return lane_detections
-        
+
         return None
-        
+
+    @cancellable
+    def long_pilit_placement(self, formation_type):
+        # Step 1: identify current lane location and heading
+        initial_lane_detection = self.laneLineSearchSequence()
+        if not initial_lane_detection:
+            print("NO LANES DETECTED INITIAL, RETURNING")
+            return
+
+        # Step 2: Place 1 pi-lit in correct position
+        start_formation = formation_type + '_start'
+
+        starting_points = placement.generate_pi_lit_formation(
+            initial_lane_detection.lane_detections, initial_lane_detection.net_heading, initial_lane_detection.width, start_formation)
+
+        self.placeMultiplePiLits(starting_points)
+
+        # Step 3: Drive forward forwards 20 feet along heading
+        destination = placement.getEndPoint(
+            self.interface.xPos, self.interface.yPos, initial_lane_detection.net_heading, 20 * placement.FEET_TO_METERS)
+        laneDestination = self.interface.CoordConversion_client_goal(
+            destination)
+        self.interface.PP_client_goal([laneDestination])
+
+        # Step 4: Identify lanes again
+        final_lane_detection = self.laneLineSearchSequence()
+        if not final_lane_detection:
+            print("NO LANES DETECTED FINAL, RETURNING")
+            return
+
+        # Step 5: Determine very accurate lane heading
+        initial_center = placement.get_center_coordinates(
+            initial_lane_detection.lane_detections, initial_lane_detection.net_heading, initial_lane_detection.width)
+        final_center = placement.get_center_coordinates(
+            final_lane_detection.lane_detections, final_lane_detection.net_heading, final_lane_detection.width)
+        net_heading = placement.get_angle_robot_frame(
+            initial_center, final_center)
+
+        # Step 6: Place all Pi-Lits
+        end_formation = formation_type + '_end'
+
+        ending_points = placement.generate_pi_lit_formation(
+            final_lane_detection.lane_detections, net_heading, final_lane_detection.width, end_formation)
+
+        self.placeMultiplePiLits(ending_points)
 
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"
@@ -402,7 +470,8 @@ class roverMacros():
 
             # Start By Turning in the general direction of the target
             if distanceToPlacement > 1:
-                self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
+                self.interface.pointTurn(
+                    math.degrees(angleToPlacement) % 360, 5)
 
             if distanceToPlacement > 3:
                 distanceBeforePiLit = distanceToPlacement - 1
@@ -429,9 +498,9 @@ class roverMacros():
             elif distanceToPlacement > 2:
                 self.interface.driveDistance(
                     distanceToPlacement - 1.5, 0.25, 0.1)
-                
+
             elif distanceToPlacement < 1:
-                self.interface.driveDistance( -1, 0.25, 0.1)
+                self.interface.driveDistance(-1, 0.25, 0.1)
 
             self.interface.wait(2)
             currentLocationConverted = self.interface.CoordConversion_client_goal(

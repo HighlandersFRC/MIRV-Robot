@@ -106,7 +106,16 @@ def estimate_coef(x, y):
 
 
 # Robot coordinates
-def get_angle_robot_frame(points_x, points_y):
+def get_angle_robot_frame(p1, p2):
+    x0 = p1[0]
+    x1 = p1[-1]
+    y0 = p2[0]
+    y1 = p2[-1]
+
+    return math.degrees(math.atan2(y1 - y0, x1 - x0))
+
+
+def get_angle_robot_frame_points(points_x, points_y):
     x0 = points_x[0]
     x1 = points_x[-1]
     y0 = points_y[0]
@@ -185,7 +194,7 @@ def get_line_equations(line, imu_offset, rover_position, center_angle, height):
 
     if points_x and points_y:
 
-        angle = get_angle_robot_frame(points_x, points_y)
+        angle = get_angle_robot_frame_points(points_x, points_y)
 
         # , line[0], line[-1]#
         return x_intercept, dx_sign, angle, points_x[0], points_y[0], points_x[-1], points_y[-1]
@@ -197,4 +206,5 @@ def get_sign(val):
     return 1 if val >= 0 else -1
 
 
-print([i / 0.0254 for i in get_real_position(0/scale, 129/scale, 0, (0, 0), (0, -15), 0.175)])
+print([i / 0.0254 for i in get_real_position(0 /
+      scale, 129/scale, 0, (0, 0), (0, -15), 0.175)])
