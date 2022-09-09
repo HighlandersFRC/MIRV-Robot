@@ -43,10 +43,19 @@ class roverMacros():
 
         # # Step 2: Drive to front of garage
         # print(f"Step 2: Driving to front of garage")
-        lineUpPoint1 = [3, 0]
-        lineUpPoint2 = [1.5, 0]
+        lineUpPoint1 = [3.5, 0]
+        lineUpPoint2 = [2, 0]
         lineUpPoints = [lineUpPoint1, lineUpPoint2]
         self.interface.PP_client_goal(lineUpPoints)
+        
+        self.interface.wait(0.5)
+        currentLocationConverted = self.interface.CoordConversion_client_goal(
+                [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
+        print("Current Location", currentLocationConverted)
+
+        absAngleToPlacement = math.atan2(currentLocationConverted[1], currentLocationConverted[0])
+        angleToPlacement = absAngleToPlacement + self.interface.heading
+        self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
 
         # ## TODO: Cancel
         # if self.interface.cancelled:
@@ -54,7 +63,7 @@ class roverMacros():
 
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
-        self.interface.wait(0.5)
+        self.interface.wait(5)
         if self.interface.garageLocation is not None:
             garage_angle = self.interface.garageLocation.angle_to_garage
         else:
@@ -142,6 +151,8 @@ class roverMacros():
         self.interface.intake_command_pub.publish(String("reset"))
         print("Stopping Drive")
         self.interface.drive(0,0.5)
+        self.interface.wait(0.5)
+        self.interface.drive(0.2,2)
         self.interface.loadPointToSQL("deploy", intakeSide)
         return True
 
