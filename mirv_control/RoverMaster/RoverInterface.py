@@ -584,7 +584,7 @@ class RoverInterface():
         self.roverState = self.AUTONOMOUS
         success = self.RoverMacro.dock()
         if success:
-            self.roverState = self.CONNECTED_DISABLED
+            self.roverState = self.DOCKED
         else:
             self.roverState = self.CONNECTED_ENABLED
 
@@ -643,6 +643,7 @@ class RoverInterface():
                     "location", {}).get("long")
                 formation = msg.get("commandParameters", {}).get(
                     "formation", "taper_right_5")
+                print("Place All Message", msg)
                 t = Thread(target=self.deployAllPilits,
                            args=(lat, long, heading, formation))
                 t.start()

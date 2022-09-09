@@ -218,7 +218,7 @@ class RobotVideoStreamTrack(VideoStreamTrack):
         super().__init__()  # don't forget this!
         self.counter = 0
     
-    
+    ## Receive Code To Forward Data from Intake Camera
     # async def recv(self):
     #     pts, time_base = await self.next_timestamp()
     #     #print("test") 
@@ -246,8 +246,6 @@ class RobotVideoStreamTrack(VideoStreamTrack):
         frame = VideoFrame.from_ndarray(corrected)
         frame.pts = pts
         frame.time_base = time_base
-        
-        #print("Returned Frame", time.time() - startTime, cv_frame.shape)
         return frame
 
 # Website posts an offer to python server
@@ -347,22 +345,6 @@ async def update_garage(token):
         get_garage_state(token)
         print("test")
         await asyncio.sleep(5)
-'''
-async def update_status(): 
-    while True:        
-        print("Update Status")
-        if len(status_messages) > 0:
-            status = status_messages[-1]
-        else:
-            status = DEFAULT_STATUS_MESSAGE
-        
-        if api_connected:
-            send_to_api(status)
-        
-        if get_webrtc_state == "connected":
-            send_to_webrtc(status)
-        await asyncio.sleep(5)
-'''
 
 def stop():
     connection_task.cancel()
@@ -373,23 +355,25 @@ def connect():
     print('API connection established')
     global api_connected
     api_connected = True
+    
+@sio.event
+def connect_error(data):
+    rospy.logwarn("Unable to Connect to API Websocket. Connection Error " + str(data))
 
 @sio.event
 def disconnect():
     rospy.logwarn("API connection lost")
-    global api_connected
-    api_connected = False
+    #global api_connected
+    #api_connected = False
 
 @sio.on('message')
 def message(data):
     print('message received with ', data)
-    # sio.emit('my response', {'response': 'my response'})
 
 
 @sio.on('exception')
 def exception(data):
-    print('exception received with ', data)
-    # sio.emit('my response', {'response': 'my response'})
+    rospy.logwarn('exception received with '+str(data))
     
 
 @sio.on('connection_offer')

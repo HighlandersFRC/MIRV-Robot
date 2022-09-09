@@ -28,9 +28,7 @@ echo "DIO Configuration Complete" >> startup.log
 
 echo "seting up enviornment variables" >>startup.log
 source set_envs.sh
-# source setenv.sh
 echo "set up enviornment variables" >> startup.log
-#roslaunch mirv_real mirv.launch
 
 #export OPENBLAS_CORETYPE=ARMV8 python
 #export OPENBLAS_CORETYPE=ARMV8 python3
