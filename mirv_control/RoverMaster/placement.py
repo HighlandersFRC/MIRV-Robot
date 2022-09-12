@@ -74,9 +74,9 @@ def getEndPoint(x, y, bearing, d):
 # Robot coordinates
 def get_angle_robot_frame(p1, p2):
     x0 = p1[0]
-    x1 = p1[-1]
-    y0 = p2[0]
-    y1 = p2[-1]
+    y0 = p1[1]
+    x1 = p2[0]
+    y1 = p2[1]
 
     return math.degrees(math.atan2(y1 - y0, x1 - x0))
 
