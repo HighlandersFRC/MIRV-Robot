@@ -1,11 +1,12 @@
 #goal definition
-string formation_type
 float64 position_x
 float64 position_y
 float64 heading
 ---
 #result definition
-std_msgs/Float64MultiArray[] placement_locations
+float64 net_heading
+float64 width
+single_lane_detection[] lane_detections
 ---
 #feedback
 string feedback

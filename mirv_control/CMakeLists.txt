@@ -63,6 +63,8 @@ add_message_files(
    aruco_detection.msg
    aruco_detections.msg
    pilit_state.msg
+   pi_lit_location.msg
+   single_lane_detection.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -93,7 +95,7 @@ add_action_files(
   DIRECTORY action
   FILES general.action
   DIRECTORY action
-  FILES GeneratePlacementLocations.action
+  FILES DetectLanes.action
 )
 
 # Generate added messages and services with any dependencies listed here

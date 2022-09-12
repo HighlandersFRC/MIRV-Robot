@@ -38,7 +38,7 @@ class RoverState:
                 "drivetrain": {"health": HEALTH_STATES[2]},
                 "intake": {"health": HEALTH_STATES[2]},
                 "sensors": {"health": HEALTH_STATES[2]},
-                "garage": {"health": HEALTH_STATES[2]},
+                "garage": {"health": HEALTH_STATES[0]},
                 "power": {"health": HEALTH_STATES[2]},
                 "general": {"health": HEALTH_STATES[2]}
             },
@@ -70,7 +70,8 @@ class RoverState:
             "encoders": Timer(1),
             "camera_frames": Timer(1),
             "heading": Timer(1),
-            "pilit_table": Timer(5)
+            "pilit_table": Timer(5),
+            "garage":Timer(10),
         }
 
     def update_timestamp(self):

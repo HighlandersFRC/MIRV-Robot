@@ -38,8 +38,8 @@
 
 
     <!-- Start real-world/simulation agnostic nodes -->
-    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true" output = "screen"/>
-    <include file="$(find mirv_control)/launch/cloud_nodes.launch" pass_all_args="true" output = "screen"/>
+    <include file="$(find mirv_control)/launch/start_control.launch" pass_all_args="true" output="screen"/>
+    <include file="$(find mirv_control)/launch/cloud_nodes.launch" pass_all_args="true" output="screen"/>
 
     <!-- start real-world nodes -->
     <!-- <node name="control" pkg="mirv_real" type="control"/> -->
@@ -53,7 +53,7 @@
     <node name="intakeCameraPublisher" pkg="mirv_real" type="intakeCameraPublisher.py"
         respawn="$(arg respawn)" 
         respawn_delay="$(arg respawn_delay)"/>
-    <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py" output = "screen"/>
+    <node name="piLitDetector" pkg="mirv_real" type="detectPiLits.py"/>
     <!-- <node name="laneLineDetector" pkg="mirv_real" type="detectLaneLines.py"/> -->
     <!-- <node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py"/> -->
     <!-- <node name="OdometyDataUnfiltered" pkg="mirv_control" type="controllerFormatting.py"/> -->

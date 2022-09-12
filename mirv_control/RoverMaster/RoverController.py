@@ -24,12 +24,6 @@ class RoverController():
         self.interface = RoverInterface()
         self.macros = RoverMacros(self.interface)
         self.interface.loadRoverMacro(self.macros)
-        #self.faults = FaultStates(self.interface)
-
-        # rospy.init_node("DatabaseActionClient")
-        # self.client = actionlib.SimpleActionClient("Database", mirv_control.msg.DatabaseAction)
-        # self.client.wait_for_server()
-        # self.interface.run()
     def updateStatus(self):
         while not rospy.is_shutdown():
             self.interface.stateWatchdog()
@@ -39,51 +33,14 @@ class RoverController():
 
     def main(self):
         print("RoverController MAIN")
-        self.interface.changeNeuralNetworkSelected("lanes")
-        self.interface.setPiLits("wave")
-        #time.sleep(60)
-        #points = self.interface.Lane_Lines_goal("taper_right_5")
-        #print(f"GENERATED POINTS: {points}")
-        
-        #self.interface.pickup_client_goal("switch_right", 0)
-
-        # self.interface.drive_into_garage(0)
-        # self.macros.testPointTurn()
-        # self.macros.testDriveDistance()
-        # point1 = self.interface.CoordConversion_client_goal([40.4739003, -104.9697079])
-        # point2 = self.interface.CoordConversion_client_goal([40.4740120, -104.9696378])
-        # point3 = self.interface.CoordConversion_client_goal([40.474175983263564,  -104.96935822069644])
-        # point4 = self.interface.CoordConversion_client_goal([40.4740867177757, -104.96949836611748])
-        # point5 = self.interface.CoordConversion_client_goal([40.4740362189614, -104.96944606304169])
-        # point6 = self.interface.CoordConversion_client_goal([40.47404009733802, -104.96954446111727])
-
-        # target = [point1, point2, point1]
-        # target = [point2, point3, point4, point5]
-
-        # self.interface.PP_client_goal(target)
-
-        # point3 = self.interface.CoordConversion_client_goal([40.4739151,  -104.9697535])
-        # point4 = self.interface.CoordConversion_client_goal([40.4738284,  -104.9696305])
-        # point4 = [5, 0]
-        # point5 = [3.5,0]
-        # point6 = [1, 0]
-        # target2 = [point1, point4, point5, point6]
-
-        # self.interface.PP_client_goal(target2)
-
-        # points = self.interface.getLatestSQLPoints()
+        self.interface.setPiLits("idle")
+        #self.macros.placePiLitFromSide(7,"switch_right")
+        #self.interface.driveDistance( 1, 0.25, 0.1)
 
 
 if __name__ == "__main__":
     controller = RoverController()
     time.sleep(4)
     controller.main()
-    #updateStatusThread = threading.Thread(target = controller.updateStatus, name="updateStatus")
-    #mainThread = threading.Thread(target = controller.main, name = "thread2")
-    #print("Starting threads...")
-    # updateStatusThread.start()
-    # mainThread.start()
-
-    #print("Threads started")
     controller.updateStatus()
     

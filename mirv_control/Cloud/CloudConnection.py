@@ -14,6 +14,7 @@ import ros_numpy
 import numpy as np
 import math
 import json
+import time
 from std_msgs.msg import String, Bool
 from aiohttp import web
 from av import VideoFrame
@@ -56,31 +57,6 @@ if CLOUD_PORT is None:
 else:
     endpoint = f"{CLOUD_HOST}:{CLOUD_PORT}"    
 
-
-DEFAULT_STATUS_MESSAGE = {
-    "roverId": f"{ROVER_COMMON_NAME}",
-    "state": "docked",
-    "status": "available",
-    "battery-percent": -1,
-    "battery-voltage": -1,
-    "health": {
-        "electronics": "unavailable",
-        "drivetrain": "unavailable",
-        "intake": "unavailable",
-        "sensors": "unavailable",
-        "garage": "unavailable",
-        "power": "unavailable",
-        "general": "unavailable"
-    },
-    "telemetry": {
-        "lat": 0,
-        "long": 0,
-        "heading": 0,
-        "speed": 0
-    }
-}
-
-
 token = ""
 
 # Setup webtrc connection components
@@ -90,6 +66,27 @@ channels = []
 #Cache incoming frames for sending
 frames = []
 status_messages = []
+
+cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+
+def get_token():
+    login_data = {'username': USERNAME, 'password': PASSWORD}
+    print(login_data)
+    try:
+        response = requests.post(f"https://{endpoint}/token", data=login_data,timeout=20)
+        contents = json.loads(response.content.decode('utf-8'))
+        token = contents.get('access_token')
+        print(token)
+        return token
+    except requests.exceptions.ReadTimeout:
+        print("Unable to Acquire Token")
+        return ""
+    except requests.exceptions.ConnectionError as e:
+        print("Unable to Acquire Token", e)
+        return ""
 
 def get_webrtc_state():
     if len(pcs) > 0:
@@ -101,20 +98,26 @@ def get_webrtc_state():
 # Tries to connect to API and form Socket Connection
 def connect_to_api():
     try:
-        sio.connect(f"ws://{endpoint}/ws", headers={"ID": ROVER_COMMON_NAME, "device-type": "rover", "token": token}, socketio_path="/ws/socket.io")
+        sio.reconnection = True
+        sio.reconnection_delay = 0.5
+        sio.reconnection_delay_max = 1
+        sio.reconnection_attempts = 0
+        sio.handle_sigint = True
+        sio.connect(f"ws://{endpoint}/ws", headers={"ID": ROVER_COMMON_NAME, "device-type": "rover", "token": token}, socketio_path="/ws/socket.io", wait_timeout = 30)
         rospy.loginfo("Cloud Connection Succeeded")
     except socketio.exceptions.ConnectionError as e:
+        global api_connected
+        api_connected = False
         rospy.logwarn(f"Unable to Connect to API: {endpoint}")
         rospy.logwarn(e)
 
 # Sends a Message to the API
 def send_to_api(message, type="data"):
     try:
-        if api_connected:
+        if sio.connected:
             sio.emit(type, message)
         else:
             rospy.logwarn("API Disconnected. Cannot Send Message")
-            connect_to_api()
     except socketio.exceptions.BadNamespaceError:
         rospy.logwarn("Unable to send message to socket server")
 
@@ -122,7 +125,7 @@ def send_to_api(message, type="data"):
 # Send a Message on Webrtc Channel
 def send_to_webrtc(message):
     try:
-        str_msg = json.dumps(msg)
+        str_msg = json.dumps(msg)   
         for channel in channels:
             rospy.loginfo("Sending", + str_msg)
             channel.send(str_msg)
@@ -142,16 +145,19 @@ def frameSubscriber(data):
 def statusSubscriber(data):
     if data is not None and len(str(data.data)) > 0:
         status = json.loads(str(data.data))
-        rospy.loginfo(status)
-        if api_connected:
+        global token
+        if token == "":
+            token = get_token()
+        
+        if sio.connected:
             send_to_api(status)
-            get_garage_state(token)        
+            get_garage_state(token)
+        #else:
+        #    connect_to_api()       
         if get_webrtc_state == "connected":
             send_to_webrtc(status)
         #if len(status_messages) == 0:
         status_messages.append(data.data)
-        #else:
-        #    status_messages[0] = data.data
     else:
         print("Received Data with Type None", data)
 
@@ -168,30 +174,15 @@ def garageSubscriber(data):
 
     
 
-def update_remote():
-    while True:
-        global socket_connection
-        if socket_connection is None:
-            print("Retrying Connection")
-            socket_connection = connect_to_api()
-        elif not socket_connection.connected:
-            print("Connection to API has been lost")
-        else:
-            pass
-        print("test")
-        sleep(5)
-
-    
-
 # Setup Socket Connection with the cloud
 sio = socketio.Client()
 api_connected = False
 
 
 # Activate ROS Nodes
-rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber)
-rospy.Subscriber("RoverStatus", String, statusSubscriber)
-rospy.Subscriber("GarageCommands", String, garageSubscriber)
+rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, frameSubscriber, queue_size = 1)
+rospy.Subscriber("RoverStatus", String, statusSubscriber, queue_size =1)
+rospy.Subscriber("GarageCommands", String, garageSubscriber, queue_size = 1)
 command_pub = rospy.Publisher('CloudCommands', String, queue_size=1)
 garage_pub = rospy.Publisher('GarageStatus', garage_state, queue_size=1)
 
@@ -201,39 +192,39 @@ class RobotVideoStreamTrack(VideoStreamTrack):
     def __init__(self):
         super().__init__()  # don't forget this!
         self.counter = 0
+    
+    ## Receive Code To Forward Data from Intake Camera
+    # async def recv(self):
+    #     pts, time_base = await self.next_timestamp()
+    #     #print("test") 
+    #     if len(frames) > 0:
+    #         #print("sending real frame")
+    #         cv_frame = frames[0]
+    #         corrected_frame = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
+    #         frame = VideoFrame.from_ndarray(corrected_frame)
+    #         if len(frames) > 1:
+    #             frames.remove(frames[0])
+    #     else:
+    #         #print("sending blank frame")
+    #         blank_image = np.zeros((480,640,3), np.uint8)
+    #         frame = VideoFrame.from_ndarray(blank_image)
         
+    #     frame.pts = pts
+    #     frame.time_base = time_base
+    #     return frame
+    
     async def recv(self):
-        
+        startTime = time.time()
         pts, time_base = await self.next_timestamp()
-        #print("test") 
-        if len(frames) > 0:
-            #print("sending real frame")
-            cv_frame = frames[0]
-            corrected_frame = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
-            frame = VideoFrame.from_ndarray(corrected_frame)
-            if len(frames) > 1:
-                frames.remove(frames[0])
-        else:
-            #print("sending blank frame")
-            blank_image = np.zeros((480,640,3), np.uint8)
-            frame = VideoFrame.from_ndarray(blank_image)
-        
+        ret, cv_frame = cap.read()
+        corrected = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
+        frame = VideoFrame.from_ndarray(corrected)
         frame.pts = pts
         frame.time_base = time_base
         return frame
 
 # Website posts an offer to python server
 async def offer(request):
-    '''
-    if not get_webrtc_state() == 'closed':
-        print("Testing")
-        return web.Response(
-            content_type="application/json",
-            text=json.dumps(
-                {"error": "Robot not available."}
-            ),
-        )
-    '''
     params = await request.json()
     print("Received Params")
     print(params)
@@ -252,12 +243,10 @@ async def offer(request):
         @channel.on("message")
         def on_message(message):
             global status_messages
-            print(message)
             command_pub.publish(message)
             for send_message in status_messages:
-               channel.send(send_message)
+                channel.send(send_message)
             status_messages = []
-            #send_rtc("I Really Like Turtles!")
 
 
     @pc.on("connectionstatechange")
@@ -289,24 +278,9 @@ async def offer(request):
         ),
     )
 
-def get_token():
-    login_data = {'username': USERNAME, 'password': PASSWORD}
-    print(login_data)
+def get_garage_state(tkn):
     try:
-        response = requests.post(f"https://{endpoint}/token", data=login_data,timeout=20)
-        contents = json.loads(response.content.decode('utf-8'))
-        token = contents.get('access_token')
-        print(token)
-        return token
-    except requests.exceptions.ReadTimeout:
-        print("Unable to Acquire Token")
-        return ""
-    except requests.exceptions.ConnectionError as e:
-        print("Unable to Acquire Token", e)
-
-def get_garage_state(token):
-    try:
-        headers= {'Authorization': f'Bearer {token}'}
+        headers= {'Authorization': f'Bearer {tkn}'}
         response = requests.get(f"https://{endpoint}/garages/{GARAGE_ID}",headers=headers)
 
         if response.status_code ==200:
@@ -319,8 +293,11 @@ def get_garage_state(token):
             state.lights_on = contents.get("lights_on", False)
             state.health = contents.get("health","unavailable")
             state.health_details = contents.get("health_description","unavailable")
+            state.rover_docked = contents.get("rover_docked", False)
             garage_pub.publish(state)
-
+        elif response.status_code ==401:
+            global token
+            token = get_token()
         else:
             print(f"Received Status Code: {response.status_code}, Details: {response.text}")
     except Exception as e:
@@ -342,25 +319,8 @@ async def update_garage(token):
     print("Started Garage")
     while True:
         get_garage_state(token)
-
         print("test")
         await asyncio.sleep(5)
-'''
-async def update_status(): 
-    while True:        
-        print("Update Status")
-        if len(status_messages) > 0:
-            status = status_messages[-1]
-        else:
-            status = DEFAULT_STATUS_MESSAGE
-        
-        if api_connected:
-            send_to_api(status)
-        
-        if get_webrtc_state == "connected":
-            send_to_webrtc(status)
-        await asyncio.sleep(5)
-'''
 
 def stop():
     connection_task.cancel()
@@ -371,23 +331,25 @@ def connect():
     print('API connection established')
     global api_connected
     api_connected = True
+    
+@sio.event
+def connect_error(data):
+    rospy.logwarn("Unable to Connect to API Websocket. Connection Error " + str(data))
 
 @sio.event
 def disconnect():
     rospy.logwarn("API connection lost")
-    global api_connected
-    api_connected = False
+    #global api_connected
+    #api_connected = False
 
 @sio.on('message')
 def message(data):
     print('message received with ', data)
-    # sio.emit('my response', {'response': 'my response'})
 
 
 @sio.on('exception')
 def exception(data):
-    print('exception received with ', data)
-    # sio.emit('my response', {'response': 'my response'})
+    rospy.logwarn('exception received with '+str(data))
     
 
 @sio.on('connection_offer')

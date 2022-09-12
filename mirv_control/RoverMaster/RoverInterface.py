@@ -27,6 +27,13 @@ from mirv_control.msg import pilit_db_msg
 from sensor_msgs.msg import NavSatFix
 
 
+def cancellable(func):
+    def method(self, *args, **kwargs):
+        if not self.cancelled:
+            return func(self, *args, **kwargs)
+    return method
+
+
 class RoverInterface():
     RoverMacro = None
     stateMsg = String
@@ -52,10 +59,6 @@ class RoverInterface():
             'PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
         print("connected to Pure Pursuit Server")
-        # self.pickupClient = actionlib.SimpleActionClient(
-        #     "PickupAS", mirv_control.msg.MovementToPiLitAction)
-        # self.pickupClient.wait_for_server()
-        # print("connected to PiLit pickup Server")
 
         self.pickupClient = actionlib.SimpleActionClient(
             "PickupAS", mirv_control.msg.PickupPilitAction)
@@ -87,9 +90,9 @@ class RoverInterface():
         self.driveDistanceClient.wait_for_server()
         print("connected to driveDistance Server")
         self.laneLineClient = actionlib.SimpleActionClient(
-            "LaneLineAS", mirv_control.msg.GeneratePlacementLocationsAction)
+            "LaneLineAS", mirv_control.msg.DetectLanesAction)
         self.pickupClient.wait_for_server()
-        # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.GeneratePlacementLocationsAction)
+        # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.DetectLanesAction)
         # self.PlacementGeneratorClient.wait_for_server()
         # print("connected to placement generator")
 
@@ -106,6 +109,7 @@ class RoverInterface():
         self.placementPoints = []
         self.storedPiLits = [4, 4]
         self.garage_state = "invalid"
+        self.rover_docked = False
         self.limit_switches = [1, 1, 0, 0]
         self.heartBeatTime = 0
         self.tasks = []
@@ -148,7 +152,7 @@ class RoverInterface():
             "RoverState", String, queue_size=5)
         self.neuralNetworkSelector = rospy.Publisher(
             "neuralNetworkSelector", String, queue_size=1)
-        
+
         self.pilit_state_publisher = rospy.Publisher(
             "PilitControl", pilit_state, queue_size=1)
         # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
@@ -190,6 +194,7 @@ class RoverInterface():
 
     def garage_state_callback(self, msg):
         self.garage_state = msg.state
+        self.rover_docked = msg.rover_docked
 
     def limit_switch_callback(self, switches):
         self.limit_switches = switches.data
@@ -209,16 +214,23 @@ class RoverInterface():
     def magazineOut(self):
         self.intake_command_pub.publish(String("mag_out"))
 
+    @cancellable
     def deployGarage(self):
         self.garage_pub.publish(String("deploy"))
-        while self.garage_state != "deployed":
+        while self.garage_state != "deployed" and not self.cancelled:
             time.sleep(0.1)
 
+    @cancellable
     def retractGarage(self):
         self.garage_pub.publish(String("retract"))
-        while self.garage_state != "retracted_latched":
+        while self.garage_state != "retracted_latched" and not self.cancelled:
+            time.sleep(0.1)
+            
+    def waitUntilDocked(self):
+        while self.garage_state != "retracted_latched" and not self.cancelled:
             time.sleep(0.1)
 
+    @cancellable
     def drive(self, vel, seconds):
         twist = Twist()
         twist.linear.x = vel
@@ -230,6 +242,7 @@ class RoverInterface():
         stop.linear.x = 0
         self.simpleDrivePub.publish(stop)
 
+    @cancellable
     def turn(self, radians, seconds):
         if seconds == 0:
             return False
@@ -243,6 +256,12 @@ class RoverInterface():
             pass
         self.simpleDrivePub.publish(stop)
         return True
+
+    @cancellable
+    def wait(self, seconds):
+        start = time.time()
+        while time.time() - start < seconds and not self.cancelled:
+            time.sleep(0.01)
 
     def updatePlacementPoints(self, data):
         self.placementPoints = self.convertOneDimArrayToTwoDim(list(data.data))
@@ -283,10 +302,12 @@ class RoverInterface():
             data.pose.pose.orientation)[0]
 
         if self.startingHeading != 0:
-            self.globalHeading = math.radians(math.degrees(
-                self.startingHeading - math.pi/2 + self.heading) % 360)
-        #print("Global Heading", math.degrees(self.globalHeading))
-        
+            #print("Starting Heading:", math.degrees(self.startingHeading), math.degrees(self.heading))
+            #self.globalHeading = math.radians(math.degrees(180 - (-self.startingHeading - self.heading)) % 360)
+            self.globalHeading = math.radians((360 - (math.degrees(self.heading - (self.startingHeading))%360))%360)
+            
+       #print(math.degrees(self.globalHeading))
+
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
 
@@ -310,29 +331,9 @@ class RoverInterface():
 
         navSatFixMsg = NavSatFix()
 
-
-        # if hasattr(self, "globalHeading") and self.globalHeading != 0:
-        #     print("Global Heading", self.globalHeading)
-        #     offset_meters =  0.3048
-        #     de = offset_meters * math.cos(self.globalHeading)
-        #     dn = offset_meters * math.sin(self.globalHeading)
-
-        #     print("Offset North ", dn,"Offset East", de)
-
-        #     R=6378137
-
-        #     #Coordinate offsets in radians
-        #     dLat = dn/R
-        #     dLon = de/(R*math.cos(math.radians(self.latitude)))
-
-            
-        #     navSatFixMsg.latitude = self.latitude + math.degrees(dLat) 
-        #     navSatFixMsg.longitude = self.longitude + math.degrees(dLon)
-
-        # else:
         navSatFixMsg.latitude = self.latitude
         navSatFixMsg.longitude = self.longitude
-        
+
         navSatFixMsg.altitude = self.altitude
 
         msg.gps_pos = navSatFixMsg
@@ -367,15 +368,24 @@ class RoverInterface():
 
     def getIsPickupControl(self):
         return self.isPickupControl
-    
-    def Lane_Lines_goal(self, formationType):
-        mirv_control.msg.GeneratePlacementLocationsGoal.formation_type = formationType
-        goal = mirv_control.msg.GeneratePlacementLocationsGoal
+
+    @cancellable
+    def Lane_Lines_goal(self):
+        mirv_control.msg.DetectLanesGoal.position_x = self.xPos
+        mirv_control.msg.DetectLanesGoal.position_y = self.yPos
+        mirv_control.msg.DetectLanesGoal.heading = math.degrees(
+            self.heading) % 360
+        print(
+            f"INITIAL CONDITIONS: {self.xPos}, {self.yPos}, {math.degrees(self.heading) % 360}")
+        goal = mirv_control.msg.DetectLanesGoal
         self.laneLineClient.send_goal(goal)
         self.laneLineClient.wait_for_result()
         print("GOT A RESULT FROM LANES")
-        return self.laneLineClient.get_result().placement_locations
+        res = self.laneLineClient.get_result()
+        print(res)
+        return res
 
+    @cancellable
     def Calibrate_client_goal(self):
         mirv_control.msg.IMUCalibrationGoal.calibrate = True
         goal = mirv_control.msg.IMUCalibrationGoal
@@ -387,6 +397,7 @@ class RoverInterface():
     def PP_client_cancel(self):
         self.PPclient.cancel_all_goals()
 
+    @cancellable
     def PP_client_goal(self, targetPoints2D):
         rospy.loginfo("running pure pursuit")
         try:
@@ -402,31 +413,32 @@ class RoverInterface():
         except:
             rospy.logerr("Failed to run pure pursuit action")
 
+    @cancellable
     def pickup_client_goal(self, intakeSide, angleToTarget):
-        # mirv_control.msg.MovementToPiLitGoal.runPID = True
-        # mirv_control.msg.MovementToPiLitGoal.intakeSide = intakeSide
-        # mirv_control.msg.MovementToPiLitGoal.estimatedPiLitAngle = angleToTarget
-        # goal = mirv_control.msg.MovementToPiLitGoal
-        # self.pickupClient.send_goal(goal)
-        # self.pickupClient.wait_for_result()
         self.changeNeuralNetworkSelected("piLit")
         print("Pickup Client Goal", intakeSide, type(intakeSide))
         mirv_control.msg.PickupPilitGoal.intakeSide = intakeSide
         goal = mirv_control.msg.PickupPilitGoal
-        print(goal)
         self.pickupClient.send_goal(goal)
         self.pickupClient.wait_for_result()
-        print("Pickup Returned", self.pickupClient.get_result())
-
-
         return self.pickupClient.get_result()
 
+    @cancellable
     def drive_into_garage(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
         mirv_control.msg.GarageGoal.estimatedGarageAngle = angleToTarget
         goal = mirv_control.msg.GarageGoal
         self.garageClient.send_goal(goal)
         self.garageClient.wait_for_result()
+    
+    @cancellable
+    def wait_for_docked(self):
+        startTime = time.time()
+        while not self.rover_docked:
+            if time.time() - 20 > startTime or self.cancelled:
+                return False
+            time.sleep(0.1)
+        return True
 
     def indentify_garage_orientation(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
@@ -479,7 +491,6 @@ class RoverInterface():
             rospy.logerr("Failed to retrieve number of stored Pi-Lits")
 
     def cancelAllCommands(self, runIntake):
-        print("Cancelling All")
         self.PP_client_cancel()
         self.disableTeleopDrive()
         self.pickup_client_cancel()
@@ -519,11 +530,11 @@ class RoverInterface():
             self.pilit_state.inhibit = False
             self.pilit_state.reverse = False
         elif command == "idle":
-            self.pilit_state.inhibit = True
+            self.pilit_state.inhibit = True            
         else:
             rospy.logwarn(
                 "Received Unrecognized Light Command type: " + str(command))
-            
+
         self.pilit_state_publisher.publish(self.pilit_state)
 
     def driveToPoint(self, lat, long):
@@ -571,12 +582,11 @@ class RoverInterface():
         self.roverState = self.AUTONOMOUS
         success = self.RoverMacro.dock()
         if success:
-            self.roverState = self.CONNECTED_DISABLED
+            self.roverState = self.DOCKED
         else:
             self.roverState = self.CONNECTED_ENABLED
 
     def cloud_callback(self, message):
-
         self.heartBeatTime = rospy.get_time()
         msg = json.loads(message.data)
 
@@ -595,7 +605,11 @@ class RoverInterface():
         if command == "e_stop":
             self.eSTOP()
         elif subsystem == "pi_lit":
-            self.setPiLits(command)
+            if command == "set_number_pi_lits":
+                print("Set Number of Pi lits: ", command)
+                pass
+            else:
+                self.setPiLits(command)
         elif subsystem == "general":
             if command == "disable":
                 self.roverState = self.CONNECTED_DISABLED
@@ -627,6 +641,7 @@ class RoverInterface():
                     "location", {}).get("long")
                 formation = msg.get("commandParameters", {}).get(
                     "formation", "taper_right_5")
+                print("Place All Message", msg)
                 t = Thread(target=self.deployAllPilits,
                            args=(lat, long, heading, formation))
                 t.start()
@@ -670,8 +685,10 @@ class RoverInterface():
             rospy.logerr("Unknown subsystem: " + str(subsystem))
         self.lastmsg = pickle.dumps(msg)
 
+    @cancellable
     def pointTurn(self, targetAngle, successThreshold):
-        print(f"INITIATING POINT TURN WITH {targetAngle} and {successThreshold}")
+        print(
+            f"INITIATING POINT TURN WITH {targetAngle} and {successThreshold}")
         mirv_control.msg.PointTurnGoal.targetAngle = targetAngle
         mirv_control.msg.PointTurnGoal.successThreshold = successThreshold
         goal = mirv_control.msg.PointTurnGoal
@@ -679,6 +696,7 @@ class RoverInterface():
         self.pointTurnClient.wait_for_result()
         return self.pointTurnClient.get_result()
 
+    @cancellable
     def driveDistance(self, targetDistance, velocityMPS, successThreshold):
         mirv_control.msg.DriveDistanceGoal.targetDistanceMeters = targetDistance
         mirv_control.msg.DriveDistanceGoal.velocityMPS = velocityMPS

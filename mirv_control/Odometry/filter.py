@@ -35,7 +35,7 @@ class Filter:
         rospy.init_node('Filter', anonymous=True)
         encoderSub = rospy.Subscriber("encoder/velocity", Float64MultiArray, self.encoderCallback)
         GPSSub = rospy.Subscriber("GPS/IMUPOS", Float64MultiArray, self.GPSCallback)
-        IMUSub = rospy.Subscriber("CameraIMU", Float64, self.IMUcallback)
+        IMUSub = rospy.Subscriber("pigeonIMU", Float64, self.IMUcallback)
         timeSinceUpdate  = time.time()
     def run(self):
         rate = rospy.Rate(self.refreshRate)

@@ -6,6 +6,7 @@
 #include "ctre/phoenix/cci/PDP_CCI.h"
 #include "ctre/phoenix/cci/CCI.h"
 #include "ctre/phoenix/ErrorCode.h"
+#include <ctre/phoenix/sensors/Pigeon2.h>
 #include <string>
 #include <iostream>
 #include <chrono>
@@ -33,6 +34,7 @@ using namespace ctre::phoenix;
 using namespace ctre::phoenix::platform;
 using namespace ctre::phoenix::motorcontrol;
 using namespace ctre::phoenix::motorcontrol::can;
+using namespace ctre::phoenix::sensors;
 using namespace std;
 double getTicksPer100MSFromVelocity(double velocity);
 /* make some talons for drive train */
@@ -47,6 +49,8 @@ ctre::phoenix::motorcontrol::can::TalonSRX intakeArmMotor(11);
 ctre::phoenix::motorcontrol::can::TalonSRX intakeWheelMotor(9);
 ctre::phoenix::motorcontrol::can::TalonSRX leftConvMotor(10);
 ctre::phoenix::motorcontrol::can::TalonSRX rightConvMotor(12);
+
+Pigeon2 pigeon(0, interface);
 
 
 double pdpVoltage = 0.0;
@@ -272,6 +276,8 @@ class Publisher {
 	ros::Publisher intakeLSPub;
 	ros::Publisher touchSensorPub;
 	ros::Publisher encoderPositionPub;
+	ros::Publisher imuPub;
+
 
 	void publishVoltage(){
 		std_msgs::Float64 voltage;
@@ -331,6 +337,23 @@ class Publisher {
 		positions.data.push_back(getDistanceFromTicks(frontLeftDrive.GetSelectedSensorPosition()));
 		encoderPositionPub.publish(positions);
 	}
+
+	void publishIMU(){
+		float yaw = pigeon.GetYaw();
+		yaw= fmod(yaw, 360);
+
+		//Ensure yaw is positive
+		if (yaw < 0){
+			yaw +=360.0;
+		}
+
+		//Flip Yaw between left and right handed coordinate systems
+		yaw = 360 - yaw;
+
+		std_msgs::Float64 pubYaw;
+		pubYaw.data = yaw;
+		imuPub.publish(pubYaw);
+	}
 };
 
 Publisher publisher;
@@ -352,7 +375,7 @@ class Intake {
 	//mag_out: move magazine outwards
 
 	double intakeUpPercent = 0.8;
-	double wheelIntakePercent = 0.6;
+	double wheelIntakePercent = 0.75;
 
 	//limit switches: fwd - up, rev - down
 
@@ -450,13 +473,13 @@ class Intake {
 				rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 				startTime = time(NULL);
-				//double reverseSpeed = getTicksPer100MSFromVelocity(-0.2);
+				double reverseSpeed = getTicksPer100MSFromVelocity(-0.2);
 
-				//frontRightDrive.Set(ControlMode::Velocity, -reverseSpeed);
-				//backRightDrive.Set(ControlMode::Velocity, -reverseSpeed*0.91);
+				frontRightDrive.Set(ControlMode::Velocity, -reverseSpeed);
+				backRightDrive.Set(ControlMode::Velocity, -reverseSpeed*0.91);
 
-				//frontLeftDrive.Set(ControlMode::Velocity, reverseSpeed);
-				//backLeftDrive.Set(ControlMode::Velocity, reverseSpeed*0.91);
+				frontLeftDrive.Set(ControlMode::Velocity, reverseSpeed);
+				backLeftDrive.Set(ControlMode::Velocity, reverseSpeed*0.91);
 			} else {
 				//stopDrive();
 				if (side > 0){
@@ -469,6 +492,7 @@ class Intake {
 						rightConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						leftConvMotor.Set(ControlMode::PercentOutput, 0.0);
 						intakeArmMotor.Set(ControlMode::PercentOutput, -0.5);
+						cout << "Right Limit Switch Pressed" << "\n";
 					} else {
 						if (time(NULL) - startTime > 4){
 							intakeWheelMotor.Set(ControlMode::PercentOutput, 0.4 * side);
@@ -676,25 +700,28 @@ int main(int argc, char **argv) {
 	ros::Subscriber intakeCommandSub = n.subscribe("intake/command", 10, intakeCommandCallback);
 	//ros::Subscriber powerDriveSub = n.subscribe("PowerDrive", 10, powerDriveCallback);
 
-	publisher.intakeLSPub = n.advertise<std_msgs::Float64MultiArray>("intake/limitswitches", 10);
-	ros::Timer intakeLSTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishIntakeLimitSwitches, publisher));
+	publisher.intakeLSPub = n.advertise<std_msgs::Float64MultiArray>("intake/limitswitches", 1);
+	ros::Timer intakeLSTimer = n.createTimer(ros::Duration(1.0 / 10.0), std::bind(&Publisher::publishIntakeLimitSwitches, publisher));
 
-	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 10);
+	publisher.batteryVoltagePub = n.advertise<std_msgs::Float64>("battery/voltage", 1);
 	ros::Timer batteryVoltageTimer = n.createTimer(ros::Duration(1), std::bind(&Publisher::publishVoltage, publisher));
 
-	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 10);
+	publisher.encoderVelocityPub = n.advertise<sensor_msgs::JointState>("encoder/velocity", 1);
 	ros::Timer encoderVelocityTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderVelocity, publisher));
 
-	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 10);
-	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishTouchSensor, publisher));
+	publisher.touchSensorPub = n.advertise<std_msgs::Float64MultiArray>("TouchSensors", 1);
+	ros::Timer touchSensorTimer = n.createTimer(ros::Duration(1.0 / 10.0), std::bind(&Publisher::publishTouchSensor, publisher));
 
-	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 10);
+	publisher.encoderPositionPub = n.advertise<std_msgs::Float64MultiArray>("encoder/position_meters", 1);
 	ros::Timer encoderPositionTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishEncoderPosition, publisher));
+
+	publisher.imuPub = n.advertise<std_msgs::Float64>("pigeonIMU", 1);
+	ros::Timer imuTimer = n.createTimer(ros::Duration(1.0 / 50.0), std::bind(&Publisher::publishIMU, publisher));
 
 	initializeDriveMotors();
 	initializeIntakeMotors();
 
-	ros::Rate rate(100);
+	ros::Rate rate(20);
 	while(ros::ok()){
 		ctre::phoenix::unmanaged::Unmanaged::FeedEnable(500);
 
