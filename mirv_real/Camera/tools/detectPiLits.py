@@ -88,13 +88,23 @@ def gotFrame(data):
         if tensorImg.ndimension() == 3:
             tensorImg = tensorImg.unsqueeze(0)
         piLitDetect(tensorImg, frame, depthFrame)
+        
+        
+i = 0
+startTime = round(time.time())
 
 def piLitDetect(img, frame, depthFrame):
+    global i
     piLitPrediction = piLitModel(img)[0]
     bboxList = []
-    #print("DETECTING...")
+    print("DETECTING...")
     closest_track_location = None
     closest_track_distance = 5
+    image_dir = "/mnt/SSD/pilit_pictures"
+    cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame)
+    print("Saved Image")
+    
+    i += 1
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
         if(score > 0.85):
             # print("GOT A PI LIT")
@@ -142,7 +152,6 @@ def piLitDetect(img, frame, depthFrame):
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
-
 device = torch.device('cuda:0')
 half = device.type != 'cpu'
 

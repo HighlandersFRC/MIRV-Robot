@@ -182,7 +182,7 @@ class detectLaneLines():
         ll_seg_mask = morphological_process(
             ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
         ll_seg_mask, lines = connect_lane(ll_seg_mask)
-        image_dir = "/media/nvidia/SSD/lane_pictures"
+        image_dir = "/mnt/SSD/lane_pictures"
         print(cv2.imwrite(
             f'{image_dir}/img_{self.startTime}_{self.i}.png', frame_orig))
         print(cv2.imwrite(

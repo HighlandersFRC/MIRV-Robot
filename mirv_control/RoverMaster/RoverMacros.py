@@ -203,11 +203,6 @@ class roverMacros():
         self.interface.pointTurn(
             roughHeading - (math.degrees(self.interface.globalHeading)) % 360, 5)
 
-        self.interface.wait(5)
-        print("Updated Global Heading", math.degrees(
-            self.interface.globalHeading))
-        print("Local Heading", self.interface.heading)
-
         # If 3 pi-lits, send to other method. This one is long, so needs a different algorithm
         if formation_type in ['taper_right_3', 'taper_left_3']:
             self.long_pilit_placement(formation_type)
@@ -227,6 +222,7 @@ class roverMacros():
             print("NO LANES DETECTED LONGITUDINAL SEARCH SEQ, RETURNING")
             self.interface.changeNeuralNetworkSelected("none")
             return
+        points.reverse()
 
         # lane_detections = self.laneLineSearchSequence()
         # if not lane_detections:
@@ -284,7 +280,7 @@ class roverMacros():
 
         self.interface.changeNeuralNetworkSelected("none")
 
-        # return self.placeMultiplePiLits(points)
+        return self.placeMultiplePiLits(points)
 
     @cancellable
     def placeMultiplePiLits(self, points):
@@ -346,8 +342,9 @@ class roverMacros():
 
             center = placement.get_center_coordinates(
                 lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width)
+            print(f"GENERATING CENTER: {center} from {[lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width]}")
 
-            detections.append({'detection': lane_detections.lane_detections, 'center': center,
+            detections.append({'lane_detections': lane_detections.lane_detections, 'center': center,
                               'heading': lane_detections.net_heading, 'width': lane_detections.width})
 
         print(f"Total detections {len(detections)}")
@@ -367,7 +364,7 @@ class roverMacros():
             print(
                 f"Generating net heading from {start_detection['center']} and {end_detection['center']}, of {net_heading}")
             print(
-                f"Generating placements from {[detection['lane_detections'], detection['heading'], detection['width'], formation_type]}")
+                f"Generating placements from {[start_detection['lane_detections'], net_heading, start_detection['width'], formation_type]}")
             return placement.generate_pi_lit_formation(
                 start_detection['lane_detections'], net_heading, start_detection['width'], formation_type)
 
