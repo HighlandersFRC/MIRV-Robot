@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 import math
-import queue
-import threading
+from operator import truediv
 import cv2
-import argparse
 import os, sys
-import shutil
 import time
-from pathlib import Path
 from faster_RCNN import get_faster_rcnn_resnet
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,33 +14,7 @@ import torch.backends.cudnn as cudnn
 from numpy import random
 import numpy as np
 
-from typing import Optional, List, Tuple
-from dataclasses import field
-
-from lib.config import cfg
-from lib.config import update_config
-from lib.utils.utils import create_logger, select_device, time_synchronized
-from lib.models import get_net
-from lib.dataset import LoadImages, LoadStreams
-from lib.core.general import bbox_iou, non_max_suppression, scale_coords
-from lib.utils import plot_one_box,show_seg_result
-from lib.core.function import AverageMeter
-from lib.core.postprocess import morphological_process, connect_lane
-from tqdm import tqdm
-import depthai
-
 from faster_RCNN import get_faster_rcnn_resnet
-from transformations import ComposeDouble
-from transformations import ComposeSingle
-from transformations import FunctionWrapperDouble
-from transformations import FunctionWrapperSingle
-from transformations import apply_nms, apply_score_threshold
-from transformations import normalize_01
-
-from backbone_resnet import ResNetBackbones
-from PIL import Image
-from std_msgs.msg import Float64
-
 
 from numpy import asarray
 
@@ -57,18 +27,14 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 import torchvision
 
-import torch.multiprocessing as mp
-
-import roslib
 import rospy
-from rospy_tutorials.msg import Floats
-from rospy.numpy_msg import numpy_msg
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import ros_numpy
-from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 
+rospy.init_node('piLitDetector')
 br = CvBridge()
 
 normalize = transforms.Normalize(
@@ -80,59 +46,69 @@ transform=transforms.Compose([
             normalize,
         ])
 
+intakeSide = "switch_right"
+
+runningNeuralNetwork = True
+# global intakeSide 
+# intakeSide = "switch_right"
+
 detections = 0
 
-hFOV = 52
+hFOV = 63
 horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
-latestOdometryX = 0
-latestOdometryY = 1
-latestOdometryTheta = 0
+def intakeCommandCallback(msg):
+    cmd = msg.data
+    global intakeSide
+    if(cmd == "switch_right"):
+        # print("RIGHT SIDE INTAKE")
+        intakeSide = cmd
+    elif(cmd == "switch_left"):
+        # print("LEFT SIDE INTAKE")
+        intakeSide = cmd
 
-def gotOdometry(data):
-    x = data[0]
-    y = data[1]
-    odometry = data[2]
-    updateLatestOdometry([x, y, odometry])
-
-def updateLatestOdometry(odometry):
-    latestOdometryX = odometry[0]
-    latestOdometryY = odometry[1]
-    latestOdometryTheta = odometry[2]
-
-def convertPiLitLocations(relativeLocation):
-    relativeX = relativeLocation[0]
-    relativeY = relativeLocation[1]
-
-
-    truckRelativeX = relativeX*math.cos(latestOdometryTheta) + relativeY*-math.sin(latestOdometryTheta) + latestOdometryX
-    yTBody = relativeX*math.sin(latestOdometryTheta) + relativeY*math.cos(latestOdometryTheta) - yBRef*math.cos(latestOdometryTheta) + xBRef*math.sin(latestOdometryTheta)
-
-    return [latestOdometryX, latestOdometryY]
+def allowNeuralNetRun(msg):
+    cmd = msg.data
+    global runningNeuralNetwork
+    if(cmd == "piLit" or cmd == "piLitAndLanes"):
+        runningNeuralNetwork = True
+    else:
+        runningNeuralNetwork = False
 
 def gotFrame(data):
-    print("GOT A FRAME")
-    initTime = time.time()
-    frame = ros_numpy.numpify(data.color_frame)
-    depthFrame = ros_numpy.numpify(data.depth_frame)
-    # print(frame.shape)
-    tensorImg = transform(frame).to(device)
-    if tensorImg.ndimension() == 3:
-        tensorImg = tensorImg.unsqueeze(0)
-    piLitDetect(tensorImg, frame, depthFrame)
+    #print("GOT A FRAME")
+    if(runningNeuralNetwork):
+        initTime = time.time()
+        frame = ros_numpy.numpify(data.color_frame)
+        depthFrame = ros_numpy.numpify(data.depth_frame)
+        # print(frame.shape)
+        tensorImg = transform(frame).to(device)
+        if tensorImg.ndimension() == 3:
+            tensorImg = tensorImg.unsqueeze(0)
+        piLitDetect(tensorImg, frame, depthFrame)
+        
+        
+i = 0
+startTime = round(time.time())
 
 def piLitDetect(img, frame, depthFrame):
+    global i
     piLitPrediction = piLitModel(img)[0]
-    # print(piLitPrediction)
-    # print(piLitPrediction["scores"])
     bboxList = []
-    # print(depthFrame)
-    # print(depthFrame[0][0])
+    print("DETECTING...")
+    closest_track_location = None
+    closest_track_distance = 5
+    image_dir = "/mnt/SSD/pilit_pictures"
+    cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame)
+    print("Saved Image")
+    
+    i += 1
     for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.75):
-            print("GOT A PI LIT")    
+        if(score > 0.85):
+            # print("GOT A PI LIT")
+            print(intakeSide)    
             x0,y0,x1,y1 = bbox
             centerX = int((x0 + x1)/2)
             centerY = int((y0 + y1)/2)
@@ -141,53 +117,52 @@ def piLitDetect(img, frame, depthFrame):
 
             angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
 
-            depth = depthFrame[centerY][centerX]
-            print("DEPTH: ", depth, "ANGLE: ", angleToPiLit)
+            depth = (depthFrame[centerY][centerX])/1000
 
-            piLitLocation = [depth, angleToPiLit]
+            if(intakeSide == "switch_right"):
+                intakeOffset = -0.0635
+            else:
+                intakeOffset = 0.0635
 
-            locations = Float64MultiArray()
-            locations.data = piLitLocation
+            complementaryAngle = math.pi/2 - angleToPiLit
 
-            piLitLocationPub.publish(locations)
-    # return frame
+            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
-parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
-parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
-parser.add_argument('--iou-thres', type=float, default=0.75, help='IOU threshold for NMS')
-parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
-parser.add_argument('--augment', action='store_true', help='augmented inference')
-parser.add_argument('--update', action='store_true', help='update all models')
+            verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
 
-api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
+            if(depth < 3 and depth != 0):
+                if depth < closest_track_distance:
+                    closest_track_distance = depth               
+                    # angleToPiLitFromIntake = math.degrees(angleToPiLit)
+                    angleToPiLitFromIntake = math.degrees(math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
+                    piLitLocation = [depth, angleToPiLitFromIntake]
 
-opt = parser.parse_args()
 
-mp.set_start_method('spawn', force=True)
+                    locations = Float64MultiArray()
+                    locations.data = piLitLocation
+                    closest_track_location = locations
+
+                    
+            else:
+                angleToPiLitFromIntake = math.degrees(angleToPiLit)
+            print("DEPTH: ", depth, " ORIGINAL ANGLE: ", math.degrees(angleToPiLit), "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+
+    if closest_track_location is not None:
+        piLitLocationPub.publish(closest_track_location)
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
-logger, _, _ = create_logger(
-    cfg, cfg.LOG_DIR, 'demo')
+device = torch.device('cuda:0')
+half = device.type != 'cpu'
 
-device = select_device(logger,opt.device)
-if os.path.exists(opt.save_dir):  # output dir
-    shutil.rmtree(opt.save_dir)  # delete dir
-os.makedirs(opt.save_dir)  # make new dir
-half = device.type != 'cpu'  # half precision only supported on CUDA
-
-piLitModel = torch.load("mirv_real/Camera/weights/piLitModel.pth")
+piLitModel = torch.load(os.path.expanduser("~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/piLitModel.pth"))
 piLitModel.eval()
 piLitModel = piLitModel.to(device)
 
-rospy.init_node('piLitDetector')
-rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
-rospy.Subscriber("fusedOdometry", Float64MultiArray, gotOdometry)
+rospy.Subscriber("IntakeCameraFrames", depthAndColorFrame, gotFrame, queue_size=1)
 piLitLocationPub = rospy.Publisher('piLitLocation', Float64MultiArray, queue_size=1)
+rospy.Subscriber("intake/command", String, intakeCommandCallback)
+rospy.Subscriber("neuralNetworkSelector", String, allowNeuralNetRun)
 
 try:
     rospy.spin()

@@ -1,0 +1,13 @@
+#goal definition
+float64[] TargetPoints
+int32 NumTargetPoints
+---
+#result definition
+bool AtTargetPoint
+float64 errorToPoint
+float64[] finalTargetPoint
+float64 angleToTarget
+---
+#feedback
+float64[] currentTarget
+float64 distanceToNext

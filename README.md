@@ -23,3 +23,12 @@ optional other packages:
   - mirv_msgs (any custom messages that we define)
   - mirv_tutorials (tutorials for using the rover/simulator)
   - mirv_documentation
+
+
+## Running
+```
+roslaunch mirv_real mirv.launch
+rosrun mirv_control RoverController.py
+sudo shutdown
+sudo poweroff
+```

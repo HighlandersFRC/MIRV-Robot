@@ -1,73 +1,103 @@
 #!/usr/bin/env python3
 import math
+
+import numpy as np
+from torch import float64
 import rospy
+import actionlib
+from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
+from sensor_msgs.msg import NavSatFix
+from nav_msgs.msg import Odometry
+import pymap3d as pm
+import mirv_control.msg as ASmsg
+
+
 class GlobalToTruck():
-    startingCord = [0, 0]
-    newCord = [0, 0]
-    prevCord = [0, 0]
+    startingCord = [0, 0, 0]
+    newCord = [0, 0, 0]
     startingHeading = 0
+    result = ASmsg.NavSatToTruckResult()
     startCordSet = False
-    EarthSMaxis = 6378137
-    eccentricity = 0.08181919
-    pub = rospy.Publisher("TruckCoordinates", Float64MultiArray, queue_size = 2)
-    rosPubMsg = Float64MultiArray()
+    startHeadSet = False
+    # EarthSMaxis = 6378137
+    # eccentricity = 0.08181919
+    gps_m_pub = rospy.Publisher("gps/odom", Odometry, queue_size=2)
+    acceptStartingPoint = False
     def __init__(self):
         rospy.init_node('TruckCoordinateConversion', anonymous=True)
-
-    def getCordDelta(self, cordDel):
-        distance = self.EarthSMaxis/(1-((self.eccentricity**2)*(math.sin(cordDel[0]))**2))
-        X = distance*math.cos(cordDel[0])*math.cos(cordDel[1])
-        Y = distance*math.cos(cordDel[0])*math.sin(cordDel[1])
-        return [X,Y]
-
-    def convertToTruck(self):
+        sub = rospy.Subscriber("gps/fix", NavSatFix, self.callBack)
+        sub = rospy.Subscriber("Start/Heading", Float64, self.setStartingHeading)
+        self._action_name = "NavSatToTruckAS"
+        self._as = actionlib.SimpleActionServer(self._action_name, ASmsg.mirv_control.msg.NavSatToTruckAction, auto_start = False)
+        self._as.register_goal_callback(self.execute_cb)
+        self._as.start()
+    def convertToTruck(self, newCord):
         theta = self.startingHeading
-        cord = self.newCord
-        cord1Cart = self.getCordDelta(self.startingCord) 
-        cord2Cart = self.getCordDelta(self.newCord)
-        delta = [cord2Cart[0]-cord1Cart[0], cord2Cart[1]-cord1Cart[1]]
-        # print(delta)
-        XT = delta[0]*math.cos(theta)-delta[1]*math.sin(theta)
-        YT = delta[0]*math.sin(theta)+delta[1]*math.cos(theta)
+        cord1 = newCord
+        print(cord1)
+        cord2 = self.startingCord
+        delta = pm.geodetic2ned(cord1[0], cord1[1], cord1[2], cord2[0], cord2[1], cord2[2])
+        XT = delta[0] * math.cos(theta) - (-delta[1]) * math.sin(theta)
+        YT = delta[0] * math.sin(theta) + (-delta[1]) * math.cos(theta)
 
         print("dist between: {}".format(((XT**2)+(YT**2))**.5))
         return [XT, YT]
 
     def degToRad(self, angle):
-        rad = angle*3.1415926/180
-        return (rad)
+        rad = angle * np.pi/180
+        return rad
 
+    def execute_cb(self):
+        goal = self._as.accept_new_goal()
+        if(self.acceptStartingPoint == True):
+            point = self.convertToTruck([goal.latitude, goal.longitude, goal.altitude])
+            self.result.truckCoordX = point[0]
+            self.result.truckCoordY = point[1]
+            self.result.distanceToOrigin = ((point[0]**2)+(point[1]**2))**.5
+            self._as.set_succeeded(self.result)
+        else:
+            self._as.set_aborted()
+            raise Exception("no starting point has been sent, Need Data to e sent on /gps/fix ros topic")
     def calcPos(self, data):
-        temp = data.data
-        self.newCord = ([self.degToRad(temp[0]), self.degToRad(temp[1])])
-        
-        if(not self.startCordSet):
-            self.setStartingPoint([self.degToRad(temp[0]), self.degToRad(temp[1])])
-        output = self.convertToTruck()
+        newCord = [data.latitude, data.longitude, data.altitude]
+        if(self.acceptStartingPoint == True):
+            if (not self.startCordSet):
+                self.setStartingPoint([data.latitude, data.longitude, data.altitude])
+            output = self.convertToTruck(newCord)
+            gps_m_odom = Odometry()
+            gps_m_odom.header.stamp = data.header.stamp
+            gps_m_odom.header.frame_id = 'odom'
+            gps_m_odom.child_frame_id = 'odom'
+            gps_m_odom.pose.pose.position.x = output[0]
+            gps_m_odom.pose.pose.position.y = output[1]
+            gps_m_odom.pose.pose.position.z = 0
+            gps_m_odom.pose.pose.orientation.w = 1
+            gps_m_odom.pose.covariance[0:2] = data.position_covariance[0:2]
+            gps_m_odom.pose.covariance[6:8] = data.position_covariance[2:4]
+            return gps_m_odom
+        else:
+            raise Exception("no starting point has been sent, Need Data to e sent on /gps/fix ros topic")
 
-        self.rosPubMsg.data = [output[0],output[1]]
-        self.pub.publish(self.rosPubMsg)
-
-        print("output: {}".format(output))
-
+    def setStartingHeading(self, data):
+        self.startingHeading = self.degToRad(data.data)
+        self.startHeadSet = True
     def setStartingPoint(self, data):
-<<<<<<< HEAD
-        self.startingHeading = self.degToRad(-90-125)
-=======
-        self.startingHeading = self.degToRad(-90-135)
->>>>>>> 927f74c5bd2796ac2a5bdcc61248ee987243a12b
         self.startingCord = data
         self.startCordSet = True
 
+    def callBack(self, data):
+        self.acceptStartingPoint = True
+        msg = self.calcPos(data)
+        if(self.startHeadSet == True):
+            self.gps_m_pub.publish(msg)
+            rospy.loginfo(msg)
+        else:
+            rospy.loginfo("waiting for starting heading")
+    def run(self):
+        sub = rospy.Subscriber("gps/fix", NavSatFix, self.callBack)
+        rospy.spin()
 
 calculator = GlobalToTruck()
-def run():
-    sub = rospy.Subscriber("GPSCoordinates", Float64MultiArray, callBack)
-    rospy.spin()
-
-def callBack(data):
-    calculator.calcPos(data)
-
 if __name__ == '__main__':
-    run()
+    calculator.run()

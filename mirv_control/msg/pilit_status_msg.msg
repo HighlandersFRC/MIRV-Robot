@@ -1,0 +1,7 @@
+std_msgs/Float64 timestamp
+std_msgs/Int16 left_count
+std_msgs/Int16 right_count
+std_msgs/Float64MultiArray ids
+std_msgs/Float64MultiArray latitudes
+std_msgs/Float64MultiArray longitudes
+std_msgs/Float64MultiArray altitudes

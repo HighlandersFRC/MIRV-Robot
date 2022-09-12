@@ -1,0 +1,23 @@
+<launch>
+    <!-- <node name="record" pkg="mirv_control" type="record.py"/> -->
+    <node name="gps_to_local" pkg="mirv_control" type="globalToTruck.py"/>
+    <node name="PurePursuitController" pkg="mirv_control" type="purePursuit.py"/>
+    <node name="EKF" pkg="mirv_control" type="EKF.py"/>
+<!--    <node name="EKF" pkg="mirv_control" type="EKF.py" output="screen"-->
+<!--        respawn="$(arg respawn)"-->
+<!--        respawn_delay="$(arg respawn_delay)"/>-->
+    <node name="IMUFilter" pkg="mirv_control" type="imuFilter.py"/>
+    <!--<node name="piLitPickup" pkg="mirv_control" type="moveToPiLit.py" output = "screen"/>-->
+    <node name="piLitPickup" pkg="mirv_control" type="PickupPIlit.py"/>
+    <node name="ComputeStartHeading" pkg="mirv_control" type="HeadingFilter.py"/>
+    <node name="TeleopDriveALServer" pkg="mirv_control" type="TeleopDrive.py"/>
+    <node name="PointTurnRelativeALServer" pkg="mirv_control" type="pointTurnRelative.py"/>
+    <node name="DriveDistanceALServer" pkg="mirv_control" type="driveDistance.py" output = "screen"/>
+    <node name="garageDocking" pkg="mirv_control" type="moveToGarage.py"/>
+    <node name="detectGarage" pkg="mirv_control" type="detectGarage.py"/>
+    
+    <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf_broadcaster"  args="0 0 0 0 0 0 /map /odom 1"/>
+
+    <!-- Start RViz for visualization -->
+<!--     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find mirv_control)/rviz/mirv_sensors.rviz" />-->
+</launch>

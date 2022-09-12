@@ -10,9 +10,13 @@ project(mirv_control)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  sensor_msgs
   std_msgs
+  actionlib_msgs
+  message_generation
 )
 
+catkin_python_setup()
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -47,31 +51,60 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+    FILES
+   depth_and_color_msg.msg
+   pilit_db_msg.msg
+   pilit_status_msg.msg
+   laneInformation.msg
+   garage_state_msg.msg
+   garage_position.msg
+   camera_calibration.msg
+   aruco_detection.msg
+   aruco_detections.msg
+   pilit_state.msg
+   pi_lit_location.msg
+   single_lane_detection.msg
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
 #   Service1.srv
 #   Service2.srv
-# )
+#)
 
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+# Generate actions in the 'action' folder
+add_action_files(
+  DIRECTORY action
+  FILES PurePursuit.action
+  DIRECTORY action
+  FILES PickupPilit.action
+  DIRECTORY action
+  FILES Database.action
+  DIRECTORY action
+  FILES NavSatToTruck.action
+  DIRECTORY action
+  FILES IMUCalibration.action
+  DIRECTORY action
+  FILES Garage.action
+  DIRECTORY action
+  FILES DriveDistance.action
+  DIRECTORY action
+  FILES PointTurn.action
+  DIRECTORY action
+  FILES general.action
+  DIRECTORY action
+  FILES DetectLanes.action
+)
 
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+# Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  actionlib_msgs
+  sensor_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -105,7 +138,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mirv_control
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+  CATKIN_DEPENDS roscpp rospy std_msgs actionlib_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -216,24 +249,39 @@ catkin_install_python(PROGRAMS coordinateConversion/globalToTruck.py
 catkin_install_python(PROGRAMS Diagnostic/GPSLogger.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS RoverHeading/headingBasedOnCoordinate.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+# catkin_install_python(PROGRAMS RoverHeading/headingBasedOnCoordinate.py
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 catkin_install_python(PROGRAMS Cloud/roverClient.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS PiLitControl/PiLitController.py
-	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-catkin_install_python(PROGRAMS MessageConversion/controllerFormatting.py
-	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+#catkin_install_python(PROGRAMS MessageConversion/controllerFormatting.py
+#	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
 catkin_install_python(PROGRAMS Odometry/record.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 catkin_install_python(PROGRAMS Controllers/remotedrive_master.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+catkin_install_python(PROGRAMS Odometry/EKF.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS RoverMaster/RoverInterface.py
+DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Diagnostic/SimpleTwist.py
+DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 catkin_install_python(PROGRAMS Controllers/tablet_controller.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Database/DatabaseController.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS Status/StatusManager.py
+	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+catkin_install_python(PROGRAMS piLitRetreival/PickupPIlit.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

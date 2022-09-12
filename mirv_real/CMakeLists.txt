@@ -217,11 +217,6 @@ add_subdirectory(Canbus)
 catkin_install_python(PROGRAMS GPS/RTKInput.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS DIOControl/DOControl.py
+catkin_install_python(PROGRAMS DIOControl/DIOControl.py
 	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-catkin_install_python(PROGRAMS DIOControl/DIControl.py
-	DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-

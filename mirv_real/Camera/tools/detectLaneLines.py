@@ -1,317 +1,241 @@
 #!/usr/bin/env python3
-from cmath import pi
-import math
-import queue
-import threading
-import cv2
-import argparse
-import os, sys
-import shutil
-import time
-from pathlib import Path
-from faster_RCNN import get_faster_rcnn_resnet
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_DIR)
-
-import torch
-import torch.backends.cudnn as cudnn
-from numpy import random
-import numpy as np
-
-from typing import Optional, List, Tuple
-from dataclasses import field
-
-from lib.config import cfg
-from lib.config import update_config
-from lib.utils.utils import create_logger, select_device, time_synchronized
-from lib.models import get_net
-from lib.dataset import LoadImages, LoadStreams
-from lib.core.general import bbox_iou, non_max_suppression, scale_coords
-from lib.utils import plot_one_box,show_seg_result
-from lib.core.function import AverageMeter
-from lib.core.postprocess import morphological_process, connect_lane
-from tqdm import tqdm
-import depthai
-
-from faster_RCNN import get_faster_rcnn_resnet
-from transformations import ComposeDouble
-from transformations import ComposeSingle
-from transformations import FunctionWrapperDouble
-from transformations import FunctionWrapperSingle
-from transformations import apply_nms, apply_score_threshold
-from transformations import normalize_01
-
-from backbone_resnet import ResNetBackbones
-from PIL import Image
-
-from numpy import asarray
-
-# import fiftyone as fo
-
-import matplotlib as plt
+import actionlib
+import mirv_control.msg as ASmsg
+from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
+from mirv_control.msg import single_lane_detection
+import ros_numpy
+from std_msgs.msg import Float64MultiArray, String
+import rospy
 import torchvision.transforms as transforms
 
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from lib.core.postprocess import morphological_process, connect_lane
+from lib.utils import show_seg_result
+from lib.models import get_net
+from lib.config import cfg
+import torch
+import cv2
+import time
+import pixel_angles
 
-import torchvision
 
-import torch.multiprocessing as mp
+class detectLaneLines():
+    def __init__(self):
+        rospy.init_node("laneLineDetector", anonymous=True)
+        self._feedback = ASmsg.DetectLanesFeedback()
+        self._result = ASmsg.DetectLanesResult()
 
-import roslib
-import rospy
-from rospy_tutorials.msg import Floats
-from rospy.numpy_msg import numpy_msg
-from std_msgs.msg import Float64MultiArray
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-import ros_numpy
-from mirv_description.msg import depth_and_color_msg as depthAndColorFrame
+        self._action_name = "LaneLineAS"
+        self._as = actionlib.SimpleActionServer(
+            self._action_name, ASmsg.DetectLanesAction, auto_start=False)
+        self._as.register_goal_callback(self.detectLanes)
+        self._as.register_preempt_callback(self.preemptedAS)
+        self._as.start()
 
-br = CvBridge()
+        
 
-normalize = transforms.Normalize(
+        self.normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )
 
-transform=transforms.Compose([
+        self.transform = transforms.Compose([
             transforms.ToTensor(),
-            normalize,
+            self.normalize,
         ])
 
-detections = 0
+        self.img_scale = 0.5
 
-hFOV = 52
-horizontalPixels = 640
-verticalPixels = 480
-degreesPerPixel = hFOV/horizontalPixels
+        self.img_height = 480/self.img_scale
+        self.img_width = 640/self.img_scale
 
+        # TODO: verify this value
+        self.shapes = ((self.img_height, self.img_width),
+                       ((0.0, self.img_scale), (0.0, 0.0)))
+        self.device = torch.device('cuda')
+        self.weights = "/home/nvidia/mirv_ws/src/MIRV-Robot/mirv_real/Camera/tools/weights/End-to-end.pth"
 
-def gotFrame(data):
-    print("GOT A FRAME")
-    initTime = time.time()
-    frame = ros_numpy.numpify(data.color_frame)
-    depthFrame = ros_numpy.numpify(data.depth_frame)
-    # print(frame.shape)
-    tensorImg = transform(frame).to(device)
-    if tensorImg.ndimension() == 3:
-        tensorImg = tensorImg.unsqueeze(0)
-    detections = laneLineDetect(tensorImg, frame, depthFrame)
-    # cv2.imshow("detections", detections)
-    # cv2.waitKey(1)
-    print("TIMEDIFF: ", time.time() - initTime)
-    # cv2.destroyAllWindows()
+        self.CAMERA_HEIGHT = 0.175
+        self.CAMERA_ANGLE = -15
 
-def laneLineDetect(img, frame, depthFrame):
-    det_out, da_seg_out,ll_seg_out= model(img)
+        # Load model
+        self.model = get_net(cfg)
+        self.checkpoint = torch.load(self.weights, map_location=self.device)
+        self.model.load_state_dict(self.checkpoint['state_dict'])
+        self.model = self.model.to(self.device)
 
-    _, _, height, width = img.shape
-    pad_w, pad_h = shapes[1][1]
-    pad_w = int(pad_w)
-    pad_h = int(pad_h)
-    ratio = shapes[1][0][1]
+        self.model.eval()
 
-    da_predict = da_seg_out[:, :, pad_h:(height-pad_h),pad_w:(width-pad_w)]
-    da_seg_mask = torch.nn.functional.interpolate(da_predict, scale_factor=int(1/ratio), mode='bilinear')
-    _, da_seg_mask = torch.max(da_seg_mask, 1)
-    da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
-    # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
-    
-    ll_predict = ll_seg_out[:, :,pad_h:(height-pad_h),pad_w:(width-pad_w)]
-    ll_seg_mask = torch.nn.functional.interpolate(ll_predict, scale_factor=int(1/ratio), mode='bilinear')
-    _, ll_seg_mask = torch.max(ll_seg_mask, 1)
-    ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
-    # Lane line post-processing
-    ll_seg_mask = morphological_process(ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
-    # ll_seg_mask = connect_lane(ll_seg_mask)
-    # print("DA: ", da_seg_mask.shape)
-    # print("FOUND LANE LINE MASK")
+        self.detections = 0
 
-      
-    img = cv2.resize(frame, (1280,720), interpolation=cv2.INTER_LINEAR)
+        self.runningNeuralNetwork = True
 
-    # print("RESIZED IMAGE")
+        self.i = 0
+        self.startTime = round(time.time())
 
-    img_det = show_seg_result(img, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
-
-    ll_seg_mask_resized = cv2.resize(ll_seg_mask, (640, 480), interpolation = cv2.INTER_LINEAR)
-
-    lines = cv2.HoughLinesP(ll_seg_mask_resized,3,np.pi/180, 50, 35, 100)
-
-    # print(ll_seg_mask.shape)
-    img = cv2.resize(frame, (640,480), interpolation=cv2.INTER_LINEAR)
-
-    # print("RESIZED IMAGE")
-
-    numLines = 0
-    piLitLocations = None
-    laneType = "CENTER"
-    try:
-        if(len(lines)%2 == 0):
-            mirvLeftLaneNum = (len(lines)/2)
-            mirvRightLaneNum = (len(lines)/2) + 1
-        else:
-            mirvLeftLaneNum = math.floor(len(lines)/2)
-            mirvRightLaneNum = math.ceil(len(lines)/2)
-        # print("LEFT LANE NUM: ", mirvLeftLaneNum)
-        # print("RIGHT LANE NUM: ", mirvRightLaneNum)
-
-        if(mirvLeftLaneNum > 2):
-            if(len(lines) - mirvRightLaneNum > 2):
-                laneType = "CENTER"
-            else:
-                laneType = "RIGHT"
-        else:
-            if(len(lines) - mirvRightLaneNum > 2):
-                laneType = "CENTER"
-            else:
-                laneType = "LEFT"
+        self.frame = None
+        self.depthFrame = None
         
-        print(laneType)
+        self.intakeCameraSub = rospy.Subscriber("IntakeCameraFrames",
+                                                depthAndColorFrame, self.gotFrame)
+        self.networkSub = rospy.Subscriber("neuralNetworkSelector",
+                                           String, self.allowNeuralNetRun)
 
-        # for line in lines:
-        #     numLines += 1
-        #     if(numLines == mirvLeftLaneNum or numLines == mirvRightLaneNum):
-        #         x1,y1,x2,y2 = line[0]
-        #         cv2.line(img,(x1,y1),(x2,y2),(255,0,0),5)
-    except:
-        print("COULD NOT FIND LANE LINES, TRYING AGAIN")
+    def allowNeuralNetRun(self, msg):
+        cmd = msg.data
+        if(cmd == "lanes" or cmd == "piLitAndLanes"):
+            self.runningNeuralNetwork = True
+        else:
+            self.runningNeuralNetwork = False
 
-    piLitLocations = calculatePiLitPlacements(depthFrame, ll_seg_mask_resized, laneType)
+    def detectLanes(self):
+        print("GOT ACTION SERVER GOAL FOR LANES")
+        goal = self._as.accept_new_goal()
+        position_x = goal.position_x
+        position_y = goal.position_y
+        heading = goal.heading
 
-    if(piLitLocations != None):
-        locations = Float64MultiArray()
-        locations.data = piLitLocations
-        placementPublisher.publish(locations)
+        lane_heading, detections, lane_width = self.process_frame(
+            self.frame, position_x, position_y, heading)
 
-def calculatePiLitPlacements(depthFrame, laneLineMask, laneType):
-    i = 0
-    laneLineDepthLeft = 0
-    laneLineDepthRight = 0
-    laneLineAngleInFrameLeft = 0
-    laneLineAngleInFrameRight = 0
-    for row in laneLineMask:
-        nonZero = np.nonzero(row)
-        for column in nonZero:
-            for pixel in column:
-                laneLineDepthLeft = (depthFrame[i][pixel])/1000
-                laneLineAngleInFrameLeft = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                # print("Left Depth: ", laneLineDepthLeft)
-                if(laneLineDepthLeft != 0):
-                    break
-            if(laneLineDepthLeft != 0):
-                break
-            for pixel in reversed(column):
-                laneLineDepthRight = (depthFrame[i][pixel])/1000
-                laneLineAngleInFrameRight = math.radians((pixel - horizontalPixels/2) * degreesPerPixel)
-                # print("Right Depth: ", laneLineDepthRight)
-                if(laneLineDepthRight != 0):
-                    break
-            if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
-                break
-        if(laneLineDepthRight != 0 and laneLineDepthLeft != 0):
-            break
-        i += 1
+        print(f"LANE LINE DETECTIONS: {detections}")
+        print(f"LANE HEADING DETECTION: {lane_heading}")
+        print(f"LANE WIDTH DETECTION: {lane_width}")
 
-    if(laneLineDepthLeft != 0 or laneLineDepthRight != 0):    
-        laneOffsetFromCenterLeft = laneLineDepthLeft * math.sin(laneLineAngleInFrameLeft)
-        laneOffsetFromCenterRight = laneLineDepthRight * math.sin(laneLineAngleInFrameRight)
+        self._result.net_heading = float(lane_heading)
+        self._result.width = float(lane_width)
+        self._result.lane_detections = detections
 
-        depthToFarthestPoint = 91.44 #meters, converts to 200 ft
+        self._as.set_succeeded(self._result)
 
-        laneWidth = laneOffsetFromCenterLeft + laneOffsetFromCenterRight
-        piLitPlacementLineLength = math.sqrt(math.pow(depthToFarthestPoint, 2) + math.pow(laneWidth, 2))
+    def gotFrame(self, data):
+        if(self.runningNeuralNetwork):
 
-        # print("LINE LENGTH: ", piLitPlacementLineLength, " LANE WIDTH: ", laneWidth)
+            self.initTime = time.time()
+            self.frame = ros_numpy.numpify(data.color_frame)
+            self.depthFrame = ros_numpy.numpify(data.depth_frame)
 
-        piLitIntervalX = laneWidth/7
-        lineSlope = piLitPlacementLineLength/laneWidth
+    def format_lane_detection(self, type, angle, x0, y0, x1, y1):
+        lane = single_lane_detection()
+        lane.heading = float(angle)
+        lane.start_x = float(x0)
+        lane.start_y = float(y0)
+        lane.end_x = float(x1)
+        lane.end_y = float(y1)
+        lane.lane_type = type
+        return lane
 
-        piLitPlacementList = []
+    def process_frame(self, frame, rover_position_x, rover_position_y, rover_heading):
+        lane_points = self.get_lane_points(frame)
+        left_lane, right_lane = self.retrieve_lanes(
+            lane_points, (rover_position_x, rover_position_y), rover_heading)
+        angle = 0
+        lanes = []
+        if left_lane and right_lane:
+            angle = (left_lane[2] + right_lane[2]) / 2
+            lanes.append(self.format_lane_detection('left', *left_lane[2:]))
+            lanes.append(self.format_lane_detection('right', *right_lane[2:]))
+        elif left_lane:
+            angle = left_lane[2]
+            lanes.append(self.format_lane_detection('left', *left_lane[2:]))
+        elif right_lane:
+            angle = right_lane[2]
+            lanes.append(self.format_lane_detection('right', *right_lane[2:]))
 
-        yTruckOffset = 3.048 #meters, converts to 10 ft
+        lane_heading = angle
+        detections = lanes
+        lane_width = 3
 
-        if(laneType == "LEFT"):
-            # 8 loop throughs for each pi lit
-            for i in range(8):
-                piLitLocationX = laneWidth - (i * piLitIntervalX)
-                piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
+        return lane_heading, detections, lane_width
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])        
-        elif(laneType == "RIGHT"):
-            # 8 loop throughs for each pi lit
-            for i in range(8):
-                piLitLocationX = i * piLitIntervalX
-                piLitLocationY = (lineSlope * (piLitLocationX))
+    def get_lane_points(self, img):
+        frame = img
+        frame_orig = img
+        img = self.transform(img).to(self.device)
+        if img.ndimension() == 3:
+            img = img.unsqueeze(0)
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-        elif(laneType == "CENTER"):
-            spearSidesDistance = depthToFarthestPoint/2
-            lineSlope = ((depthToFarthestPoint - spearSidesDistance)/laneWidth)
-            for i in range(4):
-                piLitLocationX = i * piLitIntervalX
-                piLitLocationY = (lineSlope * piLitLocationX) + spearSidesDistance
+        # Inference
+        det_out, da_seg_out, ll_seg_out = self.model(img)
 
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            for i in range(4, 8):
-                piLitLocationX = i * piLitIntervalX
-                piLitLocationY = (-lineSlope * (piLitLocationX)) + depthToFarthestPoint
-            
-                piLitPlacementList.append([piLitLocationX, piLitLocationY])
-            
-        for i in range(len(piLitPlacementList)):
-            location = piLitPlacementList[i]
-            piLitPlacementList[i] = [location[0] - laneOffsetFromCenterLeft, location[1] + yTruckOffset]
-        
-        return piLitPlacementList
-    else:
-        return None
+        _, _, height, width = img.shape
+        pad_w, pad_h = self.shapes[1][1]
+        pad_w = int(pad_w)
+        pad_h = int(pad_h)
+        ratio = self.shapes[1][0][1]
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--weights', nargs='+', type=str, default='mirv_real/Camera/weights/End-to-end.pth', help='model.pth path(s)')
-parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
-parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
-parser.add_argument('--iou-thres', type=float, default=0.75, help='IOU threshold for NMS')
-parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
-parser.add_argument('--augment', action='store_true', help='augmented inference')
-parser.add_argument('--update', action='store_true', help='update all models')
+        da_predict = da_seg_out[:, :, 0:height, 0:width]
+        da_seg_mask = torch.nn.functional.interpolate(
+            da_predict, scale_factor=int(1/ratio), mode='bilinear')
+        _, da_seg_mask = torch.max(da_seg_mask, 1)
+        da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
+        # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
 
-api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
+        ll_predict = ll_seg_out[:, :, 0:height, 0:width]
+        ll_seg_mask = torch.nn.functional.interpolate(
+            ll_predict, scale_factor=int(1/ratio), mode='bilinear')
+        _, ll_seg_mask = torch.max(ll_seg_mask, 1)
+        ll_seg_mask = ll_seg_mask.int().squeeze().cpu().numpy()
 
-opt = parser.parse_args()
+        img_det = show_seg_result(
+            frame, (da_seg_mask, ll_seg_mask), _, _, is_demo=True)
 
-mp.set_start_method('spawn', force=True)
+        # Lane line post-processing
+        ll_seg_mask = morphological_process(
+            ll_seg_mask, kernel_size=7, func_type=cv2.MORPH_OPEN)
+        ll_seg_mask, lines = connect_lane(ll_seg_mask)
+        image_dir = "/mnt/SSD/lane_pictures"
+        print(cv2.imwrite(
+            f'{image_dir}/img_{self.startTime}_{self.i}.png', frame_orig))
+        print(cv2.imwrite(
+            f'{image_dir}/img_det_{self.startTime}_{self.i}.png', img_det))
+        print(cv2.imwrite(
+            f'{image_dir}/da_seg_mask_{self.startTime}_{self.i}.png', da_seg_mask))
+        print(cv2.imwrite(
+            f'{image_dir}/ll_seg_mask_{self.startTime}_{self.i}.png', ll_seg_mask))
+        self.i += 1
+        return lines
 
-shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
-img_det_shape = (720, 1280, 3)
-logger, _, _ = create_logger(
-    cfg, cfg.LOG_DIR, 'demo')
+    # Identify and generate left and right lane line positions + angles
 
-device = select_device(logger,opt.device)
-if os.path.exists(opt.save_dir):  # output dir
-    shutil.rmtree(opt.save_dir)  # delete dir
-os.makedirs(opt.save_dir)  # make new dir
-half = device.type != 'cpu'  # half precision only supported on CUDA
+    def retrieve_lanes(self, lines, rover_position, rover_heading):
+        left_lane = None
+        right_lane = None
+        for line in lines:
+            line = list(line)
+            x_intercept, dx_sign, angle, x0, y0, x1, y1 = pixel_angles.get_line_equations(
+                line, rover_heading, rover_position, (0, self.CAMERA_ANGLE), self.CAMERA_HEIGHT)
+            print(x_intercept, dx_sign, angle, x0, y0)
 
-# Load model
-model = get_net(cfg)
-checkpoint = torch.load(opt.weights, map_location= device)
-model.load_state_dict(checkpoint['state_dict'])
-model = model.to(device)
+            if not angle or not x_intercept:  # No points on road, or horizontal
+                continue
 
-model.eval()
-model.cuda()
+            elif x_intercept <= 320/self.img_scale and dx_sign >= 0:  # Left side, pointing right
+                if left_lane:
+                    if x_intercept > left_lane[0]:  # Find closest to center
+                        left_lane = (x_intercept, dx_sign,
+                                     angle, x0, y0, x1, y1)
+                else:
+                    left_lane = (x_intercept, dx_sign, angle, x0, y0, x1, y1)
+            if x_intercept > 320/self.img_scale and dx_sign <= 0:  # Right side, pointing left
+                if right_lane:
+                    if x_intercept < right_lane[0]:  # Find closest to center
+                        right_lane = (x_intercept, dx_sign,
+                                      angle, x0, y0, x1, y1)
+                else:
+                    right_lane = (x_intercept, dx_sign, angle, x0, y0, x1, y1)
 
-rospy.init_node('laneLineDetector')
-rospy.Subscriber("CameraFrames", depthAndColorFrame, gotFrame)
+        return left_lane, right_lane
 
-placementPublisher = rospy.Publisher('pathingPointInput', Float64MultiArray, queue_size=1)
+    def preemptedAS(self):
+        if(self._as.is_new_goal_available()):
+            self._as.set_preempted()
+        else:
+            self._as.set_aborted()
 
-# self.showFrame = True
+    def run(self):
+        rospy.spin()
 
-try:
-    rospy.spin()
-except KeyboardInterrupt:
-    cv2.destroyAllWindows()
+
+cls = detectLaneLines()
+if __name__ == '__main__':
+    print("RUNNING")
+    cls.run()
