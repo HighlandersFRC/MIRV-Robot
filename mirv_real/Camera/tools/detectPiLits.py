@@ -48,7 +48,7 @@ transform=transforms.Compose([
 
 intakeSide = "switch_right"
 
-runningNeuralNetwork = True
+runningNeuralNetwork = False
 # global intakeSide 
 # intakeSide = "switch_right"
 

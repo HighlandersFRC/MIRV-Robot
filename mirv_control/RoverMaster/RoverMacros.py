@@ -46,6 +46,21 @@ class roverMacros():
         lineUpPoint1 = [3.5, 0]
         lineUpPoint2 = [2, 0]
         lineUpPoints = [lineUpPoint1, lineUpPoint2]
+        
+        currentLocationConverted = self.interface.CoordConversion_client_goal(
+            [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
+
+        deltaX = lineUpPoint1[0] - currentLocationConverted[0]
+        deltaY = -(lineUpPoint1[1] - currentLocationConverted[1])
+
+        absAngleToPlacement = math.atan2(deltaY, deltaX)
+        angleToPlacement = absAngleToPlacement + self.interface.heading
+        
+        self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
+        
+        
+        
+        
         self.interface.PP_client_goal(lineUpPoints)
 
         self.interface.wait(0.5)
