@@ -4,3 +4,4 @@ string state
 bool lights_on
 string health
 string health_details
+bool rover_docked

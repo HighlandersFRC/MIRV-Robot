@@ -57,31 +57,6 @@ if CLOUD_PORT is None:
 else:
     endpoint = f"{CLOUD_HOST}:{CLOUD_PORT}"    
 
-
-DEFAULT_STATUS_MESSAGE = {
-    "roverId": f"{ROVER_COMMON_NAME}",
-    "state": "docked",
-    "status": "available",
-    "battery-percent": -1,
-    "battery-voltage": -1,
-    "health": {
-        "electronics": "unavailable",
-        "drivetrain": "unavailable",
-        "intake": "unavailable",
-        "sensors": "unavailable",
-        "garage": "unavailable",
-        "power": "unavailable",
-        "general": "unavailable"
-    },
-    "telemetry": {
-        "lat": 0,
-        "long": 0,
-        "heading": 0,
-        "speed": 0
-    }
-}
-
-
 token = ""
 
 # Setup webtrc connection components
@@ -318,6 +293,7 @@ def get_garage_state(tkn):
             state.lights_on = contents.get("lights_on", False)
             state.health = contents.get("health","unavailable")
             state.health_details = contents.get("health_description","unavailable")
+            state.rover_docked = contents.get("rover_docked", False)
             garage_pub.publish(state)
         elif response.status_code ==401:
             global token

@@ -109,6 +109,7 @@ class RoverInterface():
         self.placementPoints = []
         self.storedPiLits = [4, 4]
         self.garage_state = "invalid"
+        self.rover_docked = False
         self.limit_switches = [1, 1, 0, 0]
         self.heartBeatTime = 0
         self.tasks = []
@@ -193,6 +194,7 @@ class RoverInterface():
 
     def garage_state_callback(self, msg):
         self.garage_state = msg.state
+        self.rover_docked = msg.rover_docked
 
     def limit_switch_callback(self, switches):
         self.limit_switches = switches.data
@@ -212,15 +214,20 @@ class RoverInterface():
     def magazineOut(self):
         self.intake_command_pub.publish(String("mag_out"))
 
+    @cancellable
     def deployGarage(self):
         self.garage_pub.publish(String("deploy"))
-        while self.garage_state != "deployed":
+        while self.garage_state != "deployed" and not self.cancelled:
             time.sleep(0.1)
 
     @cancellable
     def retractGarage(self):
         self.garage_pub.publish(String("retract"))
-        while self.garage_state != "retracted_latched":
+        while self.garage_state != "retracted_latched" and not self.cancelled:
+            time.sleep(0.1)
+            
+    def waitUntilDocked(self):
+        while self.garage_state != "retracted_latched" and not self.cancelled:
             time.sleep(0.1)
 
     @cancellable
@@ -324,24 +331,6 @@ class RoverInterface():
 
         navSatFixMsg = NavSatFix()
 
-        # if hasattr(self, "globalHeading") and self.globalHeading != 0:
-        #     print("Global Heading", self.globalHeading)
-        #     offset_meters =  0.3048
-        #     de = offset_meters * math.cos(self.globalHeading)
-        #     dn = offset_meters * math.sin(self.globalHeading)
-
-        #     print("Offset North ", dn,"Offset East", de)
-
-        #     R=6378137
-
-        #     #Coordinate offsets in radians
-        #     dLat = dn/R
-        #     dLon = de/(R*math.cos(math.radians(self.latitude)))
-
-        #     navSatFixMsg.latitude = self.latitude + math.degrees(dLat)
-        #     navSatFixMsg.longitude = self.longitude + math.degrees(dLon)
-
-        # else:
         navSatFixMsg.latitude = self.latitude
         navSatFixMsg.longitude = self.longitude
 
@@ -441,6 +430,15 @@ class RoverInterface():
         goal = mirv_control.msg.GarageGoal
         self.garageClient.send_goal(goal)
         self.garageClient.wait_for_result()
+    
+    @cancellable
+    def wait_for_docked(self):
+        startTime = time.time()
+        while not self.rover_docked:
+            if time.time() - 20 > startTime or self.cancelled:
+                return False
+            time.sleep(0.1)
+        return True
 
     def indentify_garage_orientation(self, angleToTarget):
         mirv_control.msg.GarageGoal.runPID = True
