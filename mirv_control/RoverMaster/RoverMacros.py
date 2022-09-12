@@ -220,7 +220,12 @@ class roverMacros():
         ##########################
         # Detect Lane Lines
         ##########################
-        points = self.laneLineSearchSequenceLongitudinal(formation_type)
+        # search positions are relative
+        search_positions = [
+            0, 6, 6
+        ]
+        points = self.laneLineSearchSequenceLongitudinal(
+            search_positions, formation_type)
         if not points:
             print("NO LANES DETECTED LONGITUDINAL SEARCH SEQ, RETURNING")
             self.interface.changeNeuralNetworkSelected("none")
@@ -313,12 +318,8 @@ class roverMacros():
         return True
 
     @cancellable
-    def laneLineSearchSequenceLongitudinal(self, formation_type):
+    def laneLineSearchSequenceLongitudinal(self, positions, formation_type):
         detections = []
-
-        positions = [
-            0, 6, 6
-        ]
 
         for target_position in positions:
             if target_position != 0:
@@ -409,14 +410,17 @@ class roverMacros():
 
         starting_points = placement.generate_pi_lit_formation(
             initial_lane_detection.lane_detections, initial_lane_detection.net_heading, initial_lane_detection.width, start_formation)
+        print(f"Generated first pi-lit position {starting_points} from {[initial_lane_detection.lane_detections, initial_lane_detection.net_heading, initial_lane_detection.width, start_formation]}")
 
         self.placeMultiplePiLits(starting_points)
 
         # Step 3: Drive forward forwards 20 feet along heading
         destination = placement.getEndPoint(
             self.interface.xPos, self.interface.yPos, initial_lane_detection.net_heading, 20 * placement.FEET_TO_METERS)
+        print(f"Generating destination point of {destination} from {[self.interface.xPos, self.interface.yPos, initial_lane_detection.net_heading, 20 * placement.FEET_TO_METERS]}")
         laneDestination = self.interface.CoordConversion_client_goal(
             destination)
+        print(f"Driving to position {laneDestination}")
         self.interface.PP_client_goal([laneDestination])
 
         # Step 4: Identify lanes again
@@ -432,12 +436,14 @@ class roverMacros():
             final_lane_detection.lane_detections, final_lane_detection.net_heading, final_lane_detection.width)
         net_heading = placement.get_angle_robot_frame(
             initial_center, final_center)
+        print(f"Generating net heading of {net_heading} from {[initial_center, final_center]}")
 
         # Step 6: Place all Pi-Lits
         end_formation = formation_type + '_end'
 
         ending_points = placement.generate_pi_lit_formation(
             final_lane_detection.lane_detections, net_heading, final_lane_detection.width, end_formation)
+        print(f"Generating formation points of {ending_points} from {[final_lane_detection.lane_detections, net_heading, final_lane_detection.width, end_formation]}")
 
         self.placeMultiplePiLits(ending_points)
 
