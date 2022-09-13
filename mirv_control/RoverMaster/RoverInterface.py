@@ -118,6 +118,7 @@ class RoverInterface():
         self.globalHeading = 0
         self.cancelled = False
         self.pilit_state = pilit_state()
+        self.calibrated = False
 
         self.imu_buffer = []
         self.imu = 0
@@ -195,6 +196,9 @@ class RoverInterface():
     def garage_state_callback(self, msg):
         self.garage_state = msg.state
         self.rover_docked = msg.rover_docked
+        
+        if self.garage_state == "retracted_latched" and self.rover_docked and self.roverState != self.E_STOP and len(self.tasks) == 0:
+            self.roverState = self.DOCKED
 
     def limit_switch_callback(self, switches):
         self.limit_switches = switches.data
@@ -392,6 +396,8 @@ class RoverInterface():
         self.intake_command_pub.publish(String("reset"))
         self.calibrationClient.send_goal(goal)
         self.calibrationClient.wait_for_result()
+        
+        self.calibrated = True
         return self.calibrationClient.get_result().succeeded
 
     def PP_client_cancel(self):
@@ -503,6 +509,10 @@ class RoverInterface():
             self.stopIntakeAndMagazine()
 
     def stateWatchdog(self):
+        
+        #if not self.calibrated and len(self.tasks) == 0 and self.roverState == self.CONNECTED_DISABLED:
+        #    self.roverState = self.DOCKED
+        
         if self.roverState == self.CONNECTED_DISABLED or self.roverState == self.DISCONNECTED or self.roverState == self.DOCKED:
             self.cancelAllCommands(False)
         if self.roverState == self.TELEOP_DRIVE:
