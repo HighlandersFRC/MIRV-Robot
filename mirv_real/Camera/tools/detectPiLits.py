@@ -48,7 +48,7 @@ transform=transforms.Compose([
 
 intakeSide = "switch_right"
 
-runningNeuralNetwork = True
+runningNeuralNetwork = False
 # global intakeSide 
 # intakeSide = "switch_right"
 
@@ -84,71 +84,99 @@ def gotFrame(data):
         frame = ros_numpy.numpify(data.color_frame)
         depthFrame = ros_numpy.numpify(data.depth_frame)
         # print(frame.shape)
-        tensorImg = transform(frame).to(device)
-        if tensorImg.ndimension() == 3:
-            tensorImg = tensorImg.unsqueeze(0)
-        piLitDetect(tensorImg, frame, depthFrame)
+        piLitDetect(frame, depthFrame)
         
         
 i = 0
 startTime = round(time.time())
 
-def piLitDetect(img, frame, depthFrame):
+def piLitDetect(frame, depthFrame):
     global i
-    piLitPrediction = piLitModel(img)[0]
-    bboxList = []
+
     print("DETECTING...")
     closest_track_location = None
-    closest_track_distance = 5
+    closest_track_distance = None
     image_dir = "/mnt/SSD/pilit_pictures"
     cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame)
     print("Saved Image")
-    
     i += 1
-    for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.85):
-            # print("GOT A PI LIT")
-            print(intakeSide)    
-            x0,y0,x1,y1 = bbox
-            centerX = int((x0 + x1)/2)
-            centerY = int((y0 + y1)/2)
-            bboxList.append(bbox)
-            frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
 
-            angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
+    transforms = ['', 'h', 'vh']
 
-            depth = (depthFrame[centerY][centerX])/1000
+    for transformation in transforms:
+        print(f"USING TRANSFORM: {transformation}")
+        transformed_frame = frame
+        if 'h' in transformation:
+            transformed_frame = cv2.flip(frame, 1)
+        if 'v' in transformation:
+            transformed_frame = cv2.flip(frame, 0)
 
-            if(intakeSide == "switch_right"):
-                intakeOffset = -0.0635
-            else:
-                intakeOffset = 0.0635
+        img = transform(transformed_frame).to(device)
+        if img.ndimension() == 3:
+            img = img.unsqueeze(0)
+        piLitPrediction = piLitModel(img)[0]
 
-            complementaryAngle = math.pi/2 - angleToPiLit
+        for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
+            print(bbox, score)
+            if(score > 0.85):
+                depth, angleToPiLitFromIntake = processDetection(
+                    bbox, depthFrame, intakeSide, transformation)
 
-            horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
-
-            verticalOffsetToPiLit = math.sqrt((math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
-
-            if(depth < 3 and depth != 0):
-                if depth < closest_track_distance:
-                    closest_track_distance = depth               
-                    # angleToPiLitFromIntake = math.degrees(angleToPiLit)
-                    angleToPiLitFromIntake = math.degrees(math.atan2(horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
+                if not closest_track_distance or depth < closest_track_distance:
+                    closest_track_distance = depth
                     piLitLocation = [depth, angleToPiLitFromIntake]
-
 
                     locations = Float64MultiArray()
                     locations.data = piLitLocation
                     closest_track_location = locations
 
-                    
-            else:
-                angleToPiLitFromIntake = math.degrees(angleToPiLit)
-            print("DEPTH: ", depth, " ORIGINAL ANGLE: ", math.degrees(angleToPiLit), "ANGLE: ", (angleToPiLitFromIntake), " SCORE: ", score)
+                print("DEPTH: ", depth, "ANGLE: ",
+                      (angleToPiLitFromIntake), " SCORE: ", score)
 
-    if closest_track_location is not None:
-        piLitLocationPub.publish(closest_track_location)
+        if closest_track_location is not None:
+            piLitLocationPub.publish(closest_track_location)
+            return
+
+
+def processDetection(bbox, depthFrame, intakeSide, transformation=''):
+    x0, y0, x1, y1 = bbox
+    if 'h' in transformation:
+        x0 = horizontalPixels - x0
+        x1 = horizontalPixels - x1
+    if 'v' in transformation:
+        y0 = verticalPixels - y0
+        y1 = verticalPixels - y1
+    centerX = int((x0 + x1)/2)
+    centerY = int((y0 + y1)/2)
+    # frame = cv2.rectangle(frame, (int(x0), int(y0)),
+    #                       (int(x1), int(y1)), (0, 255, 0), 3)
+
+    angleToPiLit = math.radians(
+        (centerX - horizontalPixels/2) * degreesPerPixel)
+
+    depth = (depthFrame[centerY][centerX])/1000
+
+    if(intakeSide == "switch_right"):
+        intakeOffset = -0.0635
+    else:
+        intakeOffset = 0.0635
+
+    complementaryAngle = math.pi/2 - angleToPiLit
+
+    horizontalOffsetToPiLit = (depth * math.cos(complementaryAngle))
+
+    if(depth < 3 and depth != 0):
+
+        verticalOffsetToPiLit = math.sqrt(
+            (math.pow(depth, 2) - math.pow(horizontalOffsetToPiLit, 2)))
+
+        angleToPiLitFromIntake = math.degrees(math.atan2(
+            horizontalOffsetToPiLit + intakeOffset, verticalOffsetToPiLit))
+    else:
+        angleToPiLitFromIntake = math.degrees(angleToPiLit)
+
+    return depth, angleToPiLitFromIntake
+    
 
 shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
 img_det_shape = (720, 1280, 3)
