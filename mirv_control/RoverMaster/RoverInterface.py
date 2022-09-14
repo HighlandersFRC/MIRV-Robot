@@ -156,15 +156,7 @@ class RoverInterface():
 
         self.pilit_state_publisher = rospy.Publisher(
             "PilitControl", pilit_state, queue_size=1)
-        # self.placementSub = rospy.Subscriber('pathingPointInput', Float64MultiArray, self.updatePlacementPoints)
 
-    # def setPiLitSequence(self, is_wave: bool):
-    #     self.pilit_controller.patternType(is_wave)
-    #     self.pilit_controller.reset()
-
-    # def setPiLitSequenceReversed(self, reversed: bool):
-    #     self.pilit_controller.reversePattern(reversed)
-    #     self.pilit_controller.reset()
 
     def updateIMU(self, data):
         self.imu_buffer.append(data.data)
@@ -181,7 +173,6 @@ class RoverInterface():
         return self.imu
 
     # options are piLit, lanes, piLitAndLanes, aruco, and none
-
     def changeNeuralNetworkSelected(self, selectedNetwork):
         self.neuralNetworkSelector.publish(selectedNetwork)
 
@@ -306,11 +297,8 @@ class RoverInterface():
             data.pose.pose.orientation)[0]
 
         if self.startingHeading != 0:
-            #print("Starting Heading:", math.degrees(self.startingHeading), math.degrees(self.heading))
-            #self.globalHeading = math.radians(math.degrees(180 - (-self.startingHeading - self.heading)) % 360)
             self.globalHeading = math.radians((360 - (math.degrees(self.heading - (self.startingHeading))%360))%360)
-            
-       #print(math.degrees(self.globalHeading))
+
 
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
@@ -568,6 +556,21 @@ class RoverInterface():
         self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
         self.RoverMacro.pickupPiLit()
         self.roverState = lastState
+        
+    def loadPilits(self):
+        self.cancelled = False
+        lastState = self.roverState
+        self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
+        self.RoverMacro.loadPilits()
+        self.roverState = lastState
+        
+    def unloadPilits(self):
+        self.cancelled = False
+        lastState = self.roverState
+        self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
+        self.RoverMacro.unloadPilits()
+        self.roverState = lastState
+
 
     def deployAllPilits(self, lat, long, heading, formation):
         self.cancelled = False
@@ -675,6 +678,18 @@ class RoverInterface():
                 self.tasks.append(t)
             elif command == "place_1_pi_lit":
                 t = Thread(target=self.placeOnePilit)
+                t.start()
+                self.tasks.append(t)
+            elif command == "deploy_intake":
+                self.intakeDown()
+            elif command == "retract_intake":
+                self.intakeUp()
+            elif command == "load_pi_lits":
+                t = Thread(target=self.loadPilits)
+                t.start()
+                self.tasks.append(t)
+            elif command == "unload_pi_lits":
+                t = Thread(target=self.unloadPilits)
                 t.start()
                 self.tasks.append(t)
             else:

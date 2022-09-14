@@ -98,7 +98,7 @@ class PickupPilit():
         self.allowSearch = True
         print("Searching For Pilits")
         searchStartTime = time.time()
-        while abs(searchStartTime - time.time()) < 10 and self._as.is_active():
+        while abs(searchStartTime - time.time()) < 15 and self._as.is_active():
             self.drive(0,0)
 
             

@@ -158,6 +158,26 @@ class roverMacros():
         self.interface.deployGarage()
         self.interface.drive_into_garage(0)
         self.interface.changeNeuralNetworkSelected("none")
+        
+    @cancellable
+    def loadPilits(self):
+        self.interface.intakeDown()
+        self.interface.wait(2)
+        self.interface.magazineIn()
+        self.interface.wait(10)
+        self.interface.stopIntakeAndMagazine()
+        self.interface.wait(2)
+        self.interface.intakeUp()
+        
+    @cancellable
+    def unloadPilits(self):
+        self.interface.intakeDown()
+        self.interface.wait(2)
+        self.interface.magazineOut()
+        self.interface.wait(10)
+        self.interface.stopIntakeAndMagazine()
+        self.interface.wait(2)
+        self.interface.intakeUp()
 
     @cancellable
     def placePiLitFromSide(self, timeout, intakeSide):
