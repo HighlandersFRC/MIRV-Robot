@@ -95,6 +95,10 @@ def generate_pi_lit_formation(detected_lanes, heading, lane_width, formation_typ
         return taper_3(detected_lanes, heading, lane_width, start=True, left_side=True)
     elif formation_type == "taper_left_3_end":
         return taper_3(detected_lanes, heading, lane_width, start=False, left_side=True)
+    elif formation_type == "taper_right_3":
+        return taper_3(detected_lanes, heading, lane_width)
+    elif formation_type == "taper_left_3":
+        return taper_3(detected_lanes, heading, lane_width, left_side=True)
     elif formation_type == "taper_right_5":
         return taper_5(detected_lanes, heading, lane_width)
     elif formation_type == "taper_left_5":
@@ -114,16 +118,23 @@ def taper_3(detected_lanes, heading, lane_width, start=False, left_side=False):
 
     # longitudinal_dist: longitudal distance from start point to pi-lit, in feet
     # lateral_dist: lateral (sideways) distance from the edge of the lane, in lane widths
-    if start:
-        PI_LIT_LOCATIONS = [
-            {'longitudinal_dist': 0, 'lateral_dist': -0.375 * sign},
-        ]
-    else:
-        # NOTE: Should be 100 and 200, but these are generated from 20 feet down the lane
-        PI_LIT_LOCATIONS = [
-            {'longitudinal_dist': 80, 'lateral_dist': 0.0 * sign},
-            {'longitudinal_dist': 180, 'lateral_dist': 0.0 * sign},
-        ]
+    # if start == True:
+    #     PI_LIT_LOCATIONS = [
+    #         {'longitudinal_dist': 0, 'lateral_dist': -0.375 * sign},
+    #     ]
+    # elif start == False:
+    #     # NOTE: Should be 100 and 200, but these are generated from 20 feet down the lane
+    #     PI_LIT_LOCATIONS = [
+    #         {'longitudinal_dist': 80, 'lateral_dist': 0.0 * sign},
+    #         {'longitudinal_dist': 180, 'lateral_dist': 0.0 * sign},
+    #     ]
+    # else:
+    PI_LIT_LOCATIONS = [
+        {'longitudinal_dist': 0, 'lateral_dist': -0.375 * sign},
+        {'longitudinal_dist': 100, 'lateral_dist': 0.0 * sign},
+        {'longitudinal_dist': 200, 'lateral_dist': 0.0 * sign},
+    ]
+        
 
     return generate_pi_lit_locations(start_point, heading, lane_width, PI_LIT_LOCATIONS)
 

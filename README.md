@@ -2,33 +2,47 @@
 
 The Multi-Incident Response Vehicle (MIRV) Rover is an autonomous rover capable of deploying from the tire bay of an F-150 Pick-up truck and placing Pi-Lit flares along the roadside. This rover is developed by the students of the Highlanders FRC team in conjunction with Neaera Consulting for the Virginia Tech Transportation Institute (VTTI).
 
-
 ## Installation
+
 To setup the MIRV codebase on your system, please see the installation instructions [here](installation.md).
 
 To setup an AGX for a new MIRV Rover, please see the installation instructions [here](agx_setup.md).
 
 ## Usage
-Currently the only launch file is road_slight_curve.launch in mirv_simulation, which launches the vehicle with sensors on a road in gazebo. 
+
+Currently the only launch file is road_slight_curve.launch in mirv_simulation, which launches the vehicle with sensors on a road in gazebo.
 
 ## Folder Structure
+
 recommended folder structure:
+
 - mirv (metapackage)
   - mirv_control (real world/simulation-agnostic nodes)
   - mirv_real (real-world sensor drivers/calibration)
-  - mirv_description (simulation meshes/sensor plugins/robot description,  just robot specifics. If someone else wanted to use the robot for a different task, they would want these files)
+  - mirv_description (simulation meshes/sensor plugins/robot description, just robot specifics. If someone else wanted to use the robot for a different task, they would want these files)
   - mirv_simulation (simulation launch files/worlds)
 
 optional other packages:
-  - mirv_msgs (any custom messages that we define)
-  - mirv_tutorials (tutorials for using the rover/simulator)
-  - mirv_documentation
 
+- mirv_msgs (any custom messages that we define)
+- mirv_tutorials (tutorials for using the rover/simulator)
+- mirv_documentation
 
 ## Running
+
 ```
+sudo systemctl stop mirv
+sudo systemctl start mirv
 roslaunch mirv_real mirv.launch
 rosrun mirv_control RoverController.py
 sudo shutdown
 sudo poweroff
+```
+
+
+### pytorch installation
+https://docs.nvidia.com/deeplearning/frameworks/install-pytorch-jetson-platform/index.html
+```
+export TORCH_INSTALL=https://developer.download.nvidia.cn/compute/redist/jp/v461/pytorch/torch-1.11.0a0+17540c5+nv22.01-cp36-cp36m-linux_aarch64.whl
+sudo python3 -m pip install --no-cache $TORCH_INSTALL
 ```

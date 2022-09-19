@@ -1,4 +1,0 @@
-<launch>
-  <node name="Canbus" pkg="mirv_real" type="canbus"/>
-  <node name="RemoteDrive" pkg="mirv_control" type="remotedrive_master.py"/>
-</launch>
