@@ -240,24 +240,36 @@ class roverMacros():
 
         # If 3 pi-lits, send to other method. This one is long, so needs a different algorithm
         if formation_type in ['taper_right_3', 'taper_left_3']:
-            self.long_pilit_placement(formation_type)
-            self.interface.changeNeuralNetworkSelected("none")
-            return
+            ##########################
+            # Detect Long Lane Lines
+            ##########################
+            # search positions are relative
+            search_positions = [
+                0, 4, 6, 6, 12
+            ]
+            points = self.laneLineSearchSequenceLongitudinal(
+                search_positions, formation_type)
+            if not points:
+                print("NO LANES DETECTED LONG SEARCH SEQ, RETURNING")
+                self.interface.changeNeuralNetworkSelected("none")
+                return
+            points.reverse()
+        else:
 
-        ##########################
-        # Detect Lane Lines
-        ##########################
-        # search positions are relative
-        search_positions = [
-            0, 6, 6
-        ]
-        points = self.laneLineSearchSequenceLongitudinal(
-            search_positions, formation_type)
-        if not points:
-            print("NO LANES DETECTED LONGITUDINAL SEARCH SEQ, RETURNING")
-            self.interface.changeNeuralNetworkSelected("none")
-            return
-        points.reverse()
+            ##########################
+            # Detect Lane Lines
+            ##########################
+            # search positions are relative
+            search_positions = [
+                0, 3, 6
+            ]
+            points = self.laneLineSearchSequenceLongitudinal(
+                search_positions, formation_type)
+            if not points:
+                print("NO LANES DETECTED LONGITUDINAL SEARCH SEQ, RETURNING")
+                self.interface.changeNeuralNetworkSelected("none")
+                return
+            points.reverse()
 
         # lane_detections = self.laneLineSearchSequence()
         # if not lane_detections:
@@ -347,7 +359,7 @@ class roverMacros():
         return True
 
     @cancellable
-    def laneLineSearchSequenceLongitudinal(self, positions, formation_type):
+    def laneLineSearchSequenceLongitudinal_OLD(self, positions, formation_type):
         detections = []
 
         for target_position in positions:
@@ -365,7 +377,7 @@ class roverMacros():
                 self.interface.pointTurn(
                     (math.degrees(self.interface.heading) - previous_detection['heading']) % 360, 5)
 
-            self.interface.wait(5)
+            #self.interface.wait(5)
 
             lane_detections = self.laneLineSearchSequence()
 
@@ -432,54 +444,64 @@ class roverMacros():
         return None
 
     @cancellable
-    def long_pilit_placement(self, formation_type):
-        # Step 1: identify current lane location and heading
-        initial_lane_detection = self.laneLineSearchSequence()
-        if not initial_lane_detection:
-            print("NO LANES DETECTED INITIAL, RETURNING")
-            return
+    def laneLineSearchSequenceLongitudinal(self, positions, formation_type):
+        detections = []
 
-        # Step 2: Place 1 pi-lit in correct position
-        start_formation = formation_type + '_start'
+        for target_position in positions:
+            if target_position != 0:
+                previous_detection = detections[-1]
+                destination = placement.getEndPoint(
+                    *previous_detection['center'], previous_detection['net_heading'], target_position)
 
-        starting_points = placement.generate_pi_lit_formation(
-            initial_lane_detection.lane_detections, initial_lane_detection.net_heading, initial_lane_detection.width, start_formation)
-        print(f"Generated first pi-lit position {starting_points} from {[initial_lane_detection.lane_detections, initial_lane_detection.net_heading, initial_lane_detection.width, start_formation]}")
+                print(f"Driving to {destination}")
+                self.interface.PP_client_goal(
+                    [[destination[0], destination[1]]])
 
-        self.placeMultiplePiLits(starting_points)
+                print(
+                    f"Driving to {previous_detection['heading']}, or relative {(math.degrees(self.interface.heading) - previous_detection['net_heading']) % 360}")
+                self.interface.pointTurn(
+                    (math.degrees(self.interface.heading) - previous_detection['net_heading']) % 360, 5)
 
-        # Step 3: Drive forward forwards 20 feet along heading
-        destination = placement.getEndPoint(
-            self.interface.xPos, self.interface.yPos, initial_lane_detection.net_heading, 20 * placement.FEET_TO_METERS)
-        print(f"Generating destination point of {destination} from {[self.interface.xPos, self.interface.yPos, initial_lane_detection.net_heading, 20 * placement.FEET_TO_METERS]}")
-        laneDestination = self.interface.CoordConversion_client_goal(
-            destination)
-        print(f"Driving to position {laneDestination}")
-        self.interface.PP_client_goal([laneDestination])
+            #self.interface.wait(5)
 
-        # Step 4: Identify lanes again
-        final_lane_detection = self.laneLineSearchSequence()
-        if not final_lane_detection:
-            print("NO LANES DETECTED FINAL, RETURNING")
-            return
+            lane_detections = self.laneLineSearchSequence()
 
-        # Step 5: Determine very accurate lane heading
-        initial_center = placement.get_center_coordinates(
-            initial_lane_detection.lane_detections, initial_lane_detection.net_heading, initial_lane_detection.width)
-        final_center = placement.get_center_coordinates(
-            final_lane_detection.lane_detections, final_lane_detection.net_heading, final_lane_detection.width)
-        net_heading = placement.get_angle_robot_frame(
-            initial_center, final_center)
-        print(f"Generating net heading of {net_heading} from {[initial_center, final_center]}")
+            if lane_detections == None:
+                if not detections:
+                    return None
+                else:
+                    continue
 
-        # Step 6: Place all Pi-Lits
-        end_formation = formation_type + '_end'
+            center = placement.get_center_coordinates(
+                lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width)
+            print(f"GENERATING CENTER: {center} from {[lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width]}")
+            
+            net_heading = lane_detections.net_heading
+            if len(detections) >= 1:
+                net_heading = placement.get_angle_robot_frame(
+                    detections[0]['center'], center)
 
-        ending_points = placement.generate_pi_lit_formation(
-            final_lane_detection.lane_detections, net_heading, final_lane_detection.width, end_formation)
-        print(f"Generating formation points of {ending_points} from {[final_lane_detection.lane_detections, net_heading, final_lane_detection.width, end_formation]}")
+            detections.append({'lane_detections': lane_detections.lane_detections, 'center': center,
+                              'heading': lane_detections.net_heading, 'net_heading': net_heading, 'width': lane_detections.width})
 
-        self.placeMultiplePiLits(ending_points)
+        print(f"Total detections {len(detections)}")
+        if len(detections) == 0:
+            return None
+        elif len(detections) == 1:
+            detection = detections[0]
+            print(
+                f"Generating placements from {[detection['lane_detections'], detection['heading'], detection['width'], formation_type]}")
+            return placement.generate_pi_lit_formation(
+                detection['lane_detections'], detection['heading'], detection['width'], formation_type)
+        else:
+            start_detection = detections[0]
+            end_detection = detections[-1]
+            net_heading = placement.get_angle_robot_frame(
+                    start_detection['center'], end_detection['center'])
+            print(
+                f"Generating placements from {[start_detection['lane_detections'], net_heading, start_detection['width'], formation_type]}")
+            return placement.generate_pi_lit_formation(
+                start_detection['lane_detections'], net_heading, start_detection['width'], formation_type)
 
     def placeAllPiLitsNoMovement(self, count):
         intakeSide = "switch_right"

@@ -68,6 +68,7 @@ def get_real_position(x, y, imu_offset, rover_position, center_angle, height):
         return None, None
     longitudinal_offset = height * math.tan(math.radians(90 + theta_v))
     lateral_offset = longitudinal_offset * math.tan(math.radians(theta_h))
+    print(longitudinal_offset, lateral_offset)
 
     # print(longitudinal_offset, lateral_offset)
 
