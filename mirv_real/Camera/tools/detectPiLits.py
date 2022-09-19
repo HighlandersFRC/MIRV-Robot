@@ -109,8 +109,8 @@ def piLitDetect(frame, depthFrame):
     closest_track_location = None
     closest_track_distance = None
     image_dir = "/mnt/SSD/pilit_pictures"
-    cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame)
-    print("Saved Image")
+    #cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame)
+    #print("Saved Image")
     i += 1
 
     transforms = ['']
