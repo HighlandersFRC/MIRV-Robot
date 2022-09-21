@@ -73,9 +73,6 @@ rosdep update
 ```
 
 ## Setup ROS workspace
-
-
-
 Create ROS Workspace
 ```
 mkdir ~/mirv_ws
