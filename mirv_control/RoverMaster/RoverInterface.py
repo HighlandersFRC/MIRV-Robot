@@ -594,6 +594,8 @@ class RoverInterface():
         else:
             self.roverState = self.CONNECTED_ENABLED
 
+    # Rover state transition
+
     def cloud_callback(self, message):
         self.heartBeatTime = rospy.get_time()
         msg = json.loads(message.data)

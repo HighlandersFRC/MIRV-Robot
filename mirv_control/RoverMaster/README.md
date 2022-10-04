@@ -24,7 +24,7 @@ ROS node, Runs Interface and Macros
 
 ## RoverInterface.py
 
-Holds low level commands and pub/sub objects (drive to a location, point turn, ...)
+Controls rover state transition and processes received commands. Also holds low level commands and pub/sub objects (drive to a location, pickup 1 pi-lit, ...)
 
 ## RoverMacros.py
 
