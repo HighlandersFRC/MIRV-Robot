@@ -31,8 +31,6 @@ class detectLaneLines():
         self._as.register_preempt_callback(self.preemptedAS)
         self._as.start()
 
-        
-
         self.normalize = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )
@@ -73,7 +71,7 @@ class detectLaneLines():
 
         self.frame = None
         self.depthFrame = None
-        
+
         self.intakeCameraSub = rospy.Subscriber("IntakeCameraFrames",
                                                 depthAndColorFrame, self.gotFrame)
         self.networkSub = rospy.Subscriber("neuralNetworkSelector",
@@ -167,7 +165,6 @@ class detectLaneLines():
             da_predict, scale_factor=int(1/ratio), mode='bilinear')
         _, da_seg_mask = torch.max(da_seg_mask, 1)
         da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
-        # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
 
         ll_predict = ll_seg_out[:, :, 0:height, 0:width]
         ll_seg_mask = torch.nn.functional.interpolate(

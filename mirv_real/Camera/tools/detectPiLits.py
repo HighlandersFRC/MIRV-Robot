@@ -2,32 +2,18 @@
 from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
 import ros_numpy
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
 from std_msgs.msg import Float64MultiArray, String
 import rospy
-import torchvision
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 import torchvision.transforms as transforms
-import matplotlib as plt
-from numpy import asarray
-import numpy as np
-from numpy import random
-import torch.backends.cudnn as cudnn
 import torch
 import math
-from operator import truediv
 import cv2
 import os
 import sys
 import time
-from faster_RCNN import get_faster_rcnn_resnet
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
-
-
-# import fiftyone as fo
-
 
 rospy.init_node('piLitDetector')
 br = CvBridge()
@@ -47,8 +33,6 @@ NN_SCORE_THRESHOLD = 0.0
 intakeSide = "switch_right"
 
 runningNeuralNetwork = True
-# global intakeSide
-# intakeSide = "switch_right"
 
 detections = 0
 
@@ -62,10 +46,8 @@ def intakeCommandCallback(msg):
     cmd = msg.data
     global intakeSide
     if (cmd == "switch_right"):
-        # print("RIGHT SIDE INTAKE")
         intakeSide = cmd
     elif (cmd == "switch_left"):
-        # print("LEFT SIDE INTAKE")
         intakeSide = cmd
 
 
@@ -79,12 +61,10 @@ def allowNeuralNetRun(msg):
 
 
 def gotFrame(data):
-    #print("GOT A FRAME")
     if (runningNeuralNetwork):
         initTime = time.time()
         frame = ros_numpy.numpify(data.color_frame)
         depthFrame = ros_numpy.numpify(data.depth_frame)
-        # print(frame.shape)
         piLitDetect(frame, depthFrame)
 
 
@@ -97,7 +77,8 @@ def filter_bbox(bbox):
     if x0 == 0 or x1 == horizontalPixels or y0 == 0 or y1 == verticalPixels:
         return False
 
-    if abs(x1 - x0) < 30 or abs(y1 - y0) < 8:  # abs((x1 - x0) * (y1 - y0)) < 200
+    # Filter out small detections
+    if abs(x1 - x0) < 30 or abs(y1 - y0) < 8:
         return False
     return True
 
@@ -105,12 +86,15 @@ def filter_bbox(bbox):
 def piLitDetect(frame, depthFrame):
     global i
 
-    print("DETECTING...")
+    ##########
+    # UNCOMMENT THIS CODE TO SAVE PILIT IMAGES
+    # image_dir = "/mnt/SSD/pilit_pictures"
+    # cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame)
+    # print("Saved Image")
+    ##########
+
     closest_track_location = None
     closest_track_distance = None
-    image_dir = "/mnt/SSD/pilit_pictures"
-    #cv2.imwrite(f'{image_dir}/img_{startTime}_{i}.png', frame)
-    #print("Saved Image")
     i += 1
 
     transforms = ['']
@@ -164,8 +148,6 @@ def processDetection(bbox, depthFrame, intakeSide, transformation=''):
         y1 = verticalPixels - y1
     centerX = int((x0 + x1)/2)
     centerY = int((y0 + y1)/2)
-    # frame = cv2.rectangle(frame, (int(x0), int(y0)),
-    #                       (int(x1), int(y1)), (0, 255, 0), 3)
 
     angleToPiLit = math.radians(
         (centerX - horizontalPixels/2) * degreesPerPixel)
