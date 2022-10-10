@@ -31,23 +31,15 @@ print(versions)
 
 all_imports = {}
 
-# depthai covered by -e??
-# neptunecontrib installed with neptune-client??
-# pycocotools was not installed??
-# visualization was not installed??
-# ggadata was not installed??
-# vtgdata was not installed??
-# tablemanager was not installed??
-# actionlib was not installed??
-# ublox_msgs was not installed??
-
-ROS_installed = ['geometry_msgs', 'std_msgs',
-                 'sensor_msgs', 'nav_msgs', 'dse_msgs', 'rospy', 'roslib', 'ros_numpy', 'stdlib_list',
-                 'catkin_pkg', 'rospy_tutorials', 'tf2_ros', 'tf2_geometry_msgs', 'actionlib', 'ublox_msgs', 'ggadata', 'vtgdata']
+# TODO: Verify that these will all be installed with ROS
+ROS_installed = ['geometry_msgs', 'std_msgs', 'sensor_msgs', 'nav_msgs', 'dse_msgs', 'rospy',
+                 'roslib', 'ros_numpy', 'stdlib_list', 'catkin_pkg', 'rospy_tutorials', 'tf2_ros',
+                 'tf2_geometry_msgs', 'actionlib', 'ublox_msgs', 'ggadata', 'vtgdata']
 child_packages = ['cv2_bridge', 'cv_bridge', 'neptunecontrib']
 directories_files = ['constants', 'helpful_functions_lib', 'pid', 'RoverInterface', 'RoverMacros',
                      'utils', '(', 'roverstate', 'lib', 'metrics', 'odometrystate', 'placement',
                      'rovermacros', 'roverinterface', 'mirv_control', 'robot_controller']
+# TODO: Verify that these can be ignored
 not_found = ['pycocotools', 'visualization', 'tablemanager']
 
 ignored = []
@@ -56,6 +48,7 @@ ignored.extend(child_packages)
 ignored.extend(directories_files)
 ignored.extend(not_found)
 
+# TODO: Verify that the last 3 installs are correct (depthai, torch, torchvision)
 name_mappings = {
     'cv2': 'opencv-python',
     'socketio': 'python-socketio',
