@@ -122,6 +122,7 @@ class RoverInterface():
 
         self.imu_buffer = []
         self.imu = 0
+        
 
         # SUBSCRIBERS
         self.gpsOdomSub = rospy.Subscriber(
@@ -500,6 +501,9 @@ class RoverInterface():
         
         #if not self.calibrated and len(self.tasks) == 0 and self.roverState == self.CONNECTED_DISABLED:
         #    self.roverState = self.DOCKED
+
+        if rospy.get_time() - self.heartBeatTime > 1 and self.roverState in [self.CONNECTED_ENABLED, self.AUTONOMOUS, self.TELEOP_DRIVE, self.TELEOP_DRIVE_AUTONOMOUS]:
+            self.roverState = self.DISCONNECTED
         
         if self.roverState == self.CONNECTED_DISABLED or self.roverState == self.DISCONNECTED or self.roverState == self.DOCKED:
             self.cancelAllCommands(False)
@@ -512,6 +516,7 @@ class RoverInterface():
     def eSTOP(self):
         self.cancelled = True
         self.roverState = self.E_STOP
+        rospy.logfatal("Rover ESTOP!")
         os.system("rosnode kill --all")
 
     def setPiLits(self, command):

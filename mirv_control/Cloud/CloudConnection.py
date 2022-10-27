@@ -74,18 +74,17 @@ cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 def get_token():
     login_data = {'username': USERNAME, 'password': PASSWORD}
-    print(login_data)
     try:
         response = requests.post(f"https://{endpoint}/token", data=login_data,timeout=20)
         contents = json.loads(response.content.decode('utf-8'))
         token = contents.get('access_token')
-        print(token)
+        rospy.loginfo(str(token))
         return token
     except requests.exceptions.ReadTimeout:
-        print("Unable to Acquire Token")
+        rospy.loginfo("Unable to Acquire Token")
         return ""
     except requests.exceptions.ConnectionError as e:
-        print("Unable to Acquire Token", e)
+        rospy.loginfo("Unable to Acquire Token", e)
         return ""
 
 def get_webrtc_state():
@@ -130,12 +129,11 @@ def send_to_webrtc(message):
             rospy.loginfo("Sending", + str_msg)
             channel.send(str_msg)
     except Exception as e:
-        print("Unable to send message to webrtc")
+        rospy.loginfo("Unable to send message to webrtc")
     
     
 # Receives ROS frames and adds them to internal buffer to be sent to the cloud
 def frameSubscriber(data):
-    #print("Got a new frame")
     frame = ros_numpy.numpify(data.color_frame)
     frames.append(frame)
     if len(frames) >5:
@@ -159,17 +157,18 @@ def statusSubscriber(data):
         #if len(status_messages) == 0:
         status_messages.append(data.data)
     else:
-        print("Received Data with Type None", data)
+        rospy.loginfo("Received Data with Type None", data)
 
 def garageSubscriber(data):
     if data is not None and len(str(data.data)) > 0:
         cmd = str(data.data)
-        print(cmd)
+        rospy.loginfo(cmd)
         headers= {'Authorization': f'Bearer {token}'}
         body = {"command": cmd}
-        print("Sending Command")
+        rospy.loginfo("Sending Command")
         response = requests.post(f"https://{endpoint}/garages/{GARAGE_ID}/command",json = body, headers=headers)
-        print(response.status_code, response.text)
+        rospy.loginfo("Status Code: " + str(response.status_code))
+        rospy.loginfo("Response Text:" + str(response.text))
 
 
     
@@ -195,17 +194,14 @@ class RobotVideoStreamTrack(VideoStreamTrack):
     
     ## Receive Code To Forward Data from Intake Camera
     # async def recv(self):
-    #     pts, time_base = await self.next_timestamp()
-    #     #print("test") 
+    #     pts, time_base = await self.next_timestamp() 
     #     if len(frames) > 0:
-    #         #print("sending real frame")
     #         cv_frame = frames[0]
     #         corrected_frame = cv2.cvtColor(cv_frame, cv2.COLOR_RGB2BGR)
     #         frame = VideoFrame.from_ndarray(corrected_frame)
     #         if len(frames) > 1:
     #             frames.remove(frames[0])
     #     else:
-    #         #print("sending blank frame")
     #         blank_image = np.zeros((480,640,3), np.uint8)
     #         frame = VideoFrame.from_ndarray(blank_image)
         
@@ -226,12 +222,12 @@ class RobotVideoStreamTrack(VideoStreamTrack):
 # Website posts an offer to python server
 async def offer(request):
     params = await request.json()
-    print("Received Params")
-    print(params)
+    rospy.loginfo("Received Params")
+    rospy.loginfo(str(params))
     offer = RTCSessionDescription(sdp=params["offer"]["sdp"], type=params["offer"]["type"])
 
     pc = RTCPeerConnection()
-    channel = pc.createDataChannel("RoverStatus");
+    channel = pc.createDataChannel("RoverStatus")
     channels.append(channel)
     pc.addTrack(RobotVideoStreamTrack())
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
@@ -255,18 +251,18 @@ async def offer(request):
             await pc.close()
             pcs.remove(pc)
         state = get_webrtc_state()
-        print("Connection Status Changed")
-        print(state)
+        rospy.loginfo("Connection Status Changed")
+        rospy.loginfo(state)
         
     # handle offer
     await pc.setRemoteDescription(offer)
 
     # send answer
     answer = await pc.createAnswer()
-    print(answer)
+    rospy.loginfo(str(answer))
     await pc.setLocalDescription(answer)
-    print("Returning Answer")
-    print(json.dumps({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}))
+    rospy.loginfo("Returning Answer")
+    rospy.loginfo(json.dumps({"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}))
 
 
 
@@ -299,15 +295,16 @@ def get_garage_state(tkn):
             global token
             token = get_token()
         else:
-            print(f"Received Status Code: {response.status_code}, Details: {response.text}")
+            rospy.loginfo(f"Received Status Code: {response.status_code}, Details: {response.text}")
     except Exception as e:
-        print("Garage Update failed with error",e )
+        rospy.loginfo("Garage Update failed with error")
+        rospy.loginfo(str(e))
     
 
 # Periodically tries to connect to the cloud if the system is not connected
 async def update_connection():
     while True:
-        print("Update Connection")
+        rospy.loginfo("Update Connection")
         if token == "":
             get_token()
         if not api_connected: 
@@ -316,10 +313,9 @@ async def update_connection():
 
 
 async def update_garage(token):
-    print("Started Garage")
+    rospy.loginfo("Started Garage")
     while True:
         get_garage_state(token)
-        print("test")
         await asyncio.sleep(5)
 
 def stop():
@@ -328,7 +324,7 @@ def stop():
 
 @sio.on('connect')
 def connect():
-    print('API connection established')
+    rospy.loginfo('API connection established')
     global api_connected
     api_connected = True
     
@@ -344,7 +340,8 @@ def disconnect():
 
 @sio.on('message')
 def message(data):
-    print('message received with ', data)
+    rospy.loginfo('message received with ')
+    rospy.loginfo(str(data))
 
 
 @sio.on('exception')
