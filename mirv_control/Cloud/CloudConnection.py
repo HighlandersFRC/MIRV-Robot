@@ -239,6 +239,7 @@ async def offer(request):
         @channel.on("message")
         def on_message(message):
             global status_messages
+            rospy.loginfo("Received Message:" + str(message))
             command_pub.publish(message)
             for send_message in status_messages:
                 channel.send(send_message)
@@ -282,14 +283,16 @@ def get_garage_state(tkn):
         if response.status_code ==200:
             contents = json.loads(response.content.decode('utf-8'))
             state = garage_state()
+            #rospy.loginfo(str(state))
 
-            state.garage_id = contents.get("garage_id","unavailable")
-            state.linked_rover_id = contents.get("linked_rover_id", "unavailable")
-            state.state = contents.get("state","unavailable")
-            state.lights_on = contents.get("lights_on", False)
-            state.health = contents.get("health","unavailable")
-            state.health_details = contents.get("health_description","unavailable")
-            state.rover_docked = contents.get("rover_docked", False)
+            state.garage_id = contents.get("garage_id","unavailable") or "unavailable"
+            state.linked_rover_id = contents.get("linked_rover_id", "unavailable") or "unavailable"
+            state.state = contents.get("state","unavailable") or "unavailable"
+            state.lights_on = contents.get("lights_on", False) or False
+            state.health = contents.get("health","unavailable") or "unavailable"
+            state.health_details = contents.get("health_description","unavailable") or "unavailable"
+            state.rover_docked = contents.get("rover_docked", False) or False
+
             garage_pub.publish(state)
         elif response.status_code ==401:
             global token

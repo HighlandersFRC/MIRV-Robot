@@ -1,5 +1,6 @@
 #!/bin/usr/env python3
 import time
+import rospy
 
 HEALTH_STATES = ["unhealthy", "degraded", "healthy", "unavailable"]
 ROVER_STATES = ["disconnected","disconnected_fault", "e_stop", "connected_disabled", "connected_idle_roaming", "connected_idle_docked","connected_fault","autonomous","remote_operation"]
@@ -25,7 +26,7 @@ class RoverState:
     def __init__(self):
         self.rover_state = {
             "timestamp": int(time.time() * 1000),
-            "rover_id": "rover_1",
+            "rover_id": rospy.get_param('mirv_common_name', "rover_1"),
             "state": ROVER_STATES[8],
             "docked": False,
             "status": ROVER_STATUSES[0],

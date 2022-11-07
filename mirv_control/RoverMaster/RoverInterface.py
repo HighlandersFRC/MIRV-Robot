@@ -50,45 +50,45 @@ class RoverInterface():
 
         self.lastmsg = None
         self.roverState = self.DISCONNECTED
-        print("setting up server connections")
+        rospy.loginfo("setting up server connections")
         self.calibrationClient = actionlib.SimpleActionClient(
             'StartingHeading', mirv_control.msg.IMUCalibrationAction)
         self.calibrationClient.wait_for_server()
-        print("connected to starting heading AS")
+        rospy.loginfo("connected to starting heading AS")
         self.PPclient = actionlib.SimpleActionClient(
             'PurePursuitAS', mirv_control.msg.PurePursuitAction)
         self.PPclient.wait_for_server()
-        print("connected to Pure Pursuit Server")
+        rospy.loginfo("connected to Pure Pursuit Server")
 
         self.pickupClient = actionlib.SimpleActionClient(
             "PickupAS", mirv_control.msg.PickupPilitAction)
         self.pickupClient.wait_for_server()
-        print("connected to PiLit pickup Server")
+        rospy.loginfo("connected to PiLit pickup Server")
 
         self.TruckCordClient = actionlib.SimpleActionClient(
             'NavSatToTruckAS', mirv_control.msg.NavSatToTruckAction)
         self.TruckCordClient.wait_for_server()
-        print("connected to Pure Truck CordinateAS")
+        rospy.loginfo("connected to Pure Truck CordinateAS")
         self.databaseClient = actionlib.SimpleActionClient(
             "Database", mirv_control.msg.DatabaseAction)
         self.databaseClient.wait_for_server()
-        print("connected to Database Query Server")
+        rospy.loginfo("connected to Database Query Server")
         self.garageClient = actionlib.SimpleActionClient(
             "Docking", mirv_control.msg.GarageAction)
         self.garageClient.wait_for_server()
-        print("connected to Garage Server")
+        rospy.loginfo("connected to Garage Server")
         self.TeleopClient = actionlib.SimpleActionClient(
             "TeleopDrive", mirv_control.msg.generalAction)
         self.TeleopClient.wait_for_server()
-        print("connected to teleop drive")
+        rospy.loginfo("connected to teleop drive")
         self.pointTurnClient = actionlib.SimpleActionClient(
             "PointTurnRelativeAS", mirv_control.msg.PointTurnAction)
         self.pointTurnClient.wait_for_server()
-        print("connected to PointTurn Server")
+        rospy.loginfo("connected to PointTurn Server")
         self.driveDistanceClient = actionlib.SimpleActionClient(
             "DriveDistanceAS", mirv_control.msg.DriveDistanceAction)
         self.driveDistanceClient.wait_for_server()
-        print("connected to driveDistance Server")
+        rospy.loginfo("connected to driveDistance Server")
         self.laneLineClient = actionlib.SimpleActionClient(
             "LaneLineAS", mirv_control.msg.DetectLanesAction)
         self.pickupClient.wait_for_server()
@@ -182,7 +182,7 @@ class RoverInterface():
         rospy.loginfo("Rover Macros loaded into Rover Interface")
 
     def garage_location_callback(self, msg):
-        print("Updating Garage Location", msg)
+        rospy.loginfo("Updating Garage Location" + str(msg))
         self.garageLocation = msg
 
     def garage_state_callback(self, msg):
@@ -368,14 +368,14 @@ class RoverInterface():
         mirv_control.msg.DetectLanesGoal.position_y = self.yPos
         mirv_control.msg.DetectLanesGoal.heading = math.degrees(
             self.heading) % 360
-        print(
+        rospy.loginfo(
             f"INITIAL CONDITIONS: {self.xPos}, {self.yPos}, {math.degrees(self.heading) % 360}")
         goal = mirv_control.msg.DetectLanesGoal
         self.laneLineClient.send_goal(goal)
         self.laneLineClient.wait_for_result()
-        print("GOT A RESULT FROM LANES")
+        rospy.loginfo("GOT A RESULT FROM LANES")
         res = self.laneLineClient.get_result()
-        print(res)
+        rospy.loginfo(str(res))
         return res
 
     @cancellable
@@ -403,7 +403,7 @@ class RoverInterface():
             goal = mirv_control.msg.PurePursuitGoal
             self.PPclient.send_goal(goal)
             self.PPclient.wait_for_result()
-            print("Pure Pursuit Result", self.PPclient.get_result())
+            rospy.loginfo("Pure Pursuit Result", self.PPclient.get_result())
             return self.PPclient.get_result().angleToTarget
         except:
             rospy.logerr("Failed to run pure pursuit action")
@@ -411,7 +411,6 @@ class RoverInterface():
     @cancellable
     def pickup_client_goal(self, intakeSide, angleToTarget):
         self.changeNeuralNetworkSelected("piLit")
-        print("Pickup Client Goal", intakeSide, type(intakeSide))
         mirv_control.msg.PickupPilitGoal.intakeSide = intakeSide
         goal = mirv_control.msg.PickupPilitGoal
         self.pickupClient.send_goal(goal)
@@ -452,10 +451,8 @@ class RoverInterface():
         mirv_control.msg.NavSatToTruckGoal.altitude = 1492  # TODO: Use actual altitude??
         goal = mirv_control.msg.NavSatToTruckGoal
         self.TruckCordClient.send_goal(goal)
-        print("sentGoal")
         self.TruckCordClient.wait_for_result()
         truckPoint = self.TruckCordClient.get_result()
-        print("Got Result: ", [truckPoint.truckCoordX, truckPoint.truckCoordY])
         return ([truckPoint.truckCoordX, truckPoint.truckCoordY])
 
     def getLatestSqlPoints(self):
@@ -504,6 +501,7 @@ class RoverInterface():
 
         if rospy.get_time() - self.heartBeatTime > 1 and self.roverState in [self.CONNECTED_ENABLED, self.AUTONOMOUS, self.TELEOP_DRIVE, self.TELEOP_DRIVE_AUTONOMOUS]:
             self.roverState = self.DISCONNECTED
+            rospy.loginfo("Missed Heartbeat dropping to disconnected state")
         
         if self.roverState == self.CONNECTED_DISABLED or self.roverState == self.DISCONNECTED or self.roverState == self.DOCKED:
             self.cancelAllCommands(False)
@@ -516,8 +514,10 @@ class RoverInterface():
     def eSTOP(self):
         self.cancelled = True
         self.roverState = self.E_STOP
+        self.cancelAllCommands(True)
         rospy.logfatal("Rover ESTOP!")
         os.system("rosnode kill --all")
+        
 
     def setPiLits(self, command):
         self.cancelled = False
@@ -617,14 +617,14 @@ class RoverInterface():
             else:
                 self.roverState = self.CONNECTED_DISABLED
 
-        if subsystem != 'heartbeat' and command != 'arcade':
-            print(message, self.roverState)
+        rospy.loginfo("Message: " + str(message))
+        rospy.loginfo("Rover State" + str(self.roverState))
 
         if command == "e_stop":
             self.eSTOP()
         elif subsystem == "pi_lit":
             if command == "set_number_pi_lits":
-                print("Set Number of Pi lits: ", command)
+                rospy.loginfo("Set Number of Pi lits: " + str(command))
                 pass
             else:
                 self.setPiLits(command)
@@ -647,7 +647,7 @@ class RoverInterface():
                 t.start()
                 self.tasks.append(t)
             elif command == "cancel":
-                print("Received Cancel Command")
+                rospy.loginfo("Received Cancel Command")
                 self.cancelAllCommands(True)
                 self.roverState = self.CONNECTED_ENABLED
             elif command == "deploy_pi_lits":
@@ -659,7 +659,7 @@ class RoverInterface():
                     "location", {}).get("long")
                 formation = msg.get("commandParameters", {}).get(
                     "formation", "taper_right_5")
-                print("Place All Message", msg)
+                rospy.loginfo("Place All Message", msg)
                 t = Thread(target=self.deployAllPilits,
                            args=(lat, long, heading, formation))
                 t.start()
@@ -717,8 +717,6 @@ class RoverInterface():
 
     @cancellable
     def pointTurn(self, targetAngle, successThreshold):
-        print(
-            f"INITIATING POINT TURN WITH {targetAngle} and {successThreshold}")
         mirv_control.msg.PointTurnGoal.targetAngle = targetAngle
         mirv_control.msg.PointTurnGoal.successThreshold = successThreshold
         goal = mirv_control.msg.PointTurnGoal
