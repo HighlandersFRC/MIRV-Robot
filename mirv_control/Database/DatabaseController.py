@@ -7,7 +7,7 @@ import time
 import actionlib
 import mirv_control.msg as msg
 
-DB_PATH = "/media/nvidia/SSD/Database/mirv.db"
+DB_PATH = "/media/nvidia/980SSD/Database/mirv.db"
 
 garage_table_cmd = """ CREATE TABLE IF NOT EXISTS garage (
     timestamp double PRIMARY KEY,
