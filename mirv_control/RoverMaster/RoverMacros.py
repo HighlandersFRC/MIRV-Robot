@@ -42,11 +42,10 @@ class roverMacros():
         self.interface.deployGarage()
 
         # # Step 2: Drive to front of garage
-        # print(f"Step 2: Driving to front of garage")
         lineUpPoint1 = [3.5, 0]
         lineUpPoint2 = [2, 0]
         lineUpPoints = [lineUpPoint1, lineUpPoint2]
-        
+
         currentLocationConverted = self.interface.CoordConversion_client_goal(
             [self.interface.getCurrentLatitude(), self.interface.getCurrentLongitude()])
 
@@ -55,12 +54,9 @@ class roverMacros():
 
         absAngleToPlacement = math.atan2(deltaY, deltaX)
         angleToPlacement = absAngleToPlacement + self.interface.heading
-        
+
         self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
-        
-        
-        
-        
+
         self.interface.PP_client_goal(lineUpPoints)
 
         self.interface.wait(0.5)
@@ -71,13 +67,9 @@ class roverMacros():
         absAngleToPlacement = math.atan2(
             currentLocationConverted[1], -currentLocationConverted[0])
         angleToPlacement = absAngleToPlacement + self.interface.heading
-        
+
         print(f"Turning: {angleToPlacement} to face garage")
         self.interface.pointTurn(math.degrees(angleToPlacement) % 360, 5)
-
-        # ## TODO: Cancel
-        # if self.interface.cancelled:
-        #     return
 
         # Step 3: Turn towards tag
         # TODO: Substep: turn roughly towards garage?? Just in case it is not in view
@@ -143,8 +135,7 @@ class roverMacros():
         docked = self.interface.wait_for_docked()
         if not docked:
             return False
-        
-        
+
         # Step 10: Retract garage
         print(f"Retracting Garage")
         self.interface.retractGarage()
@@ -158,7 +149,7 @@ class roverMacros():
         self.interface.deployGarage()
         self.interface.drive_into_garage(0)
         self.interface.changeNeuralNetworkSelected("none")
-        
+
     @cancellable
     def loadPilits(self):
         self.interface.intakeDown()
@@ -168,7 +159,7 @@ class roverMacros():
         self.interface.stopIntakeAndMagazine()
         self.interface.wait(2)
         self.interface.intakeUp()
-        
+
     @cancellable
     def unloadPilits(self):
         self.interface.intakeDown()
@@ -271,34 +262,6 @@ class roverMacros():
                 return
             points.reverse()
 
-        # lane_detections = self.laneLineSearchSequence()
-        # if not lane_detections:
-        #     print(f"NO LANES DETECTED, RETURNING 224, {lane_detections}")
-        #     self.interface.changeNeuralNetworkSelected("none")
-        #     return
-
-
-        # heading_error = self.get_angle_error(math.degrees(
-        #     self.interface.heading), lane_detections.net_heading)
-        # if abs(heading_error) > 10:
-        #     print("Heading of {heading_error} is off by more than threshold")
-        #     self.interface.pointTurn(heading_error, 5)
-        #     self.interface.wait(5)
-        #     new_lane_detections = self.interface.Lane_Lines_goal()
-        #     if new_lane_detections and len(new_lane_detections.lane_detections) != 0:
-        #         lane_detections = new_lane_detections
-        #         heading_error = self.get_angle_error(math.degrees(
-        #             self.interface.heading), lane_detections.net_heading)
-
-        # if len(lane_detections.lane_detections) == 0:
-        #     print(f"NO LANES DETECTED, RETURNING 242, {lane_detections}")
-        #     self.interface.changeNeuralNetworkSelected("none")
-        #     return
-
-        # print(f"LANES DETECTED: {lane_detections.lane_detections}")
-        # print(f"LANE HEADING: {lane_detections.net_heading}")
-        # print(f"LANE WIDTH: {lane_detections.width}")
-
         # ##########################
         # # Mock Lane Line Detection
         # ##########################
@@ -359,63 +322,6 @@ class roverMacros():
         return True
 
     @cancellable
-    def laneLineSearchSequenceLongitudinal_OLD(self, positions, formation_type):
-        detections = []
-
-        for target_position in positions:
-            if target_position != 0:
-                previous_detection = detections[-1]
-                destination = placement.getEndPoint(
-                    *previous_detection['center'], previous_detection['heading'], target_position)
-
-                print(f"Driving to {destination}")
-                self.interface.PP_client_goal(
-                    [[destination[0], destination[1]]])
-
-                print(
-                    f"Driving to {previous_detection['heading']}, or relative {(math.degrees(self.interface.heading) - previous_detection['heading']) % 360}")
-                self.interface.pointTurn(
-                    (math.degrees(self.interface.heading) - previous_detection['heading']) % 360, 5)
-
-            #self.interface.wait(5)
-
-            lane_detections = self.laneLineSearchSequence()
-
-            if lane_detections == None:
-                if not detections:
-                    return None
-                else:
-                    continue
-
-            center = placement.get_center_coordinates(
-                lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width)
-            print(f"GENERATING CENTER: {center} from {[lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width]}")
-
-            detections.append({'lane_detections': lane_detections.lane_detections, 'center': center,
-                              'heading': lane_detections.net_heading, 'width': lane_detections.width})
-
-        print(f"Total detections {len(detections)}")
-        if len(detections) == 0:
-            return None
-        elif len(detections) == 1:
-            detection = detections[0]
-            print(
-                f"Generating placements from {[detection['lane_detections'], detection['heading'], detection['width'], formation_type]}")
-            return placement.generate_pi_lit_formation(
-                detection['lane_detections'], detection['heading'], detection['width'], formation_type)
-        else:
-            start_detection = detections[0]
-            end_detection = detections[-1]
-            net_heading = placement.get_angle_robot_frame(
-                start_detection['center'], end_detection['center'])
-            print(
-                f"Generating net heading from {start_detection['center']} and {end_detection['center']}, of {net_heading}")
-            print(
-                f"Generating placements from {[start_detection['lane_detections'], net_heading, start_detection['width'], formation_type]}")
-            return placement.generate_pi_lit_formation(
-                start_detection['lane_detections'], net_heading, start_detection['width'], formation_type)
-
-    @cancellable
     def laneLineSearchSequence(self):
         detections = []
 
@@ -436,7 +342,7 @@ class roverMacros():
 
             # could use this to return all
             detections.append((curr_angle, lane_detections))
-            
+
             if lane_detections and len(lane_detections.lane_detections) != 0:
                 print("RETURNING LANE DETECTIONS")
                 return lane_detections
@@ -462,7 +368,7 @@ class roverMacros():
                 self.interface.pointTurn(
                     (math.degrees(self.interface.heading) - previous_detection['net_heading']) % 360, 5)
 
-            #self.interface.wait(5)
+            # self.interface.wait(5)
 
             lane_detections = self.laneLineSearchSequence()
 
@@ -474,8 +380,9 @@ class roverMacros():
 
             center = placement.get_center_coordinates(
                 lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width)
-            print(f"GENERATING CENTER: {center} from {[lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width]}")
-            
+            print(
+                f"GENERATING CENTER: {center} from {[lane_detections.lane_detections, lane_detections.net_heading, lane_detections.width]}")
+
             net_heading = lane_detections.net_heading
             if len(detections) >= 1:
                 net_heading = placement.get_angle_robot_frame(
@@ -497,7 +404,7 @@ class roverMacros():
             start_detection = detections[0]
             end_detection = detections[-1]
             net_heading = placement.get_angle_robot_frame(
-                    start_detection['center'], end_detection['center'])
+                start_detection['center'], end_detection['center'])
             print(
                 f"Generating placements from {[start_detection['lane_detections'], net_heading, start_detection['width'], formation_type]}")
             return placement.generate_pi_lit_formation(

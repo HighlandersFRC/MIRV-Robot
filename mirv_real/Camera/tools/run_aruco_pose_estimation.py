@@ -22,13 +22,6 @@ secondMarkerID = 1
 CALIBRATION_DIRETORY = "../auto_calibration_images"
 
 
-#!/usr/bin/env python3
-# import rospy
-# from std_msgs.msg import Float64
-# from mirv_control.msg import depth_and_color_msg as depthAndColorFrame
-# from cv_bridge import CvBridge
-
-
 def quat_2_radians(x, y, z, w):
     pitch = math.atan2(2*x*w - 2*y*z, 1-2*x*x - 2 * z*z)
     yaw = math.asin(2*x*y + 2*z*w)
@@ -38,11 +31,6 @@ def quat_2_radians(x, y, z, w):
 
 cameraX = 640
 cameraY = 480
-
-# br = CvBridge()
-
-# calibrationFeedbackPub = rospy.Publisher('CameraCalibrationFeedback', str)
-# rospy.init_node('CameraCalibrator', anonymous=True)
 
 pipeline = depthai.Pipeline()
 
@@ -246,31 +234,23 @@ def relativePosition(rvec1, tvec1, rvec2, tvec2):
 
     # Inverse the second marker, the right one in the image
     invRvec, invTvec = inversePerspective(rvec2, tvec2)
-    # print(float(invRvec[0][0]))
     print(get_padded_num(invTvec[0][0]), get_padded_num(
         invTvec[1][0]), get_padded_num(invTvec[2][0]))
 
     orgRvec, orgTvec = inversePerspective(invRvec, invTvec)
-    # print("rvec: ", rvec2, "tvec: ", tvec2, "\n and \n", orgRvec, orgTvec)
 
     info = cv2.composeRT(rvec1, tvec1, invRvec, invTvec)
     composedRvec, composedTvec = info[0], info[1]
 
     composedRvec = composedRvec.reshape((3, 1))
     composedTvec = composedTvec.reshape((3, 1))
-    # print(get_padded_num(composedRvec[0][0]), get_padded_num(composedRvec[1][0]), get_padded_num(
-    #     composedRvec[2][0]), get_padded_num(composedTvec[0][0]), get_padded_num(composedTvec[1][0]), get_padded_num(composedTvec[2][0]))
     return composedRvec, composedTvec
 
 
 def draw(img, corners, imgpts):
     imgpts = np.int32(imgpts).reshape(-1, 2)
-    # draw ground floor in green
-    # img = cv2.drawContours(img, [imgpts[:4]],-1,(0,255,0),-3)
-    # draw pillars in blue color
     for i, j in zip(range(4), range(4)):
         img = cv2.line(img, tuple(imgpts[i]), tuple(imgpts[j]), (255), 3)
-    # draw top layer in red color
     return img
 
 
@@ -316,7 +296,6 @@ def track(matrix_coefficients, distortion_coefficients):
                     isSecondMarkerCalibrated = True
                     secondMarkerCorners = corners[i]
 
-                # print(markerPoints)
                 (rvec - tvec).any()  # get rid of that nasty numpy value array error
                 markerRvecList.append(rvec)
                 markerTvecList.append(tvec)
@@ -334,11 +313,8 @@ def track(matrix_coefficients, distortion_coefficients):
                 imgpts, jac = cv2.projectPoints(axis, TcomposedRvec, TcomposedTvec, matrix_coefficients,
                                                 distortion_coefficients)
 
-                # frame = draw(frame, corners[0], imgpts)
                 cv2.drawFrameAxes(frame, matrix_coefficients, distortion_coefficients, TcomposedRvec, TcomposedTvec,
                                   0.01)  # Draw Axis
-                # aruco.drawAxis(frame, matrix_coefficients, distortion_coefficients, TcomposedRvec, TcomposedTvec,
-                #                0.01)  # Draw Axis
                 relativePoint = (int(imgpts[0][0][0]), int(imgpts[0][0][1]))
                 cv2.circle(frame, relativePoint, 2, (255, 255, 0))
 
@@ -349,22 +325,12 @@ def track(matrix_coefficients, distortion_coefficients):
         if key == ord('q'):  # Quit
             break
         elif ids and 0 in ids and j % 5 == 0:
-            # elif key == ord('c'):  # Calibration
-            # If there are two markers, reverse the second and get the difference
-            # if ids and len(ids) > 1:
-
             rvec1, tvec1 = firstRvec.reshape(
                 (3, 1)), firstTvec.reshape((3, 1))
             rvec1, tvec1 = rvec1.reshape((3, 1)), tvec1.reshape((3, 1))
             invRvec, invTvec = inversePerspective(rvec1, tvec1)
-            # print(float(invRvec[0][0]))
             print(get_padded_num(invTvec[0][0]), get_padded_num(
                 invTvec[1][0]), get_padded_num(invTvec[2][0]))
-            # secondRvec, secondTvec = secondRvec.reshape(
-            #     (3, 1)), secondTvec.reshape((3, 1))
-
-            # composedRvec, composedTvec = relativePosition(
-            #     firstRvec, firstTvec, secondRvec, secondTvec)
 
     # When everything done, release the capture
     cap.release()

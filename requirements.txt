@@ -1,0 +1,24 @@
+numpy==1.19.5
+matplotlib==2.1.1
+scipy==1.5.4
+python-socketio==5.6.0
+requests==2.27.1
+aiohttp==3.8.1
+av==9.2.0
+aiortc==1.3.2
+pymap3d==2.4.3
+torch @ file:///home/nvidia/torch-1.10.0a0%2Bgit36449ea-cp36-cp36m-linux_aarch64.whl==
+opencv-python==4.6.0.66
+-e git+https://github.com/luxonis/depthai-python.git@2e7110ea89ea18f3f4c688562ce1aa48549f79ce#egg=depthai==
+torchvision @ file:///home/nvidia/torchvision-0.11.0a0%2Bfa347eb-cp36-cp36m-linux_aarch64.whl==
+importlib-metadata==4.8.3
+pandas==0.22.0
+neptune-client==0.15.2
+ipython==7.16.3
+yacs==0.1.8
+pillow==8.4.0
+tqdm==4.64.0
+scikit-learn==0.24.2
+pyyaml==6.0
+prefetch-generator==1.0.1
+pyserial==3.5

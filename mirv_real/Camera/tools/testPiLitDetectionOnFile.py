@@ -1,152 +1,119 @@
-import cv2
-import argparse
-import os, sys
-import shutil
-import time
-from pathlib import Path
-from faster_RCNN import get_faster_rcnn_resnet
-import math
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_DIR)
-
+import os
 import torch
-import torch.backends.cudnn as cudnn
-from numpy import random
-import numpy as np
-
-from typing import Optional, List, Tuple
-from dataclasses import field
-
-from lib.config import cfg
-from lib.config import update_config
-from lib.utils.utils import create_logger, select_device, time_synchronized
-from lib.models import get_net
-from lib.dataset import LoadImages, LoadStreams
-from lib.core.general import bbox_iou, non_max_suppression, scale_coords
-from lib.utils import plot_one_box,show_seg_result
-from lib.core.function import AverageMeter
-from lib.core.postprocess import morphological_process, connect_lane
-from tqdm import tqdm
-import depthai
-
-from faster_RCNN import get_faster_rcnn_resnet
-from transformations import ComposeDouble
-from transformations import ComposeSingle
-from transformations import FunctionWrapperDouble
-from transformations import FunctionWrapperSingle
-from transformations import apply_nms, apply_score_threshold
-from transformations import normalize_01
-
-from backbone_resnet import ResNetBackbones
-from PIL import Image
-
-from numpy import asarray
-
-import matplotlib as plt
+import cv2
 import torchvision.transforms as transforms
+import glob
+import copy
 
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-import torchvision
 
 normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        )
+    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+)
 
-transform=transforms.Compose([
-            transforms.ToTensor(),
-            normalize,
-        ])
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    normalize,
+])
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--weights', nargs='+', type=str, default='weights/End-to-end.pth', help='model.pth path(s)')
-parser.add_argument('--source', type=str, default='inference/videos', help='source')  # file/folder   ex:inference/images
-parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-parser.add_argument('--conf-thres', type=float, default=0.35, help='object confidence threshold')
-parser.add_argument('--iou-thres', type=float, default=0.75, help='IOU threshold for NMS')
-parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-parser.add_argument('--save-dir', type=str, default='inference/output', help='directory to save results')
-parser.add_argument('--augment', action='store_true', help='augmented inference')
-parser.add_argument('--update', action='store_true', help='update all models')
+intakeSide = "switch_right"
 
-api_key = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI4NjBjY2ZkZC1kMjNmLTQwM2MtYTMwNi1mMDExNDZjNWJhYjMifQ=="
+runningNeuralNetwork = True
 
-opt = parser.parse_args()
-
-shapes = ((720, 1280), ((0.5333333333333333, 0.5), (0.0, 12.0)))
-img_det_shape = (720, 1280, 3)
-logger, _, _ = create_logger(
-    cfg, cfg.LOG_DIR, 'demo')
-
-device = select_device(logger,opt.device)
+detections = 0
 
 hFOV = 63
 horizontalPixels = 640
 verticalPixels = 480
 degreesPerPixel = hFOV/horizontalPixels
 
-piLitModel = torch.load("weights/piLitModel.pth")
 
-print(type(piLitModel))
+device = torch.device('cuda:0')
+half = device.type != 'cpu'
 
+piLitModel = torch.load(os.path.expanduser(
+    "~/mirv_ws/src/MIRV-Robot/mirv_real/Camera/weights/pi_lit_model_9.pth"))
 piLitModel.eval()
 piLitModel.to(device)
 
-# frame = cv2.imread("tools/metrics/004.jpg")
-# while True:
-#     cv2.imshow("img", frame)
 
-#     key = cv2.waitKey(1)
-#     if key == ord('q'):
-#         break
-frame = cv2.imread("cameraFrame.jpg")
+print("loaded model")
 
-# frame = cv2.resize(frame, (320, 640))
-# frame = cv2.imread("test.jpg")
 
-frameArray = asarray(frame)
-img = transform(frameArray).to(device)
+def detect(img, path):
+    return piLitDetect(img, path)
 
-if img.ndimension() == 3:
-    img = img.unsqueeze(0)
 
-# img = img.half()
+def piLitDetect(img, orig, path):
+    frame = img
+    frame_orig = orig
+    img = transform(img).to(device)
+    if img.ndimension() == 3:
+        img = img.unsqueeze(0)
 
-piLitPrediction = piLitModel(img)[0]
+    mod_out = piLitModel(img)
+    piLitPrediction = mod_out[0]
+    bboxList = []
+    # print("DETECTING...")
+    closest_track_location = None
+    closest_track_distance = 5
+    for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
+        # print(score, bbox)
+        if(score > 0.85 or True):
+            # print("GOT A PI LIT")
+            x0, y0, x1, y1 = bbox
 
-print(piLitPrediction)
+            if x0 == 0 or x1 == horizontalPixels or y0 == 0 or y1 == verticalPixels:
+                print("Ignoring detection at edge")
+                continue
 
-for bbox in piLitPrediction["boxes"]:
-    x0,y0,x1,y1 = bbox
+            if abs(x1 - x0) < 30 or abs(y1 - y0) < 8:  # abs((x1 - x0) * (y1 - y0)) < 200
+                print("Ignoring small detection")
+                continue
 
-    frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
-
-for bbox, score in zip(piLitPrediction["boxes"], piLitPrediction["scores"]):
-        if(score > 0.9):
-            print("GOT A PI LIT")    
-            x0,y0,x1,y1 = bbox
             centerX = int((x0 + x1)/2)
             centerY = int((y0 + y1)/2)
-            # bboxList.append(bbox)
-            frame = cv2.rectangle(frame, (int(x0), int(y0)), (int(x1), int(y1)), (0, 255, 0), 3)
+            bboxList.append(bbox)
 
-            angleToPiLit = math.radians((centerX - horizontalPixels/2) * degreesPerPixel)
+            color = (0, 255, 0)
+            if score > 0.85:
+                color = (0, 255, 0)
+            elif score > 0.5:
+                color = (0, 255, 255)
+            else:
+                color = (0, 0, 255)
 
-            print("angle:", angleToPiLit)
+            frame_orig = cv2.rectangle(frame_orig, (int(x0), int(y0)),
+                                       (int(x1), int(y1)), color, 3)
 
-frame = cv2.resize(frame, (640, 480))
+            frame = cv2.rectangle(frame, (int(x0), int(y0)),
+                                  (int(x1), int(y1)), color, 3)
 
-result=cv2.imwrite(r'detected.jpg', frame)
-if result==True:
-    print("SAVED!")
-    firstLoop = False
-else:
-    print("DIDN'T SAVE")
+    name_suffix = path.split('\\')[-1]
+    cv2.imshow(name_suffix, frame)
+    return bboxList
 
-# while True:
-#     cv2.imshow("img", frame)
 
-#     key = cv2.waitKey(1)
-#     if key == ord('q'):
-#         break
+out_dir = 'model_2_filtered_2'
+images = glob.glob('./pilit_pictures/*.png')
+i = 0
+found = 0
+
+if __name__ == '__main__':
+    for path in images:
+        try:
+            print(path)
+            img = cv2.imread(path)
+            img = cv2.resize(img, (640, 480), interpolation=cv2.INTER_AREA)
+
+            orig = copy.deepcopy(img)
+
+            pi_lits = piLitDetect(img, orig, path)
+            print(pi_lits)
+
+            cv2.waitKey()
+
+            i += 1
+        except:
+            pass

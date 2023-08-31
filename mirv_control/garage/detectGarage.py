@@ -17,6 +17,7 @@ from mirv_control.msg import camera_calibration as CameraCalibrationMsg
 
 INCHES_TO_METERS = 0.0254
 
+
 class GarageDetection:
 
     def __init__(self):
@@ -28,7 +29,9 @@ class GarageDetection:
         self.verticalPixels = 480
         self.degreesPerPixel = self.hFOV/self.horizontalPixels
 
-
+        # Transformation from ArUco tag coordinate systems to garage coordinates, keyed by tag ID, in meters
+        # Garage coordinates are zeroed at the back of the garage, pointing out (towards the rover, when stowed)
+        # Not totally sure why the x_scale and y_scale are necessary, but when tuned correctly the position estimations are spot on
         self.transformations = {
             0: {
                 'angle': 0,
@@ -131,13 +134,11 @@ class GarageDetection:
 
         if np.all(ids is not None):  # If there are markers found by detector
             ids = ids.flatten()
-            marker_r_vec = None
-            marker_t_vec = None
             for id, corner in zip(ids, corners):  # Iterate in markers
                 # Estimate pose of each marker and return the values rvec and tvec---different from camera coefficients
                 rvec, tvec, markerPoints = aruco.estimatePoseSingleMarkers(corner, self.markerSize, self.calibration.matrix,
                                                                            self.calibration.distortion)
-                
+
                 rvec, tvec = rvec.reshape((3, 1)), tvec.reshape((3, 1))
 
                 rvec_t, tvec_t = self.invertCameraPerspective(rvec, tvec)
@@ -263,44 +264,9 @@ class GarageDetection:
             print("Camera is not calibrated")
             return
         if self.runningDetection:
-            # print("Running Detection")
             frame = ros_numpy.numpify(data.color_frame)
             depthFrame = ros_numpy.numpify(data.depth_frame)
             self.detect_markers(frame, depthFrame)
-
-    # def getPoseFromVectors(self, rvec, tvec, id=""):
-    #     # Generate PoseStamped obj from rvec and tvec
-    #     pose = PoseStamped()
-    #     pose.header.stamp = rospy.Time.now()
-    #     pose.header.frame_id = id
-
-    #     # Apply linear bias to the translation estimates
-    #     # x = tvecs[0][0][2]/1.184 + 0.110
-    #     # y = -tvecs[0][0][0]/1.032 + 0.243
-    #     # z = -tvecs[0][0][1]/1.151 - 0.297
-    #     # dist = np.sqrt(x**2 + y**2 + z**2)
-    #     # x = x - 0.008*dist + 0.031
-    #     # y = y + 0.049*dist - 0.222
-    #     # z = z - 0.062*dist + 0.281
-    #     pose.pose.position.x = tvec[2][0]
-    #     pose.pose.position.y = -tvec[0][0]
-    #     pose.pose.position.z = -tvec[1][0]
-
-    #     # Swap the angles around to correctly represent our coordinate system
-    #     # Aruco puts zero at the tag, with z facing out...
-    #     # We want x forward, y left, z up, euler order zyx = ypr
-    #     rvecs_reordered = [rvec[2][0], -rvec[0][0], -rvec[1][0]]
-    #     r = R.from_rotvec(rvecs_reordered)
-    #     est_ypr = r.as_euler('zyx')
-    #     quat = conversion_lib.eul2quat(est_ypr[:, None])
-    #     # r = R.from_euler('zyx', est_ypr + [np.pi, 0, np.pi])
-    #     # quat = r.as_quat()
-    #     # print(quat[:])
-    #     # print(pose.pose.orientation)
-    #     pose.pose.orientation.x = quat[0]
-    #     pose.pose.orientation.y = quat[1]
-    #     pose.pose.orientation.z = quat[2]
-    #     pose.pose.orientation.w = quat[3]
 
     def run(self):
         rospy.spin()

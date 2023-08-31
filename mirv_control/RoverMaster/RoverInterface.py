@@ -91,9 +91,6 @@ class RoverInterface():
         print("connected to driveDistance Server")
         self.laneLineClient = actionlib.SimpleActionClient(
             "LaneLineAS", mirv_control.msg.DetectLanesAction)
-        self.pickupClient.wait_for_server()
-        # self.PlacementGeneratorClient = actionlib.SimpleActionClient("PlacementLocationGenerator", mirv_control.msg.DetectLanesAction)
-        # self.PlacementGeneratorClient.wait_for_server()
         # print("connected to placement generator")
 
         self.isJoystickControl = True
@@ -157,7 +154,6 @@ class RoverInterface():
         self.pilit_state_publisher = rospy.Publisher(
             "PilitControl", pilit_state, queue_size=1)
 
-
     def updateIMU(self, data):
         self.imu_buffer.append(data.data)
         if len(self.imu_buffer) > 10:
@@ -187,7 +183,7 @@ class RoverInterface():
     def garage_state_callback(self, msg):
         self.garage_state = msg.state
         self.rover_docked = msg.rover_docked
-        
+
         if self.garage_state == "retracted_latched" and self.rover_docked and self.roverState != self.E_STOP and len(self.tasks) == 0:
             self.roverState = self.DOCKED
 
@@ -220,7 +216,7 @@ class RoverInterface():
         self.garage_pub.publish(String("retract"))
         while self.garage_state != "retracted_latched" and not self.cancelled:
             time.sleep(0.1)
-            
+
     def waitUntilDocked(self):
         while self.garage_state != "retracted_latched" and not self.cancelled:
             time.sleep(0.1)
@@ -297,8 +293,8 @@ class RoverInterface():
             data.pose.pose.orientation)[0]
 
         if self.startingHeading != 0:
-            self.globalHeading = math.radians((360 - (math.degrees(self.heading - (self.startingHeading))%360))%360)
-
+            self.globalHeading = math.radians(
+                (360 - (math.degrees(self.heading - (self.startingHeading)) % 360)) % 360)
 
     def getCurrentTruckOdom(self):
         return ([self.xPos, self.yPos])
@@ -384,7 +380,7 @@ class RoverInterface():
         self.intake_command_pub.publish(String("reset"))
         self.calibrationClient.send_goal(goal)
         self.calibrationClient.wait_for_result()
-        
+
         self.calibrated = True
         return self.calibrationClient.get_result().succeeded
 
@@ -424,7 +420,7 @@ class RoverInterface():
         goal = mirv_control.msg.GarageGoal
         self.garageClient.send_goal(goal)
         self.garageClient.wait_for_result()
-    
+
     @cancellable
     def wait_for_docked(self):
         startTime = time.time()
@@ -497,10 +493,10 @@ class RoverInterface():
             self.stopIntakeAndMagazine()
 
     def stateWatchdog(self):
-        
-        #if not self.calibrated and len(self.tasks) == 0 and self.roverState == self.CONNECTED_DISABLED:
+
+        # if not self.calibrated and len(self.tasks) == 0 and self.roverState == self.CONNECTED_DISABLED:
         #    self.roverState = self.DOCKED
-        
+
         if self.roverState == self.CONNECTED_DISABLED or self.roverState == self.DISCONNECTED or self.roverState == self.DOCKED:
             self.cancelAllCommands(False)
         if self.roverState == self.TELEOP_DRIVE:
@@ -528,7 +524,7 @@ class RoverInterface():
             self.pilit_state.inhibit = False
             self.pilit_state.reverse = False
         elif command == "idle":
-            self.pilit_state.inhibit = True            
+            self.pilit_state.inhibit = True
         else:
             rospy.logwarn(
                 "Received Unrecognized Light Command type: " + str(command))
@@ -556,21 +552,20 @@ class RoverInterface():
         self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
         self.RoverMacro.pickupPiLit()
         self.roverState = lastState
-        
+
     def loadPilits(self):
         self.cancelled = False
         lastState = self.roverState
         self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
         self.RoverMacro.loadPilits()
         self.roverState = lastState
-        
+
     def unloadPilits(self):
         self.cancelled = False
         lastState = self.roverState
         self.roverState = self.TELEOP_DRIVE_AUTONOMOUS
         self.RoverMacro.unloadPilits()
         self.roverState = lastState
-
 
     def deployAllPilits(self, lat, long, heading, formation):
         self.cancelled = False
@@ -598,6 +593,8 @@ class RoverInterface():
             self.roverState = self.DOCKED
         else:
             self.roverState = self.CONNECTED_ENABLED
+
+    # Rover state transition
 
     def cloud_callback(self, message):
         self.heartBeatTime = rospy.get_time()

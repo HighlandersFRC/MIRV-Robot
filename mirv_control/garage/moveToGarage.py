@@ -119,7 +119,6 @@ class moveToGarage:
     def updateGarageLocation(self, GarageLocation):
         print("UPDATING GARAGE LOCATION")
         print(GarageLocation)
-        # if(self.runPID == False and self.driveToGarage == False):
         if(self.allowSearch == True):
             self.GarageAngle = GarageLocation.angle_to_garage
             self.GarageDepth = GarageLocation.rover_position_x_from_garage
@@ -128,11 +127,9 @@ class moveToGarage:
             self.GaragePID.setSetPoint(self.setPoint)
             self.updatedLocation = True
             self.prevGarageAngle = self.GarageAngle
-        # print("SETPOINT: ", self.setPoint)
 
     def updateIMU(self, data):
         self.imu = data.data
-        # print("UPDATED IMU TO: ", self.imu, " at Time: ", time.time())
 
     def cancelCallback(self):
         self.velocityMsg.linear.x = 0
@@ -151,7 +148,6 @@ class moveToGarage:
 
     def moveToGarage(self):
         print("MOVING TO GARAGE moveToGarage")
-        # print("SETPOINT: ", self.setPoint, " CURRENT: ", self.imu)
         result = self.GaragePID.updatePID(
             self.imu)  # this returns in radians/sec
         result = -result
@@ -159,8 +155,6 @@ class moveToGarage:
         self.velocityMsg.angular.z = result
         self.velocitydrive_pub.publish(self.velocityMsg)
         if(time.time() - self.movementInitTime > self.GarageDepth/0.25 or self.touchSensorVals[0] != 0 or self.touchSensorVals[1] != 0):
-            # print("WANTED ANGLE: ", self.setPoint)
-            # print("CURRENT ANGLE: ", self.imu)
             self.driveToGarage = False
             self.moveToGarageRunning = False
             self.velocityMsg.linear.x = 0
@@ -185,30 +179,7 @@ class moveToGarage:
         self.estimatePID.setSetPoint(estimatedGarageAngle)
         self._result.finished = False
 
-        searchInitTime = time.time()
-
-        # while(self.reachedEstimate == False and self.GarageAngle == 0):
-        #     # print("TRYING TO REACH ESTIMATE")
-        #     result = self.estimatePID.updatePID(self.imu) # this returns in radians/sec
-        #     print("SETPOINT: ", estimatedGarageAngle, " CURRENT ANGLE: ", self.imu)
-
-        #     self.velocityMsg.linear.x = 0
-        #     self.velocityMsg.angular.z = result
-
-        #     self.velocitydrive_pub.publish(self.velocityMsg)
-
-        #     if(abs(self.imu - estimatedGarageAngle) < 5):
-        #         print("GOT TO ESTIMATED TARGET!!!!")
-        #         self.reachedEstimate = True
-        #         self.velocityMsg.linear.x = 0
-        #         self.velocityMsg.angular.z = 0
-        #         self.velocitydrive_pub.publish(self.velocityMsg)
-
         time.sleep(4)
-
-        # while(time.time() - searchInitTime < 4):
-        #     continue
-            # print(time.time() - searchInitTime)
 
         if(self.GarageAngle != 0):
             self.runPID = True
@@ -264,4 +235,3 @@ class moveToGarage:
 if __name__ == '__main__':
     print("RUNNING")
     pickup = moveToGarage()
-    # pickup.run()
